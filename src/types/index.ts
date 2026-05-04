@@ -76,6 +76,7 @@ export interface DashboardResponse {
     savings: number;
     available: number;
     balance: number;
+    vsPreviousMonth?: number;
   };
   budgets: Array<{
     category: string;
