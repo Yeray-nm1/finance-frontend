@@ -6,8 +6,6 @@ import { api } from "@/lib/api";
 import type { Category } from "@/types";
 import {
   Card,
-  CardHeader,
-  CardTitle,
   CardContent,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

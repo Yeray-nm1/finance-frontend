@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+          cache: pnpm
+
+      - run: npm install -g pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: ESLINT_NO_PATCH=1 pnpm lint
+
+      - run: pnpm build

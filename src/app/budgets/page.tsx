@@ -6,8 +6,6 @@ import { api } from "@/lib/api";
 import type { BudgetWithCategory, Category } from "@/types";
 import {
   Card,
-  CardHeader,
-  CardTitle,
   CardContent,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,12 +29,6 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("es-ES", {
-    style: "currency",
-    currency: "EUR",
-  }).format(amount);
-}
 
 export default function BudgetsPage() {
   const [budgets, setBudgets] = useState<BudgetWithCategory[]>([]);

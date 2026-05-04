@@ -6,8 +6,6 @@ import { api } from "@/lib/api";
 import type { Transaction, Account, Category } from "@/types";
 import {
   Card,
-  CardHeader,
-  CardTitle,
   CardContent,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,7 +35,7 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Upload, FileDown } from "lucide-react";
+import { Plus, Upload } from "lucide-react";
 import Papa from "papaparse";
 
 function formatCurrency(amount: number): string {

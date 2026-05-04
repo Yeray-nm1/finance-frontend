@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSidebar } from "@/contexts/SidebarContext";
-import { LogOut, ChevronLeft, Upload, LayoutDashboard, PiggyBank, Repeat, ArrowLeftRight, Settings } from "lucide-react";
+import { ChevronLeft, Upload, LayoutDashboard, PiggyBank, Repeat, ArrowLeftRight, Settings } from "lucide-react";
 import { CsvUploadDialog } from "@/components/CsvUploadDialog";
 import { useState } from "react";
 
@@ -139,8 +139,8 @@ export function Sidebar() {
           {/* CSV Upload button - always visible */}
           <button
             onClick={() => setCsvDialogOpen(true)}
-            onMouseEnter={(e: any) => { e.currentTarget.style.color = "#a6e22e"; }}
-            onMouseLeave={(e: any) => { e.currentTarget.style.color = "#888888"; }}
+            onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.color = "#a6e22e"; }}
+            onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.color = "#888888"; }}
             style={{
               display: "flex",
               alignItems: "center",
@@ -185,8 +185,8 @@ export function Sidebar() {
           {!isCollapsed && (
             <button
               onClick={logout}
-              onMouseEnter={(e: any) => { e.currentTarget.style.color = "#f44747"; }}
-              onMouseLeave={(e: any) => { e.currentTarget.style.color = "#888888"; }}
+              onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.color = "#f44747"; }}
+              onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.color = "#888888"; }}
               style={{
                 display: "flex",
                 alignItems: "center",
