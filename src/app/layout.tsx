@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "next-themes";
-import { Toaster } from "@/components/ui/toaster";
+import { SidebarProvider } from "@/contexts/SidebarContext";
+import RootLayoutInner from "@/components/layout/RootLayoutInner";
 
 export const metadata: Metadata = {
   title: "Finance Dashboard - Personal Finance",
@@ -16,11 +17,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className="antialiased bg-cream text-gray-800 min-h-screen font-sans">
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+      <body className="antialiased bg-bg-primary text-text-primary min-h-screen">
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <AuthProvider>
-            {children}
-            <Toaster />
+            <SidebarProvider>
+              <RootLayoutInner>{children}</RootLayoutInner>
+            </SidebarProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>
