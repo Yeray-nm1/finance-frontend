@@ -113,7 +113,8 @@ export default function DashboardPage() {
     );
   }
 
-  const { balance, budgets, recurring, transactions } = data!;
+  const { balance, budgets, recurring, transactions } = data || {};
+  const budgetsArray = Array.isArray(budgets) ? budgets : [];
 
   return (
     <main className="min-h-screen bg-bg-primary p-4 md:p-8">
@@ -177,11 +178,11 @@ export default function DashboardPage() {
               Presupuestos
             </h2>
 
-            {budgets.length === 0 ? (
+             {budgetsArray.length === 0 ? (
               <p className="text-text-muted text-xs py-4">No hay presupuestos configurados</p>
             ) : (
               <div className="space-y-4">
-                {budgets.map((budget) => {
+                 {budgetsArray.map((budget) => {
                   const isOver = budget.progress > 100;
                   const barColor = isOver ? "progress-fill-red" : "progress-fill-green";
                   return (

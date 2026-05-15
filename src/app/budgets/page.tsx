@@ -2,215 +2,167 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { api } from "@/lib/api";
-import type { BudgetWithCategory, Category } from "@/types";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { MONTH_NAMES, type CategoryType } from "@/types";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
-import { Plus, Pencil, Trash2 } from "lucide-react";
-
+import { Spinner } from "@/components/ui/spinner";
+import { Pencil } from "lucide-react";
+import { DeleteConfirmDialog } from "@/components/budgets/DeleteConfirmDialog";
+import { BudgetEditor } from "@/components/budgets/BudgetEditor";
+import { BudgetOverview } from "@/components/budgets/BudgetOverview";
+import { useBudget } from "@/hooks/useBudget";
+import { useCategories } from "@/hooks/useCategories";
 
 export default function BudgetsPage() {
-  const [budgets, setBudgets] = useState<BudgetWithCategory[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<BudgetWithCategory | null>(null);
-  const [form, setForm] = useState({ categoryId: "", percentage: [30] });
   const { isAuthenticated } = useAuth();
+  const now = new Date();
+  const selectedMonth = now.getMonth() + 1;
+  const selectedYear = now.getFullYear();
 
-  async function loadData() {
-    try {
-      const [buds, cats] = await Promise.all([
-        api.budgets.list(),
-        api.categories.list(),
-      ]);
-      setBudgets(buds);
-      setCategories(cats);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const { budget, loading, saving, loadBudget, saveBudget, deleteBudget, calculateIncome } =
+    useBudget(selectedMonth, selectedYear);
+  const { loadCategories, addCategory, updateCategory, deleteCategory, getCategoriesByTypeRecord } =
+    useCategories();
+
+  const [editing, setEditing] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    type: "category" | "budget";
+    id?: string;
+  } | null>(null);
+
+  const categoriesByType = getCategoriesByTypeRecord();
 
   useEffect(() => {
     if (isAuthenticated) {
-      loadData();
+      Promise.all([loadBudget(), loadCategories()]).then(
+        ([budgetResult]) => {
+          if (budgetResult.exists && budgetResult.budget) {
+            setEditing(false);
+          } else {
+            setEditing(true);
+          }
+        }
+      );
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, loadBudget, loadCategories]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    try {
-      if (editing) {
-        await api.budgets.update(editing.id, {
-          percentage: form.percentage[0],
-        });
-      } else {
-        await api.budgets.create({
-          categoryId: form.categoryId,
-          percentage: form.percentage[0],
-        });
-      }
-      setForm({ categoryId: "", percentage: [30] });
-      setEditing(null);
-      setDialogOpen(false);
-      loadData();
-    } catch (err) {
-      console.error(err);
+  async function handleSave(
+    income: number,
+    typeAllocations: Array<{ categoryType: string; percentage: number }>
+  ): Promise<boolean> {
+    const saved = await saveBudget(income, typeAllocations);
+    if (saved) {
+      setEditing(false);
+      return true;
+    }
+    return false;
+  }
+
+  async function handleCalculateIncome(): Promise<number | null> {
+    return calculateIncome();
+  }
+
+  async function handleDeleteCategory(id: string) {
+    const success = await deleteCategory(id);
+    if (success) {
+      setDeleteConfirm(null);
     }
   }
 
-  async function handleDelete(id: string) {
-    if (confirm("¿Eliminar este presupuesto?")) {
-      await api.budgets.delete(id);
-      loadData();
+  async function handleDeleteBudget(): Promise<boolean> {
+    const success = await deleteBudget();
+    if (success) {
+      setDeleteConfirm(null);
+      setEditing(true);
     }
+    return success;
   }
 
-  function openEdit(budget: BudgetWithCategory) {
-    setEditing(budget);
-    setForm({ categoryId: budget.categoryId, percentage: [budget.percentage] });
-    setDialogOpen(true);
+  function handleEditModeCancel() {
+    setEditing(false);
+    loadBudget();
   }
 
-  const availableCategories = categories.filter(
-    (cat) => !budgets.some((b) => b.categoryId === cat.id)
-  );
+  async function handleAddCategory(type: CategoryType, name: string): Promise<boolean> {
+    const cat = await addCategory(type, name);
+    return cat !== null;
+  }
+
+  async function handleEditCategory(id: string, name: string): Promise<void> {
+    await updateCategory(id, { name });
+  }
 
   if (loading) {
     return (
-      <main className="p-8 max-w-4xl mx-auto">
-        <p className="font-serif text-xl text-gray-400">Cargando...</p>
+      <main className="min-h-screen flex items-center justify-center bg-cream-50">
+        <Spinner size="lg">Cargando...</Spinner>
       </main>
     );
   }
 
   return (
-    <main className="p-4 md:p-8 max-w-4xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="font-serif text-3xl font-semibold text-gray-800">
+    <main className="min-h-screen bg-gradient-to-br from-cream-50 via-white to-emerald-50 p-4 md:p-8">
+      <div className="max-w-5xl mx-auto">
+        {/* Header */}
+        <div className="mb-12 pb-8 border-b border-gray-200">
+          <h1 className="font-display text-5xl md:text-6xl font-light text-gray-900 mb-3 tracking-tight">
             Presupuestos
           </h1>
-          <p className="text-gray-500 mt-1">Controla tus gastos por categoría</p>
+          <p className="font-serif text-lg text-gray-500 italic">
+            Gestiona tus finanzas con intención
+          </p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button
-              onClick={() => {
-                setEditing(null);
-                setForm({ categoryId: "", percentage: [30] });
-              }}
-            >
-              <Plus className="size-4" /> Añadir
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {editing ? "Editar Presupuesto" : "Nuevo Presupuesto"}
-              </DialogTitle>
-              <DialogDescription>
-                {editing
-                  ? "Actualiza el porcentaje del presupuesto"
-                  : "Asigna un porcentaje de ingresos a una categoría"}
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {!editing && (
-                <div className="space-y-2">
-                  <Label>Categoría</Label>
-                  <Select
-                    value={form.categoryId}
-                    onValueChange={(v) => setForm({ ...form, categoryId: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar categoría" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableCategories.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              <div className="space-y-4">
-                <Label>Porcentaje: {form.percentage[0]}%</Label>
-                <Slider
-                  value={form.percentage}
-                  onValueChange={(v) => setForm({ ...form, percentage: v })}
-                  max={100}
-                  step={1}
-                />
-              </div>
-              <Button type="submit" className="w-full">
-                {editing ? "Actualizar" : "Crear"}
-              </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
 
-      <div className="space-y-4">
-        {budgets.length === 0 && (
-          <p className="text-gray-400 text-sm">No hay presupuestos configurados</p>
-        )}
-        {budgets.map((budget) => (
-          <Card key={budget.id}>
-            <CardContent className="p-6">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="font-serif text-lg font-medium">
-                  {budget.category.name}
-                </h3>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">
-                    {budget.percentage}%
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => openEdit(budget)}
-                  >
-                    <Pencil className="size-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelete(budget.id)}
-                  >
-                    <Trash2 className="size-4 text-coral" />
-                  </Button>
-                </div>
-              </div>
-              <Progress value={budget.percentage} className="h-3" />
-            </CardContent>
-          </Card>
-        ))}
+        <div className="flex justify-between items-start mb-8">
+          <div className="flex gap-4 items-center">
+            <div className="text-sm text-gray-500">
+              {MONTH_NAMES[selectedMonth - 1]} {selectedYear}
+            </div>
+            {budget && !editing && (
+              <Button
+                onClick={() => setEditing(true)}
+                variant="outline"
+                className="rounded-full border-2 hover:bg-gray-50"
+              >
+                <Pencil className="size-4 mr-2" /> Editar configuración
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Budget Editor / Overview */}
+        {editing ? (
+          <BudgetEditor
+            budget={budget}
+            saving={saving}
+            categoriesByType={categoriesByType}
+            onSave={handleSave}
+            onDelete={handleDeleteBudget}
+            onCalculateIncome={handleCalculateIncome}
+            onCancel={handleEditModeCancel}
+            onAddCategory={handleAddCategory}
+            onEditCategory={handleEditCategory}
+            onDeleteCategory={(id) =>
+              setDeleteConfirm({ type: "category", id })
+            }
+          />
+        ) : budget ? (
+          <BudgetOverview
+            budget={budget}
+            categoriesByType={categoriesByType}
+          />
+        ) : null}
+
+        {/* Confirmation Dialog */}
+        <DeleteConfirmDialog
+          isOpen={deleteConfirm !== null}
+          type={deleteConfirm?.type || "category"}
+          onConfirm={
+            deleteConfirm?.type === "category" && deleteConfirm.id
+              ? () => handleDeleteCategory(deleteConfirm.id!)
+              : handleDeleteBudget
+          }
+          onCancel={() => setDeleteConfirm(null)}
+        />
       </div>
     </main>
   );

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
-import type { Category } from "@/types";
+import type { Category, CategoryType } from "@/types";
 import {
   Card,
   CardContent,
@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 
-const typeLabels: Record<string, string> = {
+const typeLabels: Record<CategoryType, string> = {
   needs: "Necesidades",
   leisure: "Ocio",
   savings: "Ahorro",
@@ -40,7 +40,7 @@ export default function CategoriesPage() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
-  const [form, setForm] = useState({ name: "", type: "needs" });
+  const [form, setForm] = useState({ name: "", type: "needs" as CategoryType });
   const { isAuthenticated } = useAuth();
 
   async function loadCategories() {

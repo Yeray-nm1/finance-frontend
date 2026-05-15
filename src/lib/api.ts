@@ -17,7 +17,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     throw new Error(body.error || `HTTP ${res.status}`);
   }
 
-  return res.json();
+  const text = await res.text();
+  return text ? JSON.parse(text) : ({} as T);
 }
 
 // Types
@@ -27,7 +28,8 @@ import type {
   Category,
   Transaction,
   CreateTransactionDTO,
-  BudgetWithCategory,
+  MonthlyBudget,
+  BudgetDraft,
   Subscription,
   SubscriptionCandidate,
   DashboardResponse,
@@ -79,12 +81,17 @@ export const api = {
   },
 
   budgets: {
-    list: () => request<BudgetWithCategory[]>('/budgets'),
-    create: (data: { categoryId: string; percentage: number }) =>
-      request<BudgetWithCategory>('/budgets', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: Partial<{ categoryId: string; percentage: number }>) =>
-      request<BudgetWithCategory>(`/budgets/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id: string) => request<void>(`/budgets/${id}`, { method: 'DELETE' }),
+    getOrCreateDraft: (month: number, year: number) =>
+      request<BudgetDraft>(`/budgets?month=${month}&year=${year}`),
+    getByPeriod: (month: number, year: number) =>
+      request<MonthlyBudget>(`/budgets/period?month=${month}&year=${year}`),
+    create: (data: { month: number; year: number; totalIncome: number; typeAllocations: Array<{ categoryType: string; percentage: number }> }) =>
+      request<MonthlyBudget>('/budgets', { method: 'POST', body: JSON.stringify(data) }),
+    update: (month: number, year: number, data: { totalIncome: number; typeAllocations: Array<{ categoryType: string; percentage: number }> }) =>
+      request<MonthlyBudget>(`/budgets?month=${month}&year=${year}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (month: number, year: number) => request<void>(`/budgets?month=${month}&year=${year}`, { method: 'DELETE' }),
+    calculateIncome: (month: number, year: number) =>
+      request<{ income: number; period: { month: number; year: number } }>(`/budgets/income?month=${month}&year=${year}`),
   },
 
   subscriptions: {
