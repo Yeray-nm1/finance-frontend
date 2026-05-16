@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useState, useEffect } from "react";
+import type { Category } from "@/types";
 import { api } from "@/lib/api";
-import type { Category, CategoryType } from "@/types";
 import {
   Card,
   CardContent,
@@ -27,178 +26,173 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Pencil, Trash2 } from "lucide-react";
-
-const typeLabels: Record<CategoryType, string> = {
-  needs: "Necesidades",
-  leisure: "Ocio",
-  savings: "Ahorro",
-  other: "Otros",
-};
+import { typeLabels, typeIcons, typeBg } from "@/lib/budget-constants";
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<Category | null>(null);
-  const [form, setForm] = useState({ name: "", type: "needs" as CategoryType });
-  const { isAuthenticated } = useAuth();
+  const [newName, setNewName] = useState("");
+  const [newType, setNewType] = useState("needs");
+  const [saving, setSaving] = useState(false);
 
-  async function loadCategories() {
-    try {
-      const data = await api.categories.list();
-      setCategories(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+  function loadCategories() {
+    setLoading(true);
+    setError(null);
+    api.categories.list()
+      .then(setCategories)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
   }
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadCategories();
-    }
-  }, [isAuthenticated]);
+  useEffect(() => { loadCategories(); }, []);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
+    if (!newName.trim()) return;
+    setSaving(true);
     try {
-      if (editing) {
-        await api.categories.update(editing.id, form);
-      } else {
-        await api.categories.create(form);
-      }
-      setForm({ name: "", type: "needs" });
-      setEditing(null);
+      await api.categories.create({ name: newName.trim(), type: newType });
+      setNewName("");
+      setNewType("needs");
       setDialogOpen(false);
       loadCategories();
     } catch (err) {
-      console.error(err);
+      setError(err instanceof Error ? err.message : "Error al crear categoría");
+    } finally {
+      setSaving(false);
     }
   }
 
   async function handleDelete(id: string) {
-    if (confirm("¿Eliminar esta categoría?")) {
+    try {
       await api.categories.delete(id);
       loadCategories();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al eliminar categoría");
     }
-  }
-
-  function openEdit(category: Category) {
-    setEditing(category);
-    setForm({ name: category.name, type: category.type });
-    setDialogOpen(true);
   }
 
   if (loading) {
     return (
-      <main className="p-8 max-w-4xl mx-auto">
-        <p className="font-serif text-xl text-gray-400">Cargando...</p>
+      <main className="min-h-screen bg-bg-page p-4 md:p-8">
+        <div className="max-w-4xl mx-auto">
+          <p className="text-sm text-text-muted">Cargando...</p>
+        </div>
       </main>
     );
   }
 
-  return (
-    <main className="p-4 md:p-8 max-w-4xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="font-serif text-3xl font-semibold text-gray-800">
-            Categorías
-          </h1>
-          <p className="text-gray-500 mt-1">
-            Organiza tus gastos por categorías
-          </p>
+  if (error) {
+    return (
+      <main className="min-h-screen bg-bg-page p-4 md:p-8">
+        <div className="max-w-4xl mx-auto">
+          <p className="text-sm text-expense">{error}</p>
+          <button onClick={loadCategories} className="text-primary text-sm hover:underline mt-2">
+            Reintentar
+          </button>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button
-              onClick={() => {
-                setEditing(null);
-                setForm({ name: "", type: "needs" });
-              }}
-            >
-              <Plus className="size-4" /> Añadir
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {editing ? "Editar Categoría" : "Nueva Categoría"}
-              </DialogTitle>
-              <DialogDescription>
-                {editing
-                  ? "Actualiza los datos de la categoría"
-                  : "Crea una nueva categoría de gasto"}
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nombre</Label>
-                <Input
-                  id="name"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="Ej: Comida"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="type">Tipo</Label>
-                <Select
-                  value={form.type}
-                  onValueChange={(value) => setForm({ ...form, type: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="needs">Necesidades</SelectItem>
-                    <SelectItem value="leisure">Ocio</SelectItem>
-                    <SelectItem value="savings">Ahorro</SelectItem>
-                    <SelectItem value="other">Otros</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button type="submit" className="w-full">
-                {editing ? "Actualizar" : "Crear"}
-              </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+      </main>
+    );
+  }
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {categories.map((category) => (
-          <Card key={category.id}>
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-serif text-lg font-medium">
-                    {category.name}
-                  </h3>
-                  <p className="text-sm text-gray-400 mt-1">
-                    {typeLabels[category.type]}
-                  </p>
+  const grouped = categories.reduce((acc, cat) => {
+    if (!acc[cat.type]) acc[cat.type] = [];
+    acc[cat.type].push(cat);
+    return acc;
+  }, {} as Record<string, Category[]>);
+
+  return (
+    <main className="min-h-screen bg-bg-page p-4 md:p-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-xl font-semibold text-text-primary">
+              Categorias
+            </h1>
+            <p className="text-sm text-text-muted mt-1">
+              Organiza tus gastos por categorias
+            </p>
+          </div>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="size-4" /> Anadir
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Nueva Categoria</DialogTitle>
+                <DialogDescription>
+                  Crea una nueva categoria de gasto
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleCreate} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nombre</Label>
+                  <Input
+                    id="name"
+                    placeholder="Ej: Comida"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    required
+                  />
                 </div>
-                <div className="flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => openEdit(category)}
-                  >
-                    <Pencil className="size-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelete(category.id)}
-                  >
-                    <Trash2 className="size-4 text-coral" />
-                  </Button>
+                <div className="space-y-2">
+                  <Label htmlFor="type">Tipo</Label>
+                  <Select defaultValue="needs" value={newType} onValueChange={setNewType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="needs">Necesidades</SelectItem>
+                      <SelectItem value="leisure">Ocio</SelectItem>
+                      <SelectItem value="savings">Ahorro</SelectItem>
+                      <SelectItem value="other">Otros</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                <Button type="submit" className="w-full" disabled={saving}>
+                  {saving ? "Creando..." : "Crear"}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {Object.entries(grouped).map(([type, cats]) => (
+          <div key={type} className="mb-8">
+            <h2 className="text-xs uppercase tracking-widest text-text-muted font-semibold mb-3">
+              {typeLabels[type]}
+            </h2>
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {cats.map((category) => (
+                <Card key={category.id}>
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-9 h-9 rounded-lg ${typeIcons[category.type]?.bg ?? typeBg[category.type]} flex items-center justify-center`}>
+                          {typeIcons[category.type]?.icon}
+                        </div>
+                        <span className="font-medium text-sm text-text-primary">
+                          {category.name}
+                        </span>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon">
+                          <Pencil className="size-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(category.id)}>
+                          <Trash2 className="size-3.5 text-expense" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
     </main>

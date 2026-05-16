@@ -1,6 +1,6 @@
 const API_BASE = '/api/v1';
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
+async function request<T>(path: string, options?: RequestInit & { signal?: AbortSignal }): Promise<T> {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...options?.headers,
@@ -17,19 +17,16 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     throw new Error(body.error || `HTTP ${res.status}`);
   }
 
-  const text = await res.text();
-  return text ? JSON.parse(text) : ({} as T);
+  return res.json();
 }
 
-// Types
 import type {
   User,
   Account,
   Category,
   Transaction,
   CreateTransactionDTO,
-  MonthlyBudget,
-  BudgetDraft,
+  BudgetWithCategory,
   Subscription,
   SubscriptionCandidate,
   DashboardResponse,
@@ -47,12 +44,12 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       }),
-    me: () => request<{ user: User }>('/auth/me'),
+    me: (signal?: AbortSignal) => request<{ user: User }>('/auth/me', { signal }),
     logout: () => request<void>('/auth/logout', { method: 'POST' }),
   },
 
   accounts: {
-    list: () => request<Account[]>('/accounts'),
+    list: (signal?: AbortSignal) => request<Account[]>('/accounts', { signal }),
     create: (data: { name: string; type: string }) =>
       request<Account>('/accounts', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: Partial<{ name: string; type: string }>) =>
@@ -61,7 +58,14 @@ export const api = {
   },
 
   categories: {
-    list: () => request<Category[]>('/categories'),
+    list: (params?: { search?: string; page?: number; limit?: number }, signal?: AbortSignal) => {
+      const qs = new URLSearchParams()
+      if (params?.search) qs.set('search', params.search)
+      if (params?.page) qs.set('page', String(params.page))
+      if (params?.limit) qs.set('limit', String(params.limit))
+      const query = qs.toString()
+      return request<Category[]>(`/categories${query ? `?${query}` : ''}`, { signal })
+    },
     create: (data: { name: string; type: string }) =>
       request<Category>('/categories', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: Partial<{ name: string; type: string }>) =>
@@ -70,7 +74,7 @@ export const api = {
   },
 
   transactions: {
-    list: () => request<Transaction[]>('/transactions'),
+    list: (signal?: AbortSignal) => request<Transaction[]>('/transactions', { signal }),
     create: (data: CreateTransactionDTO) =>
       request<Transaction>('/transactions', { method: 'POST', body: JSON.stringify(data) }),
     importCsv: (rows: Record<string, string>[]) =>
@@ -78,24 +82,27 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ rows }),
       }),
+    deleteMany: (ids: string[]) =>
+      request<{ deleted: number }>(`/transactions/batch?ids=${ids.join(',')}`, { method: 'DELETE' }),
   },
 
   budgets: {
-    getOrCreateDraft: (month: number, year: number) =>
-      request<BudgetDraft>(`/budgets?month=${month}&year=${year}`),
-    getByPeriod: (month: number, year: number) =>
-      request<MonthlyBudget>(`/budgets/period?month=${month}&year=${year}`),
-    create: (data: { month: number; year: number; totalIncome: number; typeAllocations: Array<{ categoryType: string; percentage: number }> }) =>
-      request<MonthlyBudget>('/budgets', { method: 'POST', body: JSON.stringify(data) }),
-    update: (month: number, year: number, data: { totalIncome: number; typeAllocations: Array<{ categoryType: string; percentage: number }> }) =>
-      request<MonthlyBudget>(`/budgets?month=${month}&year=${year}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (month: number, year: number) => request<void>(`/budgets?month=${month}&year=${year}`, { method: 'DELETE' }),
-    calculateIncome: (month: number, year: number) =>
-      request<{ income: number; period: { month: number; year: number } }>(`/budgets/income?month=${month}&year=${year}`),
+    list: (year?: number, month?: number, signal?: AbortSignal) => {
+      const params = new URLSearchParams();
+      if (year) params.set('year', String(year));
+      if (month) params.set('month', String(month));
+      const qs = params.toString();
+      return request<BudgetWithCategory[]>(`/budgets${qs ? `?${qs}` : ''}`, { signal });
+    },
+    create: (data: { categoryId: string; percentage: number }) =>
+      request<BudgetWithCategory>('/budgets', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<{ categoryId: string; percentage: number }>) =>
+      request<BudgetWithCategory>(`/budgets/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: string) => request<void>(`/budgets/${id}`, { method: 'DELETE' }),
   },
 
   subscriptions: {
-    list: () => request<Subscription[]>('/subscriptions'),
+    list: (signal?: AbortSignal) => request<Subscription[]>('/subscriptions', { signal }),
     create: (data: { name: string; amount: number; frequency: string }) =>
       request<Subscription>('/subscriptions', {
         method: 'POST',
@@ -109,12 +116,12 @@ export const api = {
   },
 
   dashboard: {
-    get: (year?: number, month?: number) => {
+    get: (year?: number, month?: number, signal?: AbortSignal) => {
       const params = new URLSearchParams();
       if (year) params.set('year', String(year));
       if (month) params.set('month', String(month));
       const qs = params.toString();
-      return request<DashboardResponse>(`/dashboard${qs ? `?${qs}` : ''}`);
+      return request<DashboardResponse>(`/dashboard${qs ? `?${qs}` : ''}`, { signal });
     },
   },
 };

@@ -4,25 +4,25 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-2xl text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-[3px] aria-invalid:ring-destructive/20 aria-invalid:border-destructive",
   {
     variants: {
       variant: {
         default:
-          "bg-lavender text-gray-800 hover:bg-lavender/90 shadow-soft",
+          "bg-[#005696] text-white hover:bg-[#004578] shadow-sm",
         destructive:
-          "bg-coral text-gray-800 hover:bg-coral/90 shadow-soft",
+          "bg-[#dc2626] text-white hover:bg-[#b91c1c] shadow-sm",
         outline:
-          "border-2 border-lavender bg-transparent hover:bg-lavender-light hover:text-gray-800",
+          "border border-[#93c5e8] bg-transparent text-[#005696] hover:bg-[#d9eaf7]",
         secondary:
-          "bg-mint text-gray-800 hover:bg-mint/80 shadow-soft",
-        ghost: "hover:bg-lavender-light hover:text-gray-800",
-        link: "text-lavender underline-offset-4 hover:underline",
+          "bg-[#d9eaf7] text-[#005696] hover:bg-[#c5d8ec] shadow-sm",
+        ghost: "hover:bg-[#d9eaf7] text-[#111827]",
+        link: "text-[#005696] underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-11 px-6 py-2",
-        sm: "h-9 rounded-xl px-4",
-        lg: "h-12 rounded-2xl px-8",
+        default: "h-10 px-5 py-2",
+        sm: "h-8 rounded-md px-3",
+        lg: "h-12 rounded-lg px-7",
         icon: "size-10",
       },
     },
