@@ -79,7 +79,13 @@ export const api = {
   },
 
   budgets: {
-    list: () => request<BudgetWithCategory[]>('/budgets'),
+    list: (year?: number, month?: number) => {
+      const params = new URLSearchParams();
+      if (year) params.set('year', String(year));
+      if (month) params.set('month', String(month));
+      const qs = params.toString();
+      return request<BudgetWithCategory[]>(`/budgets${qs ? `?${qs}` : ''}`);
+    },
     create: (data: { categoryId: string; percentage: number }) =>
       request<BudgetWithCategory>('/budgets', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: Partial<{ categoryId: string; percentage: number }>) =>

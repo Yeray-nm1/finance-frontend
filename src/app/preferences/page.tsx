@@ -1,25 +1,26 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 
 export default function PreferencesPage() {
   const { user, logout } = useAuth();
 
   return (
-    <main className="min-h-screen bg-bg-primary p-4 md:p-8">
+    <main className="min-h-screen bg-bg-page p-4 md:p-8">
       <div className="max-w-2xl mx-auto">
-        <header className="mb-8 animate-slide-up">
-          <h1 className="font-display text-3xl font-bold text-text-primary">
-            PREFERENCIAS
+        <header className="mb-8 animate-fade-in">
+          <h1 className="text-xl font-semibold text-text-primary">
+            Preferencias
           </h1>
-          <p className="text-text-muted text-xs uppercase tracking-widest mt-1">
+          <p className="text-sm text-text-muted mt-1">
             Gestiona tu cuenta y notificaciones
           </p>
         </header>
 
         {/* Account Info */}
-        <section className="terminal-card p-5 mb-4 animate-slide-up stagger-1">
-          <h2 className="text-xs uppercase tracking-widest text-text-muted mb-4">
+        <section className="bg-white border border-border rounded-lg p-5 mb-4 animate-fade-in stagger-1">
+          <h2 className="text-xs uppercase tracking-widest text-text-muted font-semibold mb-4">
             Cuenta
           </h2>
           <div className="space-y-3">
@@ -31,40 +32,35 @@ export default function PreferencesPage() {
         </section>
 
         {/* Notifications - Placeholder */}
-        <section className="terminal-card p-5 mb-4 animate-slide-up stagger-2">
-          <h2 className="text-xs uppercase tracking-widest text-text-muted mb-4">
+        <section className="bg-white border border-border rounded-lg p-5 mb-4 animate-fade-in stagger-2">
+          <h2 className="text-xs uppercase tracking-widest text-text-muted font-semibold mb-4">
             Notificaciones
           </h2>
-          <p className="text-xs text-text-muted">
+          <p className="text-sm text-text-muted">
             Proximamente: configura alertas para presupuestos y suscripciones
           </p>
         </section>
 
         {/* Session */}
-        <section className="terminal-card p-5 animate-slide-up stagger-3">
-          <h2 className="text-xs uppercase tracking-widest text-text-muted mb-4">
+        <section className="bg-white border border-border rounded-lg p-5 animate-fade-in stagger-3">
+          <h2 className="text-xs uppercase tracking-widest text-text-muted font-semibold mb-4">
             Sesion
           </h2>
-          <div className="space-y-3">
-            <button
-              onClick={logout}
-              className="text-xs font-mono uppercase tracking-wider text-terminal-red hover:text-red transition-colors"
-              style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
-            >
+          <div className="space-y-4">
+            <Button variant="outline" onClick={logout}>
               Cerrar sesion
-            </button>
-            <div className="pt-3 border-t border-border">
-              <button
+            </Button>
+            <div className="pt-4 border-t border-border">
+              <Button
+                variant="destructive"
                 onClick={() => {
                   if (confirm("¿Estas seguro de que quieres borrar todos tus datos? Esta accion no se puede deshacer.")) {
                     alert("Funcion no implementada aun");
                   }
                 }}
-                className="text-xs font-mono uppercase tracking-wider text-terminal-red hover:text-red transition-colors"
-                style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
               >
                 Borrar todos mis datos
-              </button>
+              </Button>
             </div>
           </div>
         </section>

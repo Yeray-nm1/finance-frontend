@@ -1,8 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { api } from '@/lib/api';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 import type { User } from '@/types';
+import { MOCK_USER } from '@/lib/mock-data';
 
 interface AuthContextType {
   user: User | null;
@@ -16,40 +16,22 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  async function checkAuth() {
-    try {
-      const data = await api.auth.me();
-      setUser(data.user);
-    } catch {
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }
+  const [user, setUser] = useState<User | null>(MOCK_USER);
+  const [isLoading] = useState(false);
 
   async function login(email: string, password: string) {
-    const data = await api.auth.login(email, password);
-    setUser(data.user);
+    void email;
+    void password;
+    setUser(MOCK_USER);
   }
 
   async function register(email: string, password: string) {
-    const data = await api.auth.register(email, password);
-    setUser(data.user);
+    void email;
+    void password;
+    setUser(MOCK_USER);
   }
 
   async function logout() {
-    try {
-      await api.auth.logout();
-    } catch {
-      // Ignore errors on logout
-    }
     setUser(null);
   }
 

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { ThemeProvider } from "next-themes";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import RootLayoutInner from "@/components/layout/RootLayoutInner";
 
@@ -16,15 +15,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" suppressHydrationWarning>
-      <body className="antialiased bg-bg-primary text-text-primary min-h-screen">
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-          <AuthProvider>
-            <SidebarProvider>
-              <RootLayoutInner>{children}</RootLayoutInner>
-            </SidebarProvider>
-          </AuthProvider>
-        </ThemeProvider>
+    <html lang="es">
+      <body className="antialiased bg-bg-page text-text-primary min-h-screen">
+        <AuthProvider>
+          <SidebarProvider>
+            <RootLayoutInner>{children}</RootLayoutInner>
+          </SidebarProvider>
+        </AuthProvider>
       </body>
     </html>
   );

@@ -4,21 +4,27 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Toaster } from "@/components/ui/toaster";
+import type { RootLayoutInnerProps } from "./types";
 
-export default function RootLayoutInner({ children }: { children: React.ReactNode }) {
+export default function RootLayoutInner({ children }: Readonly<RootLayoutInnerProps>) {
   const { isAuthenticated, isLoading } = useAuth();
   const pathname = usePathname();
   const showSidebar = isAuthenticated && !isLoading && !["/login", "/register"].includes(pathname);
 
   return (
     <>
-      {showSidebar && (
-        <div style={{ paddingLeft: "64px" }}>
-          <Sidebar />
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: showSidebar ? "64px 1fr" : "1fr",
+          minHeight: "100vh",
+        }}
+      >
+        {showSidebar && <Sidebar />}
+        <main style={{ gridColumn: 2, minWidth: 0 }}>
           {children}
-        </div>
-      )}
-      {!showSidebar && children}
+        </main>
+      </div>
       <Toaster />
     </>
   );

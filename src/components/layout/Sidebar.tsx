@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSidebar } from "@/contexts/SidebarContext";
-import { ChevronLeft, Upload, LayoutDashboard, PiggyBank, Repeat, ArrowLeftRight, Settings } from "lucide-react";
+import { ChevronLeft, ChevronRight, Upload, LayoutDashboard, PiggyBank, Repeat, ArrowLeftRight, Settings } from "lucide-react";
 import { CsvUploadDialog } from "@/components/CsvUploadDialog";
 import { useState } from "react";
 
@@ -18,6 +18,7 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuth();
   const { isCollapsed, toggleCollapsed } = useSidebar();
   const [csvDialogOpen, setCsvDialogOpen] = useState(false);
@@ -46,16 +47,17 @@ export function Sidebar() {
 
       <aside
         style={{
-          position: "fixed",
-          left: 0,
-          top: 0,
+          position: isCollapsed ? "sticky" : "fixed",
+          ...(isCollapsed
+            ? { top: 0 }
+            : { left: 0, top: 0, zIndex: 40 }
+          ),
           height: "100vh",
           width: isCollapsed ? 64 : 240,
-          background: "#111111",
-          borderRight: "1px solid #252525",
+          background: "#ffffff",
+          borderRight: "1px solid #e5e7eb",
           display: "flex",
           flexDirection: "column",
-          zIndex: 50,
           transition: "width 0.3s cubic-bezier(0.22, 1, 0.36, 1)",
         }}
       >
@@ -67,15 +69,14 @@ export function Sidebar() {
           justifyContent: isCollapsed ? "center" : "space-between",
         }}>
           <span style={{
-            fontFamily: "'Syne', sans-serif",
             fontSize: "18px",
             fontWeight: "bold",
-            color: "#e8e8e8",
+            color: "#111827",
           }}>
             {isCollapsed ? userInitial : "FINANCE"}
           </span>
           {!isCollapsed && (
-            <button onClick={toggleCollapsed} style={{ background: "none", border: "none", color: "#888888", cursor: "pointer", padding: "4px" }}>
+            <button onClick={toggleCollapsed} style={{ background: "none", border: "none", color: "#6b7280", cursor: "pointer", padding: "4px" }}>
               <ChevronLeft size={16} />
             </button>
           )}
@@ -84,7 +85,7 @@ export function Sidebar() {
         {user?.email && !isCollapsed && (
           <p style={{
             fontSize: "11px",
-            color: "#888888",
+            color: "#6b7280",
             padding: "0 16px",
             marginBottom: "16px",
             overflow: "hidden",
@@ -111,21 +112,19 @@ export function Sidebar() {
                   alignItems: "center",
                   justifyContent: isCollapsed ? "center" : "flex-start",
                   padding: isCollapsed ? "10px 0" : "10px 12px",
-                  borderRadius: "4px",
-                  color: active ? "#a6e22e" : "#888888",
-                  background: active ? "rgba(166, 226, 46, 0.05)" : "transparent",
-                  borderLeft: active && !isCollapsed ? "2px solid #a6e22e" : "2px solid transparent",
+                  borderRadius: "6px",
+                  color: active ? "#005696" : "#6b7280",
+                  background: active ? "rgba(0, 86, 150, 0.06)" : "transparent",
+                  borderLeft: active && !isCollapsed ? "2px solid #005696" : "2px solid transparent",
                   textDecoration: "none",
-                  fontSize: "12px",
-                  fontFamily: "'JetBrains Mono', monospace",
-                  letterSpacing: "0.05em",
-                  textTransform: "uppercase" as const,
+                  fontSize: "13px",
+                  fontWeight: active ? "600" : "400",
                   transition: "all 0.2s",
                   marginBottom: "2px",
                 }}
               >
                 {isCollapsed ? (
-                  <Icon size={16} strokeWidth={1.5} />
+                  <Icon size={18} strokeWidth={1.5} />
                 ) : (
                   <span>{item.label}</span>
                 )}
@@ -135,12 +134,12 @@ export function Sidebar() {
         </nav>
 
         {/* Footer */}
-        <div style={{ padding: "16px 8px", borderTop: "1px solid #252525" }}>
+        <div style={{ padding: "16px 8px 0", borderTop: "1px solid #e5e7eb" }}>
           {/* CSV Upload button - always visible */}
           <button
             onClick={() => setCsvDialogOpen(true)}
-            onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.color = "#a6e22e"; }}
-            onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.color = "#888888"; }}
+            onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.color = "#005696"; }}
+            onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.color = "#6b7280"; }}
             style={{
               display: "flex",
               alignItems: "center",
@@ -149,44 +148,22 @@ export function Sidebar() {
               padding: isCollapsed ? "10px 0" : "10px 12px",
               background: "none",
               border: "none",
-              color: "#888888",
+              color: "#6b7280",
               cursor: "pointer",
-              fontSize: "12px",
-              fontFamily: "'JetBrains Mono', monospace",
-              letterSpacing: "0.05em",
-              textTransform: "uppercase",
-              marginBottom: "8px",
+              fontSize: "13px",
               transition: "all 0.2s",
             }}
             title={isCollapsed ? "Subir extracto" : undefined}
           >
-            <Upload size={isCollapsed ? 16 : 14} strokeWidth={1.5} style={{ marginRight: isCollapsed ? 0 : "8px" }} />
+            <Upload size={isCollapsed ? 18 : 14} strokeWidth={1.5} style={{ marginRight: isCollapsed ? 0 : "8px" }} />
             {!isCollapsed && "Subir extracto"}
           </button>
-
-          {isCollapsed && (
-            <button onClick={toggleCollapsed} style={{
-              display: "flex",
-              justifyContent: "center",
-              width: "100%",
-              padding: "10px 0",
-              background: "none",
-              border: "none",
-              color: "#888888",
-              cursor: "pointer",
-              fontSize: "12px",
-              fontWeight: "bold",
-              fontFamily: "'JetBrains Mono', monospace",
-            }}>
-              &raquo;
-            </button>
-          )}
 
           {!isCollapsed && (
             <button
               onClick={logout}
-              onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.color = "#f44747"; }}
-              onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.color = "#888888"; }}
+              onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.color = "#dc2626"; }}
+              onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.color = "#6b7280"; }}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -195,16 +172,34 @@ export function Sidebar() {
                 padding: "10px 12px",
                 background: "none",
                 border: "none",
-                color: "#888888",
+                color: "#6b7280",
                 cursor: "pointer",
-                fontSize: "12px",
-                fontFamily: "'JetBrains Mono', monospace",
-                letterSpacing: "0.05em",
-                textTransform: "uppercase",
-                marginTop: "8px",
+                fontSize: "13px",
               }}
             >
               Cerrar sesion
+            </button>
+          )}
+
+          {/* Toggle - only at bottom when collapsed (expand) */}
+          {isCollapsed && (
+            <button
+              onClick={toggleCollapsed}
+              title="Expandir sidebar"
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                width: "100%",
+                padding: "12px 0",
+                background: "none",
+                border: "none",
+                color: "#6b7280",
+                cursor: "pointer",
+                fontSize: "13px",
+              }}
+            >
+              <ChevronRight size={16} strokeWidth={2} />
             </button>
           )}
         </div>
@@ -213,7 +208,7 @@ export function Sidebar() {
       <CsvUploadDialog
         open={csvDialogOpen}
         onClose={() => setCsvDialogOpen(false)}
-        onImported={() => window.location.reload()}
+        onImported={() => router.refresh()}
       />
     </>
   );

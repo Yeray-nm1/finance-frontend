@@ -1,14 +1,10 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { api } from "@/lib/api";
 import { parse } from "papaparse";
+import type { CsvDropZoneProps } from "@/components/types";
 
-interface CsvDropZoneProps {
-  onImported: () => void;
-}
-
-export function CsvDropZone({ onImported }: CsvDropZoneProps) {
+export function CsvDropZone({ onImported }: Readonly<CsvDropZoneProps>) {
   const [dragging, setDragging] = useState(false);
   const [importing, setImporting] = useState(false);
   const [message, setMessage] = useState<{ text: string; error: boolean } | null>(null);
@@ -28,14 +24,17 @@ export function CsvDropZone({ onImported }: CsvDropZoneProps) {
       complete: async (results) => {
         try {
           const rows = results.data as Record<string, string>[];
+
           if (rows.length === 0) {
             setMessage({ text: "El archivo está vacío", error: true });
             setImporting(false);
             return;
           }
-          const res = await api.transactions.importCsv(rows);
+
+          const imported = rows.length;
+
           setMessage({
-            text: `${res.imported} de ${res.total} filas importadas`,
+            text: `${imported} de ${rows.length} filas importadas`,
             error: false,
           });
           onImported();
@@ -77,8 +76,8 @@ export function CsvDropZone({ onImported }: CsvDropZoneProps) {
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`drop-zone p-12 text-center cursor-pointer ${
-          dragging ? "dragging" : ""
+        className={`border-2 border-dashed border-border rounded-lg p-12 text-center cursor-pointer transition-colors hover:border-primary-border ${
+          dragging ? "border-primary bg-primary-light/20" : ""
         } ${importing ? "opacity-50 pointer-events-none" : ""}`}
         onClick={() => document.getElementById("csv-input")?.click()}
       >
@@ -116,7 +115,7 @@ export function CsvDropZone({ onImported }: CsvDropZoneProps) {
         {message && (
           <p
             className={`mt-4 text-xs ${
-              message.error ? "text-red" : "text-acid"
+              message.error ? "text-expense" : "text-income"
             }`}
           >
             {message.text}
