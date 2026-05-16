@@ -1,15 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useState, useEffect } from "react";
+import type { Category } from "@/types";
 import { api } from "@/lib/api";
-import type { BudgetWithCategory, Category } from "@/types";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -17,201 +12,230 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { BudgetDetails } from "@/components/budget/BudgetDetails";
+import { BudgetCategoryDetails } from "@/components/budget/BudgetCategoryDetails";
 
+const DEFAULT_ALLOCATIONS = [
+  { type: "needs", percentage: 50 },
+  { type: "leisure", percentage: 20 },
+  { type: "savings", percentage: 15 },
+  { type: "other", percentage: 15 },
+];
 
 export default function BudgetsPage() {
-  const [budgets, setBudgets] = useState<BudgetWithCategory[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<BudgetWithCategory | null>(null);
-  const [form, setForm] = useState({ categoryId: "", percentage: [30] });
-  const { isAuthenticated } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+  const [totalIncome, setTotalIncome] = useState(0);
+  const [typeAllocations, setTypeAllocations] = useState(DEFAULT_ALLOCATIONS);
+  const [selectedType, setSelectedType] = useState<string>("needs");
 
-  async function loadData() {
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [editName, setEditName] = useState("");
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
+
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  function loadData() {
+    setLoading(true);
+    setError(null);
+    Promise.all([
+      api.categories.list(),
+      api.budgets.list(),
+    ])
+      .then(([cats, budgets]) => {
+        setCategories(cats);
+        if (budgets.length > 0) {
+          const typePct: Record<string, number> = {};
+          for (const b of budgets) {
+            const t = b.category.type;
+            typePct[t] = (typePct[t] ?? 0) + b.percentage;
+          }
+          setTypeAllocations(
+            DEFAULT_ALLOCATIONS.map((a) => ({
+              type: a.type,
+              percentage: typePct[a.type] ?? a.percentage,
+            }))
+          );
+        }
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => { loadData(); }, []);
+
+  const totalAllocated = typeAllocations.reduce((s, a) => s + a.percentage, 0);
+  const isValidTotal = Math.abs(totalAllocated - 100) < 0.15;
+
+  function openEditCategory(cat: Category) {
+    setEditingCategory(cat);
+    setEditName(cat.name);
+    setEditDialogOpen(true);
+  }
+
+  async function handleSaveCategory() {
+    if (!editingCategory || !editName.trim()) return;
     try {
-      const [buds, cats] = await Promise.all([
-        api.budgets.list(),
-        api.categories.list(),
-      ]);
-      setBudgets(buds);
-      setCategories(cats);
+      await api.categories.update(editingCategory.id, { name: editName.trim() });
+      setEditDialogOpen(false);
+      setEditingCategory(null);
+      setEditName("");
+      loadData();
     } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+      setSaveError(err instanceof Error ? err.message : "Error al guardar");
     }
   }
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadData();
-    }
-  }, [isAuthenticated]);
+  function handleDeleteCategory(cat: Category) {
+    setDeletingCategory(cat);
+    setDeleteDialogOpen(true);
+  }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function confirmDeleteCategory() {
+    if (!deletingCategory) return;
     try {
-      if (editing) {
-        await api.budgets.update(editing.id, {
-          percentage: form.percentage[0],
-        });
-      } else {
-        await api.budgets.create({
-          categoryId: form.categoryId,
-          percentage: form.percentage[0],
-        });
-      }
-      setForm({ categoryId: "", percentage: [30] });
-      setEditing(null);
-      setDialogOpen(false);
+      await api.categories.delete(deletingCategory.id);
+      setDeleteDialogOpen(false);
+      setDeletingCategory(null);
       loadData();
     } catch (err) {
-      console.error(err);
+      setSaveError(err instanceof Error ? err.message : "Error al eliminar");
     }
   }
 
-  async function handleDelete(id: string) {
-    if (confirm("¿Eliminar este presupuesto?")) {
-      await api.budgets.delete(id);
+  async function handleAddCategory() {
+    if (!selectedType) return;
+    try {
+      await api.categories.create({
+        name: "Nueva categoría",
+        type: selectedType,
+      });
       loadData();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Error al crear categoría");
     }
   }
 
-  function openEdit(budget: BudgetWithCategory) {
-    setEditing(budget);
-    setForm({ categoryId: budget.categoryId, percentage: [budget.percentage] });
-    setDialogOpen(true);
+  function handlePercentageChange(type: string, newPercentage: number) {
+    setSaveError(null);
+    setTypeAllocations((prev) =>
+      prev.map((a) =>
+        a.type === type ? { ...a, percentage: Math.max(0, Math.min(100, newPercentage)) } : a
+      )
+    );
   }
-
-  const availableCategories = categories.filter(
-    (cat) => !budgets.some((b) => b.categoryId === cat.id)
-  );
 
   if (loading) {
     return (
-      <main className="p-8 max-w-4xl mx-auto">
-        <p className="font-serif text-xl text-gray-400">Cargando...</p>
+      <main className="min-h-screen bg-bg-page p-4 md:p-8">
+        <div className="max-w-6xl mx-auto">
+          <p className="text-sm text-text-muted">Cargando...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="min-h-screen bg-bg-page p-4 md:p-8">
+        <div className="max-w-6xl mx-auto">
+          <p className="text-sm text-expense">{error}</p>
+          <button onClick={loadData} className="text-primary text-sm hover:underline mt-2">
+            Reintentar
+          </button>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="p-4 md:p-8 max-w-4xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="font-serif text-3xl font-semibold text-gray-800">
+    <main className="min-h-screen bg-bg-page p-4 md:p-8">
+      <div className="max-w-6xl mx-auto">
+        <header className="mb-6">
+          <h1 className="font-serif text-3xl font-semibold text-text-primary">
             Presupuestos
           </h1>
-          <p className="text-gray-500 mt-1">Controla tus gastos por categoría</p>
+          <p className="text-text-muted mt-1">Controla tus gastos mensuales</p>
+        </header>
+
+        <div className="flex flex-col lg:flex-row" style={{ gap: "1.5rem" }}>
+          <div className="w-full lg:w-1/3">
+            <BudgetDetails
+              totalIncome={totalIncome}
+              onTotalIncomeChange={setTotalIncome}
+              typeAllocations={typeAllocations}
+              selectedType={selectedType}
+              onSelectType={setSelectedType}
+              totalAllocated={totalAllocated}
+              isValidTotal={isValidTotal}
+            />
+          </div>
+
+          <div className="w-full lg:w-2/3">
+            <BudgetCategoryDetails
+              categories={categories}
+              selectedType={selectedType}
+              typeAllocations={typeAllocations}
+              onPercentageChange={handlePercentageChange}
+              totalIncome={totalIncome}
+              saveError={saveError}
+              onOpenEditCategory={openEditCategory}
+              onDeleteCategory={handleDeleteCategory}
+              onAddCategory={handleAddCategory}
+            />
+          </div>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button
-              onClick={() => {
-                setEditing(null);
-                setForm({ categoryId: "", percentage: [30] });
-              }}
-            >
-              <Plus className="size-4" /> Añadir
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {editing ? "Editar Presupuesto" : "Nuevo Presupuesto"}
-              </DialogTitle>
-              <DialogDescription>
-                {editing
-                  ? "Actualiza el porcentaje del presupuesto"
-                  : "Asigna un porcentaje de ingresos a una categoría"}
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {!editing && (
-                <div className="space-y-2">
-                  <Label>Categoría</Label>
-                  <Select
-                    value={form.categoryId}
-                    onValueChange={(v) => setForm({ ...form, categoryId: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar categoría" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableCategories.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              <div className="space-y-4">
-                <Label>Porcentaje: {form.percentage[0]}%</Label>
-                <Slider
-                  value={form.percentage}
-                  onValueChange={(v) => setForm({ ...form, percentage: v })}
-                  max={100}
-                  step={1}
-                />
-              </div>
-              <Button type="submit" className="w-full">
-                {editing ? "Actualizar" : "Crear"}
-              </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
       </div>
 
-      <div className="space-y-4">
-        {budgets.length === 0 && (
-          <p className="text-gray-400 text-sm">No hay presupuestos configurados</p>
-        )}
-        {budgets.map((budget) => (
-          <Card key={budget.id}>
-            <CardContent className="p-6">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="font-serif text-lg font-medium">
-                  {budget.category.name}
-                </h3>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">
-                    {budget.percentage}%
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => openEdit(budget)}
-                  >
-                    <Pencil className="size-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelete(budget.id)}
-                  >
-                    <Trash2 className="size-4 text-coral" />
-                  </Button>
-                </div>
-              </div>
-              <Progress value={budget.percentage} className="h-3" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar categoría</DialogTitle>
+            <DialogDescription>Cambia el nombre de la categoría</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="cat-name">Nombre</Label>
+              <Input
+                id="cat-name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSaveCategory()}
+              />
+            </div>
+            <Button className="w-full" onClick={handleSaveCategory}>
+              Guardar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Eliminar categoría</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que quieres eliminar la categoría <strong>{deletingCategory?.name}</strong>? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              className="bg-expense text-white hover:bg-red-700"
+              onClick={confirmDeleteCategory}
+            >
+              Eliminar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

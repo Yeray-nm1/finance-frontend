@@ -1,14 +1,14 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { api } from '@/lib/api';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import type { User } from '@/types';
+import { api } from '@/lib/api';
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
@@ -20,38 +20,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    checkAuth();
+    api.auth.me()
+      .then((res) => setUser(res.user))
+      .catch(() => setUser(null))
+      .finally(() => setIsLoading(false));
   }, []);
 
-  async function checkAuth() {
-    try {
-      const data = await api.auth.me();
-      setUser(data.user);
-    } catch {
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }
+  const login = useCallback(async (email: string, password: string) => {
+    const res = await api.auth.login(email, password);
+    setUser(res.user);
+  }, []);
 
-  async function login(email: string, password: string) {
-    const data = await api.auth.login(email, password);
-    setUser(data.user);
-  }
+  const register = useCallback(async (email: string, password: string) => {
+    const res = await api.auth.register(email, password);
+    setUser(res.user);
+  }, []);
 
-  async function register(email: string, password: string) {
-    const data = await api.auth.register(email, password);
-    setUser(data.user);
-  }
-
-  async function logout() {
-    try {
-      await api.auth.logout();
-    } catch {
-      // Ignore errors on logout
-    }
+  const logout = useCallback(async () => {
+    await api.auth.logout();
     setUser(null);
-  }
+  }, []);
 
   return (
     <AuthContext.Provider
