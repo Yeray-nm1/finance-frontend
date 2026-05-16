@@ -25,28 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Home, PartyPopper, PiggyBank, Package } from "lucide-react";
-
-const typeLabels: Record<string, string> = {
-  needs: "Necesidades",
-  leisure: "Ocio",
-  savings: "Ahorro",
-  other: "Otros",
-};
-
-const typeIcons: Record<string, React.ReactNode> = {
-  needs: <Home className="size-5 text-amber-700" />,
-  leisure: <PartyPopper className="size-5 text-pink-700" />,
-  savings: <PiggyBank className="size-5 text-green-700" />,
-  other: <Package className="size-5 text-sky-700" />,
-};
-
-const typeBg: Record<string, string> = {
-  needs: "bg-amber-100",
-  leisure: "bg-pink-100",
-  savings: "bg-green-100",
-  other: "bg-sky-100",
-};
+import { Plus, Pencil, Trash2 } from "lucide-react";
+import { typeLabels, typeIcons, typeBg } from "@/lib/budget-constants";
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -192,8 +172,8 @@ export default function CategoriesPage() {
                   <CardContent className="p-4">
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-3">
-                        <div className={`w-9 h-9 rounded-lg ${typeBg[category.type]} flex items-center justify-center`}>
-                          {typeIcons[category.type]}
+                        <div className={`w-9 h-9 rounded-lg ${typeIcons[category.type]?.bg ?? typeBg[category.type]} flex items-center justify-center`}>
+                          {typeIcons[category.type]?.icon}
                         </div>
                         <span className="font-medium text-sm text-text-primary">
                           {category.name}

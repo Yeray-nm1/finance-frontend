@@ -34,17 +34,10 @@ export function Sidebar() {
 
   return (
     <>
-      {!isCollapsed && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40"
-          onClick={toggleCollapsed}
-        />
-      )}
-
       <aside
         className={cn(
-          "h-screen bg-white border-r border-border flex flex-col transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
-          isCollapsed ? "sticky top-0 w-16" : "fixed left-0 top-0 z-40 w-60"
+          "h-screen bg-white border-r border-border flex flex-col transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] sticky top-0",
+          isCollapsed ? "w-16" : "w-60"
         )}
       >
         <div className={cn(
@@ -69,7 +62,7 @@ export function Sidebar() {
 
         <nav className="flex-1 overflow-y-auto px-2">
           {navItems.map((item) => {
-            const active = pathname === item.href;
+            const active = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
             const Icon = item.icon;
             return (
               <Link

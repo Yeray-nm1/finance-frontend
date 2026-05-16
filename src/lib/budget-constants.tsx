@@ -15,3 +15,10 @@ export const typeIcons: Record<string, { icon: React.ReactNode; bg: string; colo
   other: { icon: <Package size={16} />, bg: "bg-sky-100", color: "text-sky-700" },
 };
 
+export const typeBg: Record<string, string> = {
+  needs: "bg-amber-100",
+  leisure: "bg-pink-100",
+  savings: "bg-green-100",
+  other: "bg-sky-100",
+};
+

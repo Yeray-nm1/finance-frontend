@@ -157,10 +157,10 @@ export default function BudgetsPage() {
     <main className="min-h-screen bg-bg-page p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         <header className="mb-6">
-          <h1 className="font-serif text-3xl font-semibold text-gray-800">
+          <h1 className="font-serif text-3xl font-semibold text-text-primary">
             Presupuestos
           </h1>
-          <p className="text-gray-500 mt-1">Controla tus gastos mensuales</p>
+          <p className="text-text-muted mt-1">Controla tus gastos mensuales</p>
         </header>
 
         <div className="flex flex-col lg:flex-row" style={{ gap: "1.5rem" }}>

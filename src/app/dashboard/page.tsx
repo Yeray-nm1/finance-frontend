@@ -155,7 +155,7 @@ export default function DashboardPage() {
                         {budget.progress.toFixed(1)}%
                       </span>
                     </div>
-                    <div className="bg-[#e5e7eb] rounded-sm overflow-hidden h-1.5">
+                    <div className="bg-border rounded-sm overflow-hidden h-1.5">
                       <div
                         className={`h-full rounded-sm transition-all ${
                           isOver ? "bg-expense" : "bg-income"
@@ -204,7 +204,7 @@ export default function DashboardPage() {
                     <div className="text-text-primary font-medium">
                       {formatCurrency(item.amount)}
                     </div>
-                    <span className="text-[#d97706] text-[11px]">
+                    <span className="text-amber-600 text-[11px]">
                       requiere accion
                     </span>
                   </div>

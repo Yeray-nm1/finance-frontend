@@ -72,11 +72,16 @@ export default function TransactionsPage() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (!newDescription.trim() || !newAmount) return;
+    const parsedAmount = Number(newAmount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      setError('El importe debe ser un número válido mayor que 0');
+      return;
+    }
     setSaving(true);
     try {
       await api.transactions.create({
         date: newDate,
-        amount: Number(newAmount),
+        amount: parsedAmount,
         description: newDescription.trim(),
         type: newType as "income" | "expense" | "transfer",
         accountId: newAccountId || undefined,
