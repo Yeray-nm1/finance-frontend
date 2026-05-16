@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Account } from "@/types";
-import { MOCK_ACCOUNTS } from "@/lib/mock-data";
+import { api } from "@/lib/api";
 import {
   Card,
   CardContent,
@@ -28,8 +28,73 @@ import {
 import { Plus, Pencil, Trash2, Landmark, PiggyBank } from "lucide-react";
 
 export default function AccountsPage() {
-  const [accounts] = useState<Account[]>(MOCK_ACCOUNTS);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newType, setNewType] = useState("checking");
+  const [saving, setSaving] = useState(false);
+
+  function loadAccounts() {
+    setLoading(true);
+    setError(null);
+    api.accounts.list()
+      .then(setAccounts)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => { loadAccounts(); }, []);
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newName.trim()) return;
+    setSaving(true);
+    try {
+      await api.accounts.create({ name: newName.trim(), type: newType });
+      setNewName("");
+      setNewType("checking");
+      setDialogOpen(false);
+      loadAccounts();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al crear cuenta");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      await api.accounts.delete(id);
+      loadAccounts();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al eliminar cuenta");
+    }
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-bg-page p-4 md:p-8">
+        <div className="max-w-4xl mx-auto">
+          <p className="text-sm text-text-muted">Cargando...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="min-h-screen bg-bg-page p-4 md:p-8">
+        <div className="max-w-4xl mx-auto">
+          <p className="text-sm text-expense">{error}</p>
+          <button onClick={loadAccounts} className="text-primary text-sm hover:underline mt-2">
+            Reintentar
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-bg-page p-4 md:p-8">
@@ -54,14 +119,20 @@ export default function AccountsPage() {
                   Crea una nueva cuenta bancaria
                 </DialogDescription>
               </DialogHeader>
-              <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+              <form onSubmit={handleCreate} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Nombre</Label>
-                  <Input id="name" placeholder="Ej: CaixaBank" />
+                  <Input
+                    id="name"
+                    placeholder="Ej: CaixaBank"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="type">Tipo</Label>
-                  <Select defaultValue="checking">
+                  <Select defaultValue="checking" value={newType} onValueChange={setNewType}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -71,8 +142,8 @@ export default function AccountsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button type="submit" className="w-full">
-                  Crear
+                <Button type="submit" className="w-full" disabled={saving}>
+                  {saving ? "Creando..." : "Crear"}
                 </Button>
               </form>
             </DialogContent>
@@ -105,7 +176,7 @@ export default function AccountsPage() {
                     <Button variant="ghost" size="icon">
                       <Pencil className="size-4" />
                     </Button>
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(account.id)}>
                       <Trash2 className="size-4 text-expense" />
                     </Button>
                   </div>

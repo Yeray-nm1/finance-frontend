@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Category } from "@/types";
-import { MOCK_CATEGORIES, MOCK_MONTHLY_BUDGET } from "@/lib/mock-data";
+import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,10 +16,19 @@ import {
 import { BudgetDetails } from "@/components/budget/BudgetDetails";
 import { BudgetCategoryDetails } from "@/components/budget/BudgetCategoryDetails";
 
+const DEFAULT_ALLOCATIONS = [
+  { type: "needs", percentage: 50 },
+  { type: "leisure", percentage: 20 },
+  { type: "savings", percentage: 15 },
+  { type: "other", percentage: 15 },
+];
+
 export default function BudgetsPage() {
-  const [categories, setCategories] = useState<Category[]>(MOCK_CATEGORIES);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [totalIncome, setTotalIncome] = useState(0);
-  const [typeAllocations, setTypeAllocations] = useState(MOCK_MONTHLY_BUDGET.allocations);
+  const [typeAllocations, setTypeAllocations] = useState(DEFAULT_ALLOCATIONS);
   const [selectedType, setSelectedType] = useState<string>("needs");
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -31,6 +40,35 @@ export default function BudgetsPage() {
 
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  function loadData() {
+    setLoading(true);
+    setError(null);
+    Promise.all([
+      api.categories.list(),
+      api.budgets.list(),
+    ])
+      .then(([cats, budgets]) => {
+        setCategories(cats);
+        if (budgets.length > 0) {
+          const typePct: Record<string, number> = {};
+          for (const b of budgets) {
+            const t = b.category.type;
+            typePct[t] = (typePct[t] ?? 0) + b.percentage;
+          }
+          setTypeAllocations(
+            DEFAULT_ALLOCATIONS.map((a) => ({
+              type: a.type,
+              percentage: typePct[a.type] ?? a.percentage,
+            }))
+          );
+        }
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => { loadData(); }, []);
+
   const totalAllocated = typeAllocations.reduce((s, a) => s + a.percentage, 0);
   const isValidTotal = Math.abs(totalAllocated - 100) < 0.15;
 
@@ -40,16 +78,17 @@ export default function BudgetsPage() {
     setEditDialogOpen(true);
   }
 
-  function handleSaveCategory() {
+  async function handleSaveCategory() {
     if (!editingCategory || !editName.trim()) return;
-    setCategories((prev) =>
-      prev.map((c) =>
-        c.id === editingCategory.id ? { ...c, name: editName.trim() } : c
-      )
-    );
-    setEditDialogOpen(false);
-    setEditingCategory(null);
-    setEditName("");
+    try {
+      await api.categories.update(editingCategory.id, { name: editName.trim() });
+      setEditDialogOpen(false);
+      setEditingCategory(null);
+      setEditName("");
+      loadData();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Error al guardar");
+    }
   }
 
   function handleDeleteCategory(cat: Category) {
@@ -57,23 +96,29 @@ export default function BudgetsPage() {
     setDeleteDialogOpen(true);
   }
 
-  function confirmDeleteCategory() {
+  async function confirmDeleteCategory() {
     if (!deletingCategory) return;
-    setCategories((prev) => prev.filter((c) => c.id !== deletingCategory.id));
-    setDeleteDialogOpen(false);
-    setDeletingCategory(null);
+    try {
+      await api.categories.delete(deletingCategory.id);
+      setDeleteDialogOpen(false);
+      setDeletingCategory(null);
+      loadData();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Error al eliminar");
+    }
   }
 
-  function handleAddCategory() {
+  async function handleAddCategory() {
     if (!selectedType) return;
-    const newId = `cat-${Date.now()}`;
-    const newCat: Category = {
-      id: newId,
-      userId: "user-1",
-      name: "Nueva categoría",
-      type: selectedType as Category["type"],
-    };
-    setCategories((prev) => [...prev, newCat]);
+    try {
+      await api.categories.create({
+        name: "Nueva categoría",
+        type: selectedType,
+      });
+      loadData();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Error al crear categoría");
+    }
   }
 
   function handlePercentageChange(type: string, newPercentage: number) {
@@ -82,6 +127,29 @@ export default function BudgetsPage() {
       prev.map((a) =>
         a.type === type ? { ...a, percentage: Math.max(0, Math.min(100, newPercentage)) } : a
       )
+    );
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-bg-page p-4 md:p-8">
+        <div className="max-w-6xl mx-auto">
+          <p className="text-sm text-text-muted">Cargando...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="min-h-screen bg-bg-page p-4 md:p-8">
+        <div className="max-w-6xl mx-auto">
+          <p className="text-sm text-expense">{error}</p>
+          <button onClick={loadData} className="text-primary text-sm hover:underline mt-2">
+            Reintentar
+          </button>
+        </div>
+      </main>
     );
   }
 

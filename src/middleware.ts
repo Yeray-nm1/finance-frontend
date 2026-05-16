@@ -7,10 +7,15 @@ export function middleware(request: NextRequest) {
 
   const publicPaths = ["/login", "/register"];
   const isPublicPath = publicPaths.includes(pathname);
+  const isApiPath = pathname.startsWith("/api/");
+  const isStaticPath = pathname.startsWith("/_next/") || pathname === "/favicon.ico";
 
-  // Mock mode: always allow through (AuthContext handles auto-login)
-  if (!token && !isPublicPath && pathname !== "/" && pathname !== "/dashboard") {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  if (isApiPath || isStaticPath) {
+    return NextResponse.next();
+  }
+
+  if (!token && !isPublicPath) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   if (token && isPublicPath) {

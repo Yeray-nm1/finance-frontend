@@ -3,7 +3,11 @@
 import { useState, useCallback, useEffect } from "react";
 import { api } from "@/lib/api";
 import { parse } from "papaparse";
-import type { CsvUploadDialogProps } from "@/components/types";
+interface CsvUploadDialogProps {
+  readonly open: boolean;
+  readonly onClose: () => void;
+  readonly onImported: () => void;
+}
 
 export function CsvUploadDialog({ open, onClose, onImported }: Readonly<CsvUploadDialogProps>) {
   const [dragging, setDragging] = useState(false);

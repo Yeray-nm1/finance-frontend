@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,22 +29,95 @@ import {
 } from "@/components/ui/drawer";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Upload } from "lucide-react";
-import { MOCK_TRANSACTIONS, MOCK_ACCOUNTS, MOCK_CATEGORIES } from "@/lib/mock-data";
+import { api } from "@/lib/api";
 import type { Transaction, Account, Category } from "@/types";
+import { formatCurrency } from "@/lib/format";
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("es-ES", {
-    style: "currency",
-    currency: "EUR",
-  }).format(amount);
-}
 
 export default function TransactionsPage() {
-  const [transactions] = useState<Transaction[]>(MOCK_TRANSACTIONS);
-  const [accounts] = useState<Account[]>(MOCK_ACCOUNTS);
-  const [categories] = useState<Category[]>(MOCK_CATEGORIES);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [csvDrawerOpen, setCsvDrawerOpen] = useState(false);
+  const [newDate, setNewDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [newType, setNewType] = useState("expense");
+  const [newAmount, setNewAmount] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [newAccountId, setNewAccountId] = useState("");
+  const [newCategoryId, setNewCategoryId] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  function loadData() {
+    setLoading(true);
+    setError(null);
+    Promise.all([
+      api.transactions.list(),
+      api.accounts.list(),
+      api.categories.list(),
+    ])
+      .then(([txs, accs, cats]) => {
+        setTransactions(txs);
+        setAccounts(accs);
+        setCategories(cats);
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => { loadData(); }, []);
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newDescription.trim() || !newAmount) return;
+    setSaving(true);
+    try {
+      await api.transactions.create({
+        date: newDate,
+        amount: Number(newAmount),
+        description: newDescription.trim(),
+        type: newType as "income" | "expense" | "transfer",
+        accountId: newAccountId || undefined,
+        categoryId: newCategoryId || undefined,
+      });
+      setNewDescription("");
+      setNewAmount("");
+      setNewDate(new Date().toISOString().split("T")[0]);
+      setNewAccountId("");
+      setNewCategoryId("");
+      setDialogOpen(false);
+      loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al crear transacción");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-bg-page p-4 md:p-8">
+        <div className="max-w-6xl mx-auto">
+          <p className="text-sm text-text-muted">Cargando...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="min-h-screen bg-bg-page p-4 md:p-8">
+        <div className="max-w-6xl mx-auto">
+          <p className="text-sm text-expense">{error}</p>
+          <button onClick={loadData} className="text-primary text-sm hover:underline mt-2">
+            Reintentar
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-bg-page p-4 md:p-8">
@@ -94,17 +167,19 @@ export default function TransactionsPage() {
                     Anade un movimiento manual
                   </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+                <form onSubmit={handleCreate} className="space-y-4">
                   <div className="space-y-2">
                     <Label>Fecha</Label>
                     <Input
                       type="date"
-                      defaultValue={new Date().toISOString().split("T")[0]}
+                      value={newDate}
+                      onChange={(e) => setNewDate(e.target.value)}
+                      required
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>Tipo</Label>
-                    <Select defaultValue="expense">
+                    <Select defaultValue="expense" value={newType} onValueChange={setNewType}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -117,16 +192,28 @@ export default function TransactionsPage() {
                   </div>
                   <div className="space-y-2">
                     <Label>Importe</Label>
-                    <Input type="number" step="0.01" placeholder="0.00" />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={newAmount}
+                      onChange={(e) => setNewAmount(e.target.value)}
+                      required
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Descripcion</Label>
-                    <Input placeholder="Ej: Mercadona" />
+                    <Input
+                      placeholder="Ej: Mercadona"
+                      value={newDescription}
+                      onChange={(e) => setNewDescription(e.target.value)}
+                      required
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Cuenta</Label>
-                      <Select>
+                      <Select value={newAccountId} onValueChange={setNewAccountId}>
                         <SelectTrigger>
                           <SelectValue placeholder="Opcional" />
                         </SelectTrigger>
@@ -141,7 +228,7 @@ export default function TransactionsPage() {
                     </div>
                     <div className="space-y-2">
                       <Label>Categoria</Label>
-                      <Select>
+                      <Select value={newCategoryId} onValueChange={setNewCategoryId}>
                         <SelectTrigger>
                           <SelectValue placeholder="Opcional" />
                         </SelectTrigger>
@@ -155,8 +242,8 @@ export default function TransactionsPage() {
                       </Select>
                     </div>
                   </div>
-                  <Button type="submit" className="w-full">
-                    Crear
+                  <Button type="submit" className="w-full" disabled={saving}>
+                    {saving ? "Creando..." : "Crear"}
                   </Button>
                 </form>
               </DialogContent>
@@ -185,10 +272,10 @@ export default function TransactionsPage() {
                     {tx.description}
                   </TableCell>
                   <TableCell className="text-text-muted">
-                    {categories.find((c) => c.id === tx.categoryId)?.name || "-"}
+                    {tx.category?.name ?? categories.find((c) => c.id === tx.categoryId)?.name ?? "-"}
                   </TableCell>
                   <TableCell className="text-text-muted">
-                    {accounts.find((a) => a.id === tx.accountId)?.name || "-"}
+                    {tx.account?.name ?? accounts.find((a) => a.id === tx.accountId)?.name ?? "-"}
                   </TableCell>
                   <TableCell
                     className={`text-right font-medium ${

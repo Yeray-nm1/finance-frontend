@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,15 +24,9 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Plus, Pencil, Trash2, Sparkles } from "lucide-react";
-import { MOCK_SUBSCRIPTIONS, MOCK_SUBSCRIPTION_CANDIDATES } from "@/lib/mock-data";
+import { api } from "@/lib/api";
 import type { Subscription, SubscriptionCandidate } from "@/types";
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("es-ES", {
-    style: "currency",
-    currency: "EUR",
-  }).format(amount);
-}
+import { formatCurrency } from "@/lib/format";
 
 const freqLabels: Record<string, string> = {
   weekly: "Semanal",
@@ -41,9 +35,99 @@ const freqLabels: Record<string, string> = {
 };
 
 export default function SubscriptionsPage() {
-  const [subscriptions] = useState<Subscription[]>(MOCK_SUBSCRIPTIONS);
-  const [candidates] = useState<SubscriptionCandidate[]>(MOCK_SUBSCRIPTION_CANDIDATES);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [candidates, setCandidates] = useState<SubscriptionCandidate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newAmount, setNewAmount] = useState("");
+  const [newFrequency, setNewFrequency] = useState("monthly");
+  const [saving, setSaving] = useState(false);
+  const [detecting, setDetecting] = useState(false);
+
+  function loadData() {
+    setLoading(true);
+    setError(null);
+    Promise.all([
+      api.subscriptions.list(),
+      api.subscriptions.detect().then((r) => r.candidates).catch(() => []),
+    ])
+      .then(([subs, cands]) => {
+        setSubscriptions(subs);
+        setCandidates(cands);
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => { loadData(); }, []);
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newName.trim() || !newAmount) return;
+    setSaving(true);
+    try {
+      await api.subscriptions.create({
+        name: newName.trim(),
+        amount: Number(newAmount),
+        frequency: newFrequency,
+      });
+      setNewName("");
+      setNewAmount("");
+      setNewFrequency("monthly");
+      setDialogOpen(false);
+      loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al crear suscripción");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      await api.subscriptions.delete(id);
+      loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al eliminar suscripción");
+    }
+  }
+
+  async function handleDetect() {
+    setDetecting(true);
+    try {
+      const res = await api.subscriptions.detect();
+      setCandidates(res.candidates);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al detectar suscripciones");
+    } finally {
+      setDetecting(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-bg-page p-4 md:p-8">
+        <div className="max-w-4xl mx-auto">
+          <p className="text-sm text-text-muted">Cargando...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (error && subscriptions.length === 0) {
+    return (
+      <main className="min-h-screen bg-bg-page p-4 md:p-8">
+        <div className="max-w-4xl mx-auto">
+          <p className="text-sm text-expense">{error}</p>
+          <button onClick={loadData} className="text-primary text-sm hover:underline mt-2">
+            Reintentar
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-bg-page p-4 md:p-8">
@@ -56,8 +140,8 @@ export default function SubscriptionsPage() {
             <p className="text-sm text-text-muted mt-1">Gestiona tus pagos recurrentes</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline">
-              <Sparkles className="size-4" /> Detectar
+            <Button variant="outline" onClick={handleDetect} disabled={detecting}>
+              <Sparkles className="size-4" /> {detecting ? "Detectando..." : "Detectar"}
             </Button>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
@@ -72,18 +156,30 @@ export default function SubscriptionsPage() {
                     Anade un pago recurrente manual
                   </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+                <form onSubmit={handleCreate} className="space-y-4">
                   <div className="space-y-2">
                     <Label>Nombre</Label>
-                    <Input placeholder="Ej: Netflix" />
+                    <Input
+                      placeholder="Ej: Netflix"
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      required
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Importe</Label>
-                    <Input type="number" step="0.01" placeholder="0.00" />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={newAmount}
+                      onChange={(e) => setNewAmount(e.target.value)}
+                      required
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Frecuencia</Label>
-                    <Select defaultValue="monthly">
+                    <Select defaultValue="monthly" value={newFrequency} onValueChange={setNewFrequency}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -94,8 +190,8 @@ export default function SubscriptionsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button type="submit" className="w-full">
-                    Crear
+                  <Button type="submit" className="w-full" disabled={saving}>
+                    {saving ? "Creando..." : "Crear"}
                   </Button>
                 </form>
               </DialogContent>
@@ -103,7 +199,6 @@ export default function SubscriptionsPage() {
           </div>
         </div>
 
-        {/* Candidates */}
         {candidates.length > 0 && (
           <div className="mb-6">
             <h2 className="text-xs uppercase tracking-widest text-text-muted font-semibold mb-4">
@@ -130,7 +225,6 @@ export default function SubscriptionsPage() {
           </div>
         )}
 
-        {/* Subscriptions */}
         <div className="space-y-3">
           {subscriptions.map((sub) => (
             <Card key={sub.id}>
@@ -157,7 +251,7 @@ export default function SubscriptionsPage() {
                     <Button variant="ghost" size="icon">
                       <Pencil className="size-4" />
                     </Button>
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(sub.id)}>
                       <Trash2 className="size-4 text-expense" />
                     </Button>
                   </div>

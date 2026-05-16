@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Category } from "@/types";
-import { MOCK_CATEGORIES } from "@/lib/mock-data";
+import { api } from "@/lib/api";
 import {
   Card,
   CardContent,
@@ -25,8 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, Trash2 } from "lucide-react";
-import { Home, PartyPopper, PiggyBank, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, Home, PartyPopper, PiggyBank, Package } from "lucide-react";
 
 const typeLabels: Record<string, string> = {
   needs: "Necesidades",
@@ -50,8 +49,73 @@ const typeBg: Record<string, string> = {
 };
 
 export default function CategoriesPage() {
-  const [categories] = useState<Category[]>(MOCK_CATEGORIES);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newType, setNewType] = useState("needs");
+  const [saving, setSaving] = useState(false);
+
+  function loadCategories() {
+    setLoading(true);
+    setError(null);
+    api.categories.list()
+      .then(setCategories)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => { loadCategories(); }, []);
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newName.trim()) return;
+    setSaving(true);
+    try {
+      await api.categories.create({ name: newName.trim(), type: newType });
+      setNewName("");
+      setNewType("needs");
+      setDialogOpen(false);
+      loadCategories();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al crear categoría");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      await api.categories.delete(id);
+      loadCategories();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al eliminar categoría");
+    }
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-bg-page p-4 md:p-8">
+        <div className="max-w-4xl mx-auto">
+          <p className="text-sm text-text-muted">Cargando...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="min-h-screen bg-bg-page p-4 md:p-8">
+        <div className="max-w-4xl mx-auto">
+          <p className="text-sm text-expense">{error}</p>
+          <button onClick={loadCategories} className="text-primary text-sm hover:underline mt-2">
+            Reintentar
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   const grouped = categories.reduce((acc, cat) => {
     if (!acc[cat.type]) acc[cat.type] = [];
@@ -84,14 +148,20 @@ export default function CategoriesPage() {
                   Crea una nueva categoria de gasto
                 </DialogDescription>
               </DialogHeader>
-              <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+              <form onSubmit={handleCreate} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Nombre</Label>
-                  <Input id="name" placeholder="Ej: Comida" />
+                  <Input
+                    id="name"
+                    placeholder="Ej: Comida"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="type">Tipo</Label>
-                  <Select defaultValue="needs">
+                  <Select defaultValue="needs" value={newType} onValueChange={setNewType}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -103,8 +173,8 @@ export default function CategoriesPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button type="submit" className="w-full">
-                  Crear
+                <Button type="submit" className="w-full" disabled={saving}>
+                  {saving ? "Creando..." : "Crear"}
                 </Button>
               </form>
             </DialogContent>
@@ -133,7 +203,7 @@ export default function CategoriesPage() {
                         <Button variant="ghost" size="icon">
                           <Pencil className="size-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(category.id)}>
                           <Trash2 className="size-3.5 text-expense" />
                         </Button>
                       </div>

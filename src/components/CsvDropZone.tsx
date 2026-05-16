@@ -2,7 +2,9 @@
 
 import { useState, useCallback } from "react";
 import { parse } from "papaparse";
-import type { CsvDropZoneProps } from "@/components/types";
+interface CsvDropZoneProps {
+  readonly onImported: () => void;
+}
 
 export function CsvDropZone({ onImported }: Readonly<CsvDropZoneProps>) {
   const [dragging, setDragging] = useState(false);

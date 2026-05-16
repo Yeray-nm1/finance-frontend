@@ -1,15 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { DashboardResponse } from "@/types";
-import { MOCK_DASHBOARD } from "@/lib/mock-data";
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("es-ES", {
-    style: "currency",
-    currency: "EUR",
-  }).format(amount);
-}
+import { api } from "@/lib/api";
+import { formatCurrency } from "@/lib/format";
 
 function formatPercent(value: number): string {
   return `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`;
@@ -37,9 +31,58 @@ function BalanceRow({
 }
 
 export default function DashboardPage() {
-  const [data] = useState<DashboardResponse>(MOCK_DASHBOARD);
+  const [data, setData] = useState<DashboardResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const { balance, budgets, recurring, transactions } = data;
+  function loadDashboard() {
+    setLoading(true);
+    setError(null);
+    api.dashboard.get()
+      .then(setData)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => { loadDashboard(); }, []);
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-bg-page p-4 md:p-8">
+        <div className="max-w-6xl mx-auto">
+          <header className="mb-8">
+            <h1 className="text-xl font-semibold text-text-primary">Dashboard</h1>
+            <p className="text-sm text-text-muted mt-1">Cargando...</p>
+          </header>
+        </div>
+      </main>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <main className="min-h-screen bg-bg-page p-4 md:p-8">
+        <div className="max-w-6xl mx-auto">
+          <header className="mb-8">
+            <h1 className="text-xl font-semibold text-text-primary">Dashboard</h1>
+            <p className="text-sm text-expense mt-1">{error ?? "Error al cargar datos"}</p>
+          </header>
+          <button onClick={loadDashboard} className="text-primary text-sm hover:underline">
+            Reintentar
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  const balance = data.balance ?? { income: 0, expenses: 0, savings: 0, available: 0, balance: 0 };
+  const budgets = Array.isArray(data.budgets) ? data.budgets : [];
+  const rawRecurring = data.recurring ?? {};
+  const recurring = {
+    manual: Array.isArray(rawRecurring.manual) ? rawRecurring.manual : [],
+    detected: Array.isArray(rawRecurring.detected) ? rawRecurring.detected : [],
+  };
+  const transactions = Array.isArray(data.transactions) ? data.transactions : [];
 
   return (
     <main className="min-h-screen bg-bg-page p-4 md:p-8">

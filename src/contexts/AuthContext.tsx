@@ -1,14 +1,14 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import type { User } from '@/types';
-import { MOCK_USER } from '@/lib/mock-data';
+import { api } from '@/lib/api';
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
@@ -16,24 +16,30 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(MOCK_USER);
-  const [isLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  async function login(email: string, password: string) {
-    void email;
-    void password;
-    setUser(MOCK_USER);
-  }
+  useEffect(() => {
+    api.auth.me()
+      .then((res) => setUser(res.user))
+      .catch(() => setUser(null))
+      .finally(() => setIsLoading(false));
+  }, []);
 
-  async function register(email: string, password: string) {
-    void email;
-    void password;
-    setUser(MOCK_USER);
-  }
+  const login = useCallback(async (email: string, password: string) => {
+    const res = await api.auth.login(email, password);
+    setUser(res.user);
+  }, []);
 
-  async function logout() {
+  const register = useCallback(async (email: string, password: string) => {
+    const res = await api.auth.register(email, password);
+    setUser(res.user);
+  }, []);
+
+  const logout = useCallback(async () => {
+    await api.auth.logout();
     setUser(null);
-  }
+  }, []);
 
   return (
     <AuthContext.Provider

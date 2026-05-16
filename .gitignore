@@ -17,7 +17,6 @@
 .DS_Store
 *.pem
 /docs
-src/lib/mock-data.ts
 
 # debug
 npm-debug.log*

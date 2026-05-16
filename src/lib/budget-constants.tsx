@@ -1,4 +1,5 @@
 import { Home, PartyPopper, PiggyBank, Package } from "lucide-react";
+export { formatCurrency } from "@/lib/format";
 
 export const typeLabels: Record<string, string> = {
   needs: "Necesidades",
@@ -14,9 +15,3 @@ export const typeIcons: Record<string, { icon: React.ReactNode; bg: string; colo
   other: { icon: <Package size={16} />, bg: "bg-sky-100", color: "text-sky-700" },
 };
 
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("es-ES", {
-    style: "currency",
-    currency: "EUR",
-  }).format(amount);
-}

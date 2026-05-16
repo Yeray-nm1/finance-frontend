@@ -4,7 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Toaster } from "@/components/ui/toaster";
-import type { RootLayoutInnerProps } from "./types";
+interface RootLayoutInnerProps {
+  readonly children: React.ReactNode;
+}
 
 export default function RootLayoutInner({ children }: Readonly<RootLayoutInnerProps>) {
   const { isAuthenticated, isLoading } = useAuth();
