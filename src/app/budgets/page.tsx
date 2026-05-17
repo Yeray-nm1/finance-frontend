@@ -116,11 +116,11 @@ export default function BudgetsPage() {
   async function handleSaveCategory() {
     if (!editingCategory || !editName.trim()) return;
     try {
-      await api.categories.update(editingCategory.id, { name: editName.trim() });
+      const updated = await api.categories.update(editingCategory.id, { name: editName.trim() });
       setEditDialogOpen(false);
       setEditingCategory(null);
       setEditName("");
-      loadData();
+      setCategories(prev => prev.map(c => c.id === updated.id ? updated : c));
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Error al guardar");
     }
@@ -137,7 +137,7 @@ export default function BudgetsPage() {
       await api.categories.delete(deletingCategory.id);
       setDeleteDialogOpen(false);
       setDeletingCategory(null);
-      loadData();
+      setCategories(prev => prev.filter(c => c.id !== deletingCategory.id));
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Error al eliminar");
     }
@@ -146,11 +146,11 @@ export default function BudgetsPage() {
   async function handleAddCategory() {
     if (!selectedType) return;
     try {
-      await api.categories.create({
+      const created = await api.categories.create({
         name: "Nueva categoría",
         type: selectedType,
       });
-      loadData();
+      setCategories(prev => [...prev, created]);
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Error al crear categoría");
     }

@@ -17,6 +17,7 @@ async function request<T>(path: string, options?: RequestInit & { signal?: Abort
     throw new Error(body.error || `HTTP ${res.status}`);
   }
 
+  if (res.status === 204) return undefined as T;
   return res.json();
 }
 
@@ -38,6 +39,7 @@ async function requestNullable<T>(path: string, options?: RequestInit & { signal
     throw new Error(body.error || `HTTP ${res.status}`);
   }
 
+  if (res.status === 204) return undefined as T;
   return res.json();
 }
 

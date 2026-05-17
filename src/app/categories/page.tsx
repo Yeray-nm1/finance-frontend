@@ -53,11 +53,11 @@ export default function CategoriesPage() {
     if (!newName.trim()) return;
     setSaving(true);
     try {
-      await api.categories.create({ name: newName.trim(), type: newType });
+      const created = await api.categories.create({ name: newName.trim(), type: newType });
       setNewName("");
       setNewType("needs");
       setDialogOpen(false);
-      loadCategories();
+      setCategories(prev => [...prev, created]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al crear categoría");
     } finally {
@@ -68,7 +68,7 @@ export default function CategoriesPage() {
   async function handleDelete(id: string) {
     try {
       await api.categories.delete(id);
-      loadCategories();
+      setCategories(prev => prev.filter(c => c.id !== id));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al eliminar categoría");
     }
