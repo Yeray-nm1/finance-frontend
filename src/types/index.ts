@@ -75,6 +75,11 @@ export interface BudgetTypeAllocation {
   percentage: number;
 }
 
+export interface BudgetDraft {
+  exists: boolean;
+  budget: MonthlyBudget | null;
+}
+
 export interface MonthlyBudget {
   id: string;
   userId: string;
@@ -83,12 +88,7 @@ export interface MonthlyBudget {
   totalIncome: number;
   createdAt: string;
   updatedAt: string;
-  typeAllocations: BudgetTypeAllocation[];
-}
-
-export interface BudgetDraft {
-  exists: boolean;
-  budget: MonthlyBudget | null;
+  typeAllocations: Array<{ type: string; percentage: number }>;
 }
 
 export interface BudgetWithCategory {
@@ -158,4 +158,18 @@ export interface DashboardResponse {
     category: string | null;
     account: string | null;
   }>;
+}
+
+export interface IncomeCandidateItem {
+  id: string;
+  date: string;
+  amount: number;
+  description: string;
+}
+
+export interface IncomeGroup {
+  label: string;
+  count: number;
+  totalAmount: number;
+  transactions: IncomeCandidateItem[];
 }

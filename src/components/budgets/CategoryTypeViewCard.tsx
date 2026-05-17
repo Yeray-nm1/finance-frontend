@@ -1,10 +1,10 @@
 "use client";
 
-import type { BudgetTypeAllocation, Category, CategoryTypeConfig } from "@/types";
+import type { Category, CategoryTypeConfig } from "@/types";
 import { Card } from "@/components/ui/card";
 
 interface CategoryTypeViewCardProps {
-  allocation: BudgetTypeAllocation;
+  allocation: { type: string; percentage: number };
   config: CategoryTypeConfig;
   categories: Category[];
   totalIncome: number;

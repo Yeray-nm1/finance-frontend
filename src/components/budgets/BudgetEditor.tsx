@@ -20,7 +20,7 @@ interface BudgetEditorProps {
   categoriesByType: Record<string, Category[]>;
   onSave: (
     income: number,
-    typeAllocations: Array<{ categoryType: string; percentage: number }>
+    typeAllocations: Array<{ type: string; percentage: number }>
   ) => Promise<boolean>;
   onDelete: () => Promise<boolean>;
   onCalculateIncome: () => Promise<number | null>;
@@ -64,7 +64,7 @@ export function BudgetEditor({
         other: "",
       };
       budget.typeAllocations.forEach((alloc) => {
-        allocs[alloc.categoryType] = alloc.percentage.toString();
+        allocs[alloc.type] = alloc.percentage.toString();
       });
       setAllocations(allocs);
     } else {
@@ -115,8 +115,8 @@ export function BudgetEditor({
 
     const typeAllocations = Object.entries(allocations)
       .filter(([, val]) => val !== "" && parseFloat(val) > 0)
-      .map(([categoryType, percentage]) => ({
-        categoryType,
+      .map(([type, percentage]) => ({
+        type,
         percentage: parseFloat(percentage),
       }));
 

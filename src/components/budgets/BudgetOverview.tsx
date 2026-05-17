@@ -22,18 +22,18 @@ export function BudgetOverview({ budget, categoriesByType }: BudgetOverviewProps
           gap: "16px",
         }}
       >
-        {budget.typeAllocations.map((alloc) => {
+        {budget.typeAllocations.map((alloc, idx) => {
           const typeInfo = CATEGORY_CONFIGS.find(
-            (t) => t.type === alloc.categoryType
+            (t) => t.type === alloc.type
           );
           if (!typeInfo) return null;
 
           return (
             <CategoryTypeViewCard
-              key={alloc.id}
+              key={alloc.type + idx}
               allocation={alloc}
               config={typeInfo}
-              categories={categoriesByType[alloc.categoryType] || []}
+              categories={categoriesByType[alloc.type] || []}
               totalIncome={budget.totalIncome}
             />
           );

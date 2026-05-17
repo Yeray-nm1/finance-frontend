@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calculator } from "lucide-react";
+import { Calculator, Save } from "lucide-react";
 import { typeLabels, typeIcons, formatCurrency } from "@/lib/budget-constants";
 
 export function BudgetDetails({
@@ -14,6 +14,11 @@ export function BudgetDetails({
   onSelectType,
   totalAllocated,
   isValidTotal,
+  onCalculateIncome,
+  calculatingIncome,
+  onSave,
+  saving,
+  canSave,
 }: Readonly<BudgetDetailsProps>) {
   return (
     <Card>
@@ -40,9 +45,13 @@ export function BudgetDetails({
           </div>
         </div>
 
-        <Button className="w-full gap-2 bg-primary text-white hover:bg-primary-hover">
+        <Button
+          className="w-full gap-2 bg-primary text-white hover:bg-primary-hover"
+          onClick={onCalculateIncome}
+          disabled={!onCalculateIncome || calculatingIncome}
+        >
           <Calculator size={14} />
-          Calcular ingresos del mes anterior
+          {calculatingIncome ? "Calculando..." : "Calcular ingresos a partir del mes anterior"}
         </Button>
 
         <div className="border-t border-border" />
@@ -86,6 +95,15 @@ export function BudgetDetails({
             ? "✓ Distribución correcta (100%)"
             : `Los porcentajes suman ${totalAllocated.toFixed(1)}% — deben sumar 100%`}
         </div>
+
+        <Button
+          className="w-full gap-2 bg-primary text-white hover:bg-primary-hover disabled:opacity-50"
+          onClick={onSave}
+          disabled={!onSave || !canSave || saving}
+        >
+          <Save size={14} />
+          {saving ? "Guardando..." : "Guardar presupuesto"}
+        </Button>
       </CardContent>
     </Card>
   );
