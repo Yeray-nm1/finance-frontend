@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import type { Category } from "@/types";
+import type { IncomeGroup } from "@/types";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,9 @@ import {
 } from "@/components/ui/dialog";
 import { BudgetDetails } from "@/components/budget/BudgetDetails";
 import { BudgetCategoryDetails } from "@/components/budget/BudgetCategoryDetails";
+import { IncomeReviewDialog } from "@/components/budget/IncomeReviewDialog";
+import { useBudget } from "@/hooks/useBudget";
+import { toast } from "@/hooks/use-toast";
 
 const DEFAULT_ALLOCATIONS = [
   { type: "needs", percentage: 50 },
@@ -24,6 +28,11 @@ const DEFAULT_ALLOCATIONS = [
 ];
 
 export default function BudgetsPage() {
+  const now = useMemo(() => new Date(), []);
+  const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
+  const { budget, saving, setBudget, saveBudget } = useBudget(currentMonth, currentYear);
+
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +48,12 @@ export default function BudgetsPage() {
   const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
 
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [incomeGroups, setIncomeGroups] = useState<IncomeGroup[]>([]);
+  const [incomeDialogOpen, setIncomeDialogOpen] = useState(false);
+  const [calculatingIncome, setCalculatingIncome] = useState(false);
+
+  const isInitialLoad = useRef(true);
+  const categoriesSnapshotRef = useRef("");
 
   function loadData() {
     setLoading(true);
@@ -46,9 +61,21 @@ export default function BudgetsPage() {
     Promise.all([
       api.categories.list(),
       api.budgets.list(),
+      api.budgets.monthly.get(currentMonth, currentYear),
     ])
-      .then(([cats, budgets]) => {
+      .then(([cats, budgets, monthly]) => {
         setCategories(cats);
+
+        if (isInitialLoad.current) {
+          isInitialLoad.current = false;
+          categoriesSnapshotRef.current = JSON.stringify(cats);
+          if (monthly) {
+            setBudget(monthly);
+            setTotalIncome(monthly.totalIncome);
+            setTypeAllocations(monthly.typeAllocations);
+          }
+        }
+
         if (budgets.length > 0) {
           const typePct: Record<string, number> = {};
           for (const b of budgets) {
@@ -67,10 +94,18 @@ export default function BudgetsPage() {
       .finally(() => setLoading(false));
   }
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const totalAllocated = typeAllocations.reduce((s, a) => s + a.percentage, 0);
   const isValidTotal = Math.abs(totalAllocated - 100) < 0.15;
+
+  const categoriesChanged = JSON.stringify(categories) !== categoriesSnapshotRef.current;
+  const hasChanges = budget !== null && (
+    totalIncome !== budget.totalIncome ||
+    JSON.stringify(typeAllocations) !== JSON.stringify(budget.typeAllocations) ||
+    categoriesChanged
+  );
+  const canSave = totalIncome > 0 && isValidTotal && (budget === null || hasChanges);
 
   function openEditCategory(cat: Category) {
     setEditingCategory(cat);
@@ -81,11 +116,11 @@ export default function BudgetsPage() {
   async function handleSaveCategory() {
     if (!editingCategory || !editName.trim()) return;
     try {
-      await api.categories.update(editingCategory.id, { name: editName.trim() });
+      const updated = await api.categories.update(editingCategory.id, { name: editName.trim() });
       setEditDialogOpen(false);
       setEditingCategory(null);
       setEditName("");
-      loadData();
+      setCategories(prev => prev.map(c => c.id === updated.id ? updated : c));
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Error al guardar");
     }
@@ -102,7 +137,7 @@ export default function BudgetsPage() {
       await api.categories.delete(deletingCategory.id);
       setDeleteDialogOpen(false);
       setDeletingCategory(null);
-      loadData();
+      setCategories(prev => prev.filter(c => c.id !== deletingCategory.id));
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Error al eliminar");
     }
@@ -111,11 +146,11 @@ export default function BudgetsPage() {
   async function handleAddCategory() {
     if (!selectedType) return;
     try {
-      await api.categories.create({
+      const created = await api.categories.create({
         name: "Nueva categoría",
         type: selectedType,
       });
-      loadData();
+      setCategories(prev => [...prev, created]);
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Error al crear categoría");
     }
@@ -128,6 +163,45 @@ export default function BudgetsPage() {
         a.type === type ? { ...a, percentage: Math.max(0, Math.min(100, newPercentage)) } : a
       )
     );
+  }
+
+  async function handleCalculateIncome() {
+    setCalculatingIncome(true);
+    try {
+      const now = new Date();
+      const prevMonth = now.getMonth() === 0 ? 12 : now.getMonth();
+      const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+      const result = await api.budgets.calculateIncome(prevMonth, prevYear);
+      setIncomeGroups(result);
+      setIncomeDialogOpen(true);
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Error al calcular ingresos",
+        variant: "destructive",
+      });
+    } finally {
+      setCalculatingIncome(false);
+    }
+  }
+
+  function handleIncomeConfirm(selectedTotal: number) {
+    setTotalIncome(selectedTotal);
+    setIncomeDialogOpen(false);
+  }
+
+  async function handleSave() {
+    const saved = await saveBudget(totalIncome, typeAllocations);
+    if (saved) {
+      categoriesSnapshotRef.current = JSON.stringify(categories);
+      toast({ title: "Presupuesto guardado", description: "Los cambios se han guardado correctamente." });
+    } else {
+      toast({
+        title: "Error",
+        description: "No se pudo guardar el presupuesto",
+        variant: "destructive",
+      });
+    }
   }
 
   if (loading) {
@@ -173,6 +247,11 @@ export default function BudgetsPage() {
               onSelectType={setSelectedType}
               totalAllocated={totalAllocated}
               isValidTotal={isValidTotal}
+              onCalculateIncome={handleCalculateIncome}
+              calculatingIncome={calculatingIncome}
+              onSave={handleSave}
+              saving={saving}
+              canSave={canSave}
             />
           </div>
 
@@ -191,6 +270,13 @@ export default function BudgetsPage() {
           </div>
         </div>
       </div>
+
+      <IncomeReviewDialog
+        open={incomeDialogOpen}
+        onOpenChange={setIncomeDialogOpen}
+        groups={incomeGroups}
+        onConfirm={handleIncomeConfirm}
+      />
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>

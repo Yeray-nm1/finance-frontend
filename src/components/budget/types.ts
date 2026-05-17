@@ -8,6 +8,11 @@ export interface BudgetDetailsProps {
   readonly onSelectType: (type: string) => void;
   readonly totalAllocated: number;
   readonly isValidTotal: boolean;
+  readonly onCalculateIncome?: () => void;
+  readonly calculatingIncome?: boolean;
+  readonly onSave?: () => void;
+  readonly saving?: boolean;
+  readonly canSave?: boolean;
 }
 
 export interface BudgetCategoryDetailsProps {

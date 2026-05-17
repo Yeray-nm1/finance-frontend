@@ -16,7 +16,7 @@ export interface Category {
   id: string;
   userId: string;
   name: string;
-  type: 'needs' | 'leisure' | 'savings' | 'other';
+  type: CategoryType;
 }
 
 export interface Transaction {
@@ -40,6 +40,55 @@ export interface CreateTransactionDTO {
   type: 'income' | 'expense' | 'transfer';
   accountId?: string;
   categoryId?: string;
+}
+
+export const CATEGORY_TYPES = ['needs', 'leisure', 'savings', 'other'] as const;
+export type CategoryType = (typeof CATEGORY_TYPES)[number];
+
+export const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
+
+export const MONTH_NAMES = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+] as const;
+
+export interface CategoryTypeConfig {
+  type: CategoryType;
+  label: string;
+  description: string;
+  color: string;
+  accent: string;
+  textAccent: string;
+}
+
+export const CATEGORY_CONFIGS: CategoryTypeConfig[] = [
+  { type: "needs", label: "Necesidades", description: "Gastos esenciales", color: "from-emerald-50 to-emerald-100", accent: "bg-emerald-600", textAccent: "text-emerald-700" },
+  { type: "leisure", label: "Ocio", description: "Entretenimiento", color: "from-violet-50 to-violet-100", accent: "bg-violet-600", textAccent: "text-violet-700" },
+  { type: "savings", label: "Ahorro", description: "Ahorros e inversiones", color: "from-blue-50 to-blue-100", accent: "bg-blue-600", textAccent: "text-blue-700" },
+  { type: "other", label: "Otros", description: "Gastos varios", color: "from-amber-50 to-amber-100", accent: "bg-amber-600", textAccent: "text-amber-700" },
+];
+
+export interface BudgetTypeAllocation {
+  id: string;
+  budgetId: string;
+  categoryType: CategoryType;
+  percentage: number;
+}
+
+export interface BudgetDraft {
+  exists: boolean;
+  budget: MonthlyBudget | null;
+}
+
+export interface MonthlyBudget {
+  id: string;
+  userId: string;
+  month: number;
+  year: number;
+  totalIncome: number;
+  createdAt: string;
+  updatedAt: string;
+  typeAllocations: Array<{ type: string; percentage: number }>;
 }
 
 export interface BudgetWithCategory {
@@ -109,4 +158,18 @@ export interface DashboardResponse {
     category: string | null;
     account: string | null;
   }>;
+}
+
+export interface IncomeCandidateItem {
+  id: string;
+  date: string;
+  amount: number;
+  description: string;
+}
+
+export interface IncomeGroup {
+  label: string;
+  count: number;
+  totalAmount: number;
+  transactions: IncomeCandidateItem[];
 }

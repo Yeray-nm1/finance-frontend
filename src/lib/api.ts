@@ -17,6 +17,29 @@ async function request<T>(path: string, options?: RequestInit & { signal?: Abort
     throw new Error(body.error || `HTTP ${res.status}`);
   }
 
+  if (res.status === 204) return undefined as T;
+  return res.json();
+}
+
+async function requestNullable<T>(path: string, options?: RequestInit & { signal?: AbortSignal }): Promise<T | null> {
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...options?.headers,
+  };
+
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers,
+    credentials: 'include',
+  });
+
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: 'Unknown error' }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+
+  if (res.status === 204) return undefined as T;
   return res.json();
 }
 
@@ -27,9 +50,11 @@ import type {
   Transaction,
   CreateTransactionDTO,
   BudgetWithCategory,
+  MonthlyBudget,
   Subscription,
   SubscriptionCandidate,
   DashboardResponse,
+  IncomeGroup,
 } from '@/types';
 
 export const api = {
@@ -99,6 +124,29 @@ export const api = {
     update: (id: string, data: Partial<{ categoryId: string; percentage: number }>) =>
       request<BudgetWithCategory>(`/budgets/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: string) => request<void>(`/budgets/${id}`, { method: 'DELETE' }),
+    calculateIncome: (month: number, year: number) => {
+      const params = new URLSearchParams();
+      params.set('month', String(month));
+      params.set('year', String(year));
+      return request<IncomeGroup[]>(`/budgets/calculate-income?${params.toString()}`);
+    },
+    monthly: {
+      get: (month: number, year: number) => {
+        const params = new URLSearchParams();
+        params.set('month', String(month));
+        params.set('year', String(year));
+        return requestNullable<MonthlyBudget>(`/budgets/monthly?${params.toString()}`);
+      },
+      upsert: (month: number, year: number, data: { totalIncome: number; typeAllocations: Array<{ type: string; percentage: number }> }) => {
+        const params = new URLSearchParams();
+        params.set('month', String(month));
+        params.set('year', String(year));
+        return request<MonthlyBudget>(`/budgets/monthly?${params.toString()}`, {
+          method: 'PUT',
+          body: JSON.stringify(data),
+        });
+      },
+    },
   },
 
   subscriptions: {

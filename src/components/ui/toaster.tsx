@@ -1,17 +1,23 @@
 "use client"
 
-import * as React from "react"
-import * as ToastPrimitives from "@radix-ui/react-toast"
-
-function ToastViewport(props: React.ComponentPropsWithoutRef<typeof ToastPrimitives.Viewport>) {
-  return <ToastPrimitives.Viewport {...props} />
-}
-ToastViewport.displayName = "ToastViewport"
+import { useToast } from "@/hooks/use-toast"
+import { ToastProvider, ToastViewport, Toast, ToastTitle, ToastDescription, ToastClose } from "@/components/ui/toast"
 
 export function Toaster() {
+  const { toasts } = useToast()
+
   return (
-    <ToastPrimitives.Provider>
-      <ToastViewport className="fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]" />
-    </ToastPrimitives.Provider>
+    <ToastProvider>
+      {toasts.map(({ id, title, description, variant }) => (
+        <Toast key={id} className={variant === "destructive" ? "border-red-400 bg-red-50" : ""}>
+          <div className="grid gap-1">
+            {title && <ToastTitle>{title}</ToastTitle>}
+            {description && <ToastDescription>{description}</ToastDescription>}
+          </div>
+          <ToastClose />
+        </Toast>
+      ))}
+      <ToastViewport />
+    </ToastProvider>
   )
 }
