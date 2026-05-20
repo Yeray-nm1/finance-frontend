@@ -23,14 +23,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerDescription,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
-import {
   Table,
   TableBody,
   TableCell,
@@ -38,6 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { CsvUploadDialog } from "@/components/CsvUploadDialog";
 import { Plus, Upload, Search, Trash2, ArrowUpDown, ChevronUp, ChevronDown, X, CalendarIcon, Pencil } from "lucide-react";
 import { api } from "@/lib/api";
 import type { Transaction, UpdateTransactionDTO } from "@/types/transactions";
@@ -103,7 +96,8 @@ export default function TransactionsPage() {
   const [filterAccountId, setFilterAccountId] = useState("");
   const [filterSearch, setFilterSearch] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterDates, setFilterDates] = useState<{ from?: string; to?: string }>({});
+  const [filterDates, setFilterDates] = useState<{ from?: Date; to?: Date }>({});
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const [sortBy, setSortBy] = useState<"date" | "amount" | "description">("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
@@ -116,13 +110,13 @@ export default function TransactionsPage() {
   const [editTxId, setEditTxId] = useState<string | null>(null);
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [csvDrawerOpen, setCsvDrawerOpen] = useState(false);
+  const [csvDialogOpen, setCsvDialogOpen] = useState(false);
   const [newDate, setNewDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [newType, setNewType] = useState<"income" | "expense" | "transfer">("expense");
   const [newAmount, setNewAmount] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newAccountId, setNewAccountId] = useState("");
-  const [newCategoryId, setNewCategoryId] = useState("");
+  const [newCategoryId, setNewCategoryId] = useState("__none__");
   const [saving, setSaving] = useState(false);
 
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
@@ -145,8 +139,8 @@ export default function TransactionsPage() {
           categoryId: filterCategoryId || undefined,
           accountId: filterAccountId || undefined,
           search: searchQuery || undefined,
-          dateFrom: filterDates.from,
-          dateTo: filterDates.to,
+          dateFrom: filterDates.from ? format(filterDates.from, "yyyy-MM-dd") : undefined,
+          dateTo: filterDates.to ? format(filterDates.to, "yyyy-MM-dd") : undefined,
           sortBy,
           sortOrder,
         },
@@ -210,7 +204,7 @@ export default function TransactionsPage() {
     setSavingField(true);
     try {
       const payload: Partial<UpdateTransactionDTO> = {};
-      if (field === "categoryId") payload.categoryId = value === " " ? null : value;
+      if (field === "categoryId") payload.categoryId = value === "__none__" ? null : value;
       else if (field === "description") payload.description = value;
 
       const updated = await api.transactions.update(tx.id, payload);
@@ -247,7 +241,7 @@ export default function TransactionsPage() {
     setSaving(true);
     try {
       if (editTxId) {
-        const resolvedCategory = newCategoryId === " " ? null : newCategoryId;
+        const resolvedCategory = newCategoryId === "__none__" ? null : newCategoryId;
         await api.transactions.update(editTxId, {
           description: newDescription.trim(),
           categoryId: resolvedCategory,
@@ -278,13 +272,14 @@ export default function TransactionsPage() {
           description: newDescription.trim(),
           type: newType,
           accountId: newAccountId || undefined,
-          categoryId: newCategoryId === " " ? undefined : newCategoryId || undefined,
+          categoryId: newCategoryId === "__none__" ? undefined : newCategoryId || undefined,
         });
         setNewDescription("");
         setNewAmount("");
         setNewDate(new Date().toISOString().split("T")[0]);
         setNewAccountId("");
-        setNewCategoryId("");
+        setNewType("expense");
+        setNewCategoryId("__none__");
         setDialogOpen(false);
         loadData();
       }
@@ -320,7 +315,7 @@ export default function TransactionsPage() {
     setNewAmount(String(tx.amount));
     setNewDescription(tx.description);
     setNewAccountId(tx.accountId ?? "");
-    setNewCategoryId(tx.categoryId ?? " ");
+    setNewCategoryId(tx.categoryId ?? "__none__");
     setEditTxId(tx.id);
     setDialogOpen(true);
   }
@@ -380,25 +375,15 @@ export default function TransactionsPage() {
             <p className="text-sm text-text-muted mt-1">Gestiona tus movimientos</p>
           </div>
           <div className="flex gap-2">
-            <Drawer open={csvDrawerOpen} onOpenChange={setCsvDrawerOpen}>
-              <DrawerTrigger asChild>
-                <Button variant="outline">
-                  <Upload className="size-4" /> Importar CSV
-                </Button>
-              </DrawerTrigger>
-              <DrawerContent className="p-6">
-                <DrawerHeader>
-                  <DrawerTitle>Importar CSV</DrawerTitle>
-                  <DrawerDescription>Sube un archivo CSV con tus movimientos</DrawerDescription>
-                </DrawerHeader>
-                <div className="space-y-4 mt-4">
-                  <p className="text-sm text-text-muted">Funcionalidad disponible con conexion al backend</p>
-                  <Button variant="secondary" className="w-full" onClick={() => setCsvDrawerOpen(false)}>
-                    Cerrar
-                  </Button>
-                </div>
-              </DrawerContent>
-            </Drawer>
+            <Button variant="outline" onClick={() => setCsvDialogOpen(true)}>
+              <Upload className="size-4" /> Importar CSV
+            </Button>
+
+            <CsvUploadDialog
+              open={csvDialogOpen}
+              onClose={() => setCsvDialogOpen(false)}
+              onImported={() => loadData()}
+            />
 
             <Dialog
               open={dialogOpen}
@@ -410,7 +395,7 @@ export default function TransactionsPage() {
                   setNewAmount("");
                   setNewDescription("");
                   setNewAccountId("");
-                  setNewCategoryId("");
+                  setNewCategoryId("__none__");
                   setDialogOpen(false);
                 }
               }}
@@ -485,7 +470,7 @@ export default function TransactionsPage() {
                       <Select value={newCategoryId} onValueChange={setNewCategoryId}>
                         <SelectTrigger id="tx-category"><SelectValue placeholder="Opcional" /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value=" ">Sin categoria</SelectItem>
+                          <SelectItem value="__none__">Sin categoria</SelectItem>
                           {categories.map((cat) => (
                             <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                           ))}
@@ -582,47 +567,56 @@ export default function TransactionsPage() {
               )}
             </div>
             <div className="w-px h-8 bg-border self-center" />
-            <Popover>
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className={`w-[260px] h-9 justify-start text-left font-normal ${!filterDates.from && !filterDates.to ? "text-text-muted" : "text-text-primary"}`}
+                  aria-label="Abrir calendario"
+                  className={`h-9 justify-start text-left font-normal ${!filterDates.from && !filterDates.to ? "text-text-muted" : "text-text-primary"}`}
                 >
-                  {filterDates.from && filterDates.to
-                    ? `${format(new Date(filterDates.from + "T00:00:00"), "dd/MM/yyyy")} - ${format(new Date(filterDates.to + "T00:00:00"), "dd/MM/yyyy")}`
-                    : filterDates.from
-                      ? `${format(new Date(filterDates.from + "T00:00:00"), "dd/MM/yyyy")} - ...`
-                      : "Seleccionar fechas"}
+                  {(() => {
+                    if (filterDates.from && filterDates.to) {
+                      return `${format(filterDates.from, "dd/MM/yyyy")} - ${format(filterDates.to, "dd/MM/yyyy")}`;
+                    }
+                    if (filterDates.from) {
+                      return `${format(filterDates.from, "dd/MM/yyyy")} - ...`;
+                    }
+                    return "Seleccionar fechas";
+                  })()}
                   <CalendarIcon className="ml-2 size-4" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="range"
-                  selected={filterDates.from ? { from: new Date(filterDates.from + "T00:00:00"), to: filterDates.to ? new Date(filterDates.to + "T00:00:00") : undefined } : undefined}
+                  selected={filterDates.from ? { from: filterDates.from, to: filterDates.to } : undefined}
                   onSelect={(range) => {
-                    const fromStr = range?.from ? format(range.from, "yyyy-MM-dd") : undefined;
-                    const toStr = range?.to ? format(range.to, "yyyy-MM-dd") : undefined;
-                    setFilterDates({ from: fromStr, to: toStr });
-                    if (fromStr && toStr) setPage(1);
+                    setFilterDates({ from: range?.from, to: range?.to });
+                    if (range?.from && range?.to && range.from.getTime() !== range.to.getTime()) {
+                      setCalendarOpen(false);
+                      setPage(1);
+                    }
                   }}
                   autoFocus
                 />
+                {(filterDates.from || filterDates.to) && (
+                  <div className="border-t border-border p-2 flex justify-center">
+                    <button
+                      onClick={() => { setFilterDates({}); setPage(1); }}
+                      className="text-xs text-text-muted hover:text-expense transition-colors"
+                    >
+                      Limpiar filtros
+                    </button>
+                  </div>
+                )}
               </PopoverContent>
             </Popover>
-            {(filterDates.from || filterDates.to) && (
-              <button
-                onClick={() => { setFilterDates({}); setPage(1); }}
-                className="text-text-muted hover:text-expense transition-colors p-1"
-                aria-label="Limpiar filtro de fechas"
-              >
-                <X className="size-4" />
-              </button>
-            )}
             {hasActiveFilters() && (
-              <Button variant="ghost" size="sm" onClick={clearFilters}>
-                <X className="size-4 mr-1" /> Limpiar
-              </Button>
+              <div className="w-full">
+                <Button variant="ghost" size="sm" onClick={clearFilters}>
+                  <X className="size-4 mr-1" /> Limpiar
+                </Button>
+              </div>
             )}
           </div>
         </div>
@@ -725,7 +719,7 @@ export default function TransactionsPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value=" ">Sin categoria</SelectItem>
+                          <SelectItem value="__none__">Sin categoria</SelectItem>
                           {categories.map((cat) => (
                             <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                           ))}
@@ -734,7 +728,7 @@ export default function TransactionsPage() {
                     ) : (
                       <span
                         className="cursor-pointer hover:text-primary border-b border-dashed border-transparent hover:border-primary"
-                        onClick={() => startEdit(tx, "categoryId", tx.categoryId ?? " ")}
+                        onClick={() => startEdit(tx, "categoryId", tx.categoryId ?? "__none__")}
                         title="Clic para editar"
                       >
                         {tx.category?.name ?? categories.find((c) => c.id === tx.categoryId)?.name ?? "-"}
