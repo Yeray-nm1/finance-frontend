@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Category } from "@/types";
-import type { CategoryType, CategoryTypeConfig } from "@/types";
+import type { Category, CategoryType, CategoryTypeConfig } from "@/types/categories";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, X, Pencil, Check } from "lucide-react";
@@ -31,11 +30,11 @@ export function CategoryTypeEditCard({
   newCategoryName,
   onNewCategoryNameChange,
   onCancelAddCategory,
-}: CategoryTypeEditCardProps) {
+}: Readonly<CategoryTypeEditCardProps>) {
   const [expandedType, setExpandedType] = useState<string | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
-  const hasValue = allocation && parseFloat(allocation) > 0;
+  const hasValue = allocation && Number.parseFloat(allocation) > 0;
   const isExpanded = expandedType === config.type;
 
   function handleEditCategoryChange(cat: Category, field: string, value: string) {

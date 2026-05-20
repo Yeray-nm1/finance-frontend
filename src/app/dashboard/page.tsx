@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { DashboardResponse } from "@/types";
+import type { DashboardResponse } from "@/types/dashboard";
 import { api } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";
 
@@ -14,9 +14,9 @@ function BalanceRow({
   amount,
   color,
 }: {
-  label: string;
-  amount: number;
-  color: string;
+  readonly label: string;
+  readonly amount: number;
+  readonly color: string;
 }) {
   return (
     <div className="flex justify-between items-center">
@@ -105,9 +105,8 @@ export default function DashboardPage() {
               </h2>
               {balance.vsPreviousMonth !== undefined && (
                 <span
-                  className={`text-xs ${
-                    balance.vsPreviousMonth >= 0 ? "text-income" : "text-expense"
-                  }`}
+                  className={`text-xs ${balance.vsPreviousMonth >= 0 ? "text-income" : "text-expense"
+                    }`}
                 >
                   {formatPercent(balance.vsPreviousMonth)} vs mes anterior
                 </span>
@@ -126,9 +125,8 @@ export default function DashboardPage() {
                     Balance
                   </span>
                   <span
-                    className={`font-semibold text-xl ${
-                      balance.balance >= 0 ? "text-income" : "text-expense"
-                    }`}
+                    className={`font-semibold text-xl ${balance.balance >= 0 ? "text-income" : "text-expense"
+                      }`}
                   >
                     {balance.balance >= 0 ? "+" : ""}
                     {formatCurrency(balance.balance)}
@@ -157,9 +155,8 @@ export default function DashboardPage() {
                     </div>
                     <div className="bg-border rounded-sm overflow-hidden h-1.5">
                       <div
-                        className={`h-full rounded-sm transition-all ${
-                          isOver ? "bg-expense" : "bg-income"
-                        }`}
+                        className={`h-full rounded-sm transition-all ${isOver ? "bg-expense" : "bg-income"
+                          }`}
                         style={{ width: `${Math.min(budget.progress, 100)}%` }}
                       />
                     </div>
@@ -235,13 +232,12 @@ export default function DashboardPage() {
                     </p>
                   </div>
                   <span
-                    className={`text-xs font-medium ml-4 whitespace-nowrap ${
-                      tx.type === "income"
+                    className={`text-xs font-medium ml-4 whitespace-nowrap ${tx.type === "income"
                         ? "text-income"
                         : tx.type === "expense"
-                        ? "text-expense"
-                        : "text-savings"
-                    }`}
+                          ? "text-expense"
+                          : "text-savings"
+                      }`}
                   >
                     {tx.type === "income" ? "+" : tx.type === "expense" ? "-" : "↔"}{" "}
                     {formatCurrency(Math.abs(tx.amount))}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { Account } from "@/types";
+import type { Account } from "@/types/accounts";
 import { api } from "@/lib/api";
 import {
   Card,

@@ -1,7 +1,8 @@
 "use client";
 
-import type { MonthlyBudget, Category } from "@/types";
-import { CATEGORY_CONFIGS } from "@/types";
+import type { MonthlyBudget } from "@/types/budgets";
+import type { Category } from "@/types/categories";
+import { CATEGORY_CONFIGS } from "@/types/categories";
 import { CategoryTypeViewCard } from "@/components/budgets/CategoryTypeViewCard";
 
 interface BudgetOverviewProps {
@@ -9,7 +10,7 @@ interface BudgetOverviewProps {
   categoriesByType: Record<string, Category[]>;
 }
 
-export function BudgetOverview({ budget, categoriesByType }: BudgetOverviewProps) {
+export function BudgetOverview({ budget, categoriesByType }: Readonly<BudgetOverviewProps>) {
   return (
     <div className="mt-8 space-y-4">
       <h2 className="font-display text-2xl font-light text-gray-800">

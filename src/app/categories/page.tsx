@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { Category } from "@/types";
+import type { Category } from "@/types/categories";
 import { api } from "@/lib/api";
 import {
   Card,

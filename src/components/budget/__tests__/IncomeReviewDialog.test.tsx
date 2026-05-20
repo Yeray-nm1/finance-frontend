@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { IncomeReviewDialog } from '../IncomeReviewDialog';
-import type { IncomeGroup } from '@/types';
+import type { IncomeGroup } from '@/types/budgets';
 
 const mockGroups: IncomeGroup[] = [
   {

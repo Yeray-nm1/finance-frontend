@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import type { Category } from "@/types";
-import type { IncomeGroup } from "@/types";
+import type { Category } from "@/types/categories";
+import type { IncomeGroup } from "@/types/budgets";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

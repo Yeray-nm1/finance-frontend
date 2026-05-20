@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/card";
 import { Plus, Pencil, Trash2, Sparkles } from "lucide-react";
 import { api } from "@/lib/api";
-import type { Subscription, SubscriptionCandidate } from "@/types";
+import type { Subscription, SubscriptionCandidate } from "@/types/subscriptions";
 import { formatCurrency } from "@/lib/format";
 
 const freqLabels: Record<string, string> = {
