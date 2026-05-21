@@ -4,9 +4,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
 import {
   Select,
   SelectContent,
@@ -22,42 +19,20 @@ import {
   DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { format } from "date-fns";
+import { Plus, Upload, X } from "lucide-react";
 import { CsvUploadDialog } from "@/components/CsvUploadDialog";
-import { Plus, Upload, Search, Trash2, ArrowUpDown, ChevronUp, ChevronDown, X, CalendarIcon, Pencil } from "lucide-react";
+import { TransactionsFilters } from "@/components/transactions/TransactionsFilters";
+import { TransactionsTable } from "@/components/transactions/TransactionsTable";
+import { TransactionsPagination } from "@/components/transactions/TransactionsPagination";
+import { NO_CATEGORY_SENTINEL, getSubmitLabel, getAmountColor, getAmountSign, typeLabel } from "@/lib/transactions-utils";
+import { formatCurrency } from "@/lib/format";
 import { api } from "@/lib/api";
 import type { Transaction, UpdateTransactionDTO } from "@/types/transactions";
 import type { Account } from "@/types/accounts";
 import type { Category } from "@/types/categories";
-import { formatCurrency } from "@/lib/format";
 
-function SortIcon({ field, sortBy, sortOrder }: { field: string; sortBy: string; sortOrder: string }) {
-  if (sortBy !== field) return <ArrowUpDown className="size-3 inline ml-1 opacity-40" />;
-  return sortOrder === "asc"
-    ? <ChevronUp className="size-3 inline ml-1" />
-    : <ChevronDown className="size-3 inline ml-1" />;
-}
-
-function SkeletonRow() {
-  return (
-    <TableRow>
-      {Array.from({ length: 6 }).map((_, i) => (
-        <TableCell key={i}>
-          <div className="h-4 bg-gray-200 rounded animate-pulse" />
-        </TableCell>
-      ))}
-    </TableRow>
-  );
-}
-
-function Toast({ message, type, onClose }: { message: string; type: "success" | "error"; onClose: () => void }) {
+function Toast({ message, type, onClose }: Readonly<{ message: string; type: "success" | "error"; onClose: () => void }>) {
   useEffect(() => {
     const timer = setTimeout(onClose, 3000);
     return () => clearTimeout(timer);
@@ -116,7 +91,7 @@ export default function TransactionsPage() {
   const [newAmount, setNewAmount] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newAccountId, setNewAccountId] = useState("");
-  const [newCategoryId, setNewCategoryId] = useState("__none__");
+  const [newCategoryId, setNewCategoryId] = useState(NO_CATEGORY_SENTINEL);
   const [saving, setSaving] = useState(false);
 
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
@@ -127,12 +102,12 @@ export default function TransactionsPage() {
     setToast({ message, type });
   }
 
-  const loadData = useCallback(() => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
-    Promise.all([
-      api.transactions.list(
-        {
+    try {
+      const [txResult, accs, cats] = await Promise.all([
+        api.transactions.list({
           page,
           limit,
           type: filterType || undefined,
@@ -143,19 +118,19 @@ export default function TransactionsPage() {
           dateTo: filterDates.to ? format(filterDates.to, "yyyy-MM-dd") : undefined,
           sortBy,
           sortOrder,
-        },
-      ),
-      api.accounts.list(),
-      api.categories.list(),
-    ])
-      .then(([txResult, accs, cats]) => {
-        setTransactions(txResult.data);
-        setTotal(txResult.total);
-        setAccounts(accs);
-        setCategories(cats);
-      })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+        }),
+        api.accounts.list(),
+        api.categories.list(),
+      ]);
+      setTransactions(txResult.data);
+      setTotal(txResult.total);
+      setAccounts(accs);
+      setCategories(cats);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
   }, [page, limit, filterType, filterCategoryId, filterAccountId, searchQuery, filterDates, sortBy, sortOrder]);
 
   useEffect(() => {
@@ -204,7 +179,7 @@ export default function TransactionsPage() {
     setSavingField(true);
     try {
       const payload: Partial<UpdateTransactionDTO> = {};
-      if (field === "categoryId") payload.categoryId = value === "__none__" ? null : value;
+      if (field === "categoryId") payload.categoryId = value === NO_CATEGORY_SENTINEL ? null : value;
       else if (field === "description") payload.description = value;
 
       const updated = await api.transactions.update(tx.id, payload);
@@ -236,12 +211,12 @@ export default function TransactionsPage() {
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
     try {
       if (editTxId) {
-        const resolvedCategory = newCategoryId === "__none__" ? null : newCategoryId;
+        const resolvedCategory = newCategoryId === NO_CATEGORY_SENTINEL ? null : newCategoryId;
         await api.transactions.update(editTxId, {
           description: newDescription.trim(),
           categoryId: resolvedCategory,
@@ -272,14 +247,14 @@ export default function TransactionsPage() {
           description: newDescription.trim(),
           type: newType,
           accountId: newAccountId || undefined,
-          categoryId: newCategoryId === "__none__" ? undefined : newCategoryId || undefined,
+          categoryId: newCategoryId === NO_CATEGORY_SENTINEL ? undefined : newCategoryId || undefined,
         });
         setNewDescription("");
         setNewAmount("");
         setNewDate(new Date().toISOString().split("T")[0]);
         setNewAccountId("");
         setNewType("expense");
-        setNewCategoryId("__none__");
+        setNewCategoryId(NO_CATEGORY_SENTINEL);
         setDialogOpen(false);
         loadData();
       }
@@ -290,8 +265,8 @@ export default function TransactionsPage() {
     }
   }
 
-  function startEdit(tx: Transaction, field: string, currentValue: string) {
-    setEditingId(tx.id);
+  function startEdit(txId: string, field: string, currentValue: string) {
+    setEditingId(txId);
     setEditingField(field);
     setEditValue(currentValue);
   }
@@ -302,12 +277,6 @@ export default function TransactionsPage() {
     setEditValue("");
   }
 
-  const typeLabel: Record<string, string> = {
-    income: "Ingreso",
-    expense: "Gasto",
-    transfer: "Transferencia",
-  };
-
   function handleOpenEdit(tx: Transaction) {
     cancelEdit();
     setNewDate(tx.date);
@@ -315,7 +284,7 @@ export default function TransactionsPage() {
     setNewAmount(String(tx.amount));
     setNewDescription(tx.description);
     setNewAccountId(tx.accountId ?? "");
-    setNewCategoryId(tx.categoryId ?? "__none__");
+    setNewCategoryId(tx.categoryId ?? NO_CATEGORY_SENTINEL);
     setEditTxId(tx.id);
     setDialogOpen(true);
   }
@@ -334,18 +303,26 @@ export default function TransactionsPage() {
             </div>
           </div>
           <div className="bg-white border border-border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
+            <table className="w-full">
+              <thead>
+                <tr>
                   {["Fecha", "Descripcion", "Categoria", "Cuenta", "Importe", ""].map((h) => (
-                    <TableHead key={h}>{h}</TableHead>
+                    <th key={h} className="h-10 px-4 text-left text-sm font-medium text-text-muted">{h}</th>
                   ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)}
-              </TableBody>
-            </Table>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <tr key={`skeleton-row-${i}`}>
+                    {Array.from({ length: 6 }).map((_, j) => (
+                      <td key={`skeleton-cell-${j}`} className="px-4 py-1.5">
+                        <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </main>
@@ -395,7 +372,7 @@ export default function TransactionsPage() {
                   setNewAmount("");
                   setNewDescription("");
                   setNewAccountId("");
-                  setNewCategoryId("__none__");
+                  setNewCategoryId(NO_CATEGORY_SENTINEL);
                   setDialogOpen(false);
                 }
               }}
@@ -426,7 +403,7 @@ export default function TransactionsPage() {
                   <div className="space-y-2">
                     <Label htmlFor="tx-type">Tipo</Label>
                     {editTxId ? (
-                      <p className="text-sm text-text-primary py-1.5">{typeLabel[newType] ?? newType}</p>
+                      <p className="text-sm text-text-primary py-1.5">{typeLabel(newType)}</p>
                     ) : (
                       <Select defaultValue="expense" value={newType} onValueChange={(v) => setNewType(v as "income" | "expense" | "transfer")}>
                         <SelectTrigger id="tx-type"><SelectValue /></SelectTrigger>
@@ -441,8 +418,8 @@ export default function TransactionsPage() {
                   <div className="space-y-2">
                     <Label htmlFor="tx-amount">Importe</Label>
                     {editTxId ? (
-                      <p className={`text-sm py-1.5 ${newType === "income" ? "text-income" : newType === "expense" ? "text-expense" : "text-savings"}`}>
-                        {newType === "income" ? "+" : newType === "expense" ? "-" : "↔"}{" "}
+                      <p className={`text-sm py-1.5 ${getAmountColor(newType)}`}>
+                        {getAmountSign(newType)}{" "}
                         {formatCurrency(Math.abs(Number(newAmount)))}
                       </p>
                     ) : (
@@ -470,7 +447,7 @@ export default function TransactionsPage() {
                       <Select value={newCategoryId} onValueChange={setNewCategoryId}>
                         <SelectTrigger id="tx-category"><SelectValue placeholder="Opcional" /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="__none__">Sin categoria</SelectItem>
+                          <SelectItem value={NO_CATEGORY_SENTINEL}>Sin categoria</SelectItem>
                           {categories.map((cat) => (
                             <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                           ))}
@@ -479,9 +456,7 @@ export default function TransactionsPage() {
                     </div>
                   </div>
                   <Button type="submit" className="w-full" disabled={saving}>
-                    {saving
-                      ? (editTxId ? "Guardando..." : "Creando...")
-                      : (editTxId ? "Guardar cambios" : "Crear")}
+                    {getSubmitLabel(saving, editTxId !== null)}
                   </Button>
                 </form>
               </DialogContent>
@@ -489,338 +464,56 @@ export default function TransactionsPage() {
           </div>
         </div>
 
-        <div className="bg-white border border-border rounded-lg mb-4 p-4">
-          <div className="flex flex-wrap gap-3 items-end">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-text-muted" />
-              <Input
-                placeholder="Buscar por descripcion..."
-                className="pl-9"
-                value={filterSearch}
-                onChange={(e) => setFilterSearch(e.target.value)}
-              />
-              {filterSearch && (
-                <button
-                  onClick={() => setFilterSearch("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-expense"
-                  aria-label="Limpiar filtro de busqueda"
-                >
-                  <X className="size-4" />
-                </button>
-              )}
-            </div>
-            <div className="relative w-[140px]">
-              <Select value={filterType} onValueChange={(v) => { setFilterType(v as "" | "income" | "expense" | "transfer"); setPage(1); }}>
-                <SelectTrigger className={filterType ? "pr-8" : ""}><SelectValue placeholder="Tipo" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="income">Ingreso</SelectItem>
-                  <SelectItem value="expense">Gasto</SelectItem>
-                  <SelectItem value="transfer">Transferencia</SelectItem>
-                </SelectContent>
-              </Select>
-              {filterType && (
-                <button
-                  onClick={() => { setFilterType(""); setPage(1); }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-expense z-10"
-                  aria-label="Limpiar filtro de tipo"
-                >
-                  <X className="size-3.5" />
-                </button>
-              )}
-            </div>
-            <div className="relative w-[160px]">
-              <Select value={filterCategoryId} onValueChange={(v) => { setFilterCategoryId(v); setPage(1); }}>
-                <SelectTrigger className={filterCategoryId ? "pr-8" : ""}><SelectValue placeholder="Categoria" /></SelectTrigger>
-                <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {filterCategoryId && (
-                <button
-                  onClick={() => { setFilterCategoryId(""); setPage(1); }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-expense z-10"
-                  aria-label="Limpiar filtro de categoria"
-                >
-                  <X className="size-3.5" />
-                </button>
-              )}
-            </div>
-            <div className="relative w-[160px]">
-              <Select value={filterAccountId} onValueChange={(v) => { setFilterAccountId(v); setPage(1); }}>
-                <SelectTrigger className={filterAccountId ? "pr-8" : ""}><SelectValue placeholder="Cuenta" /></SelectTrigger>
-                <SelectContent>
-                  {accounts.map((acc) => (
-                    <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {filterAccountId && (
-                <button
-                  onClick={() => { setFilterAccountId(""); setPage(1); }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-expense z-10"
-                  aria-label="Limpiar filtro de cuenta"
-                >
-                  <X className="size-3.5" />
-                </button>
-              )}
-            </div>
-            <div className="w-px h-8 bg-border self-center" />
-            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  aria-label="Abrir calendario"
-                  className={`h-9 justify-start text-left font-normal ${!filterDates.from && !filterDates.to ? "text-text-muted" : "text-text-primary"}`}
-                >
-                  {(() => {
-                    if (filterDates.from && filterDates.to) {
-                      return `${format(filterDates.from, "dd/MM/yyyy")} - ${format(filterDates.to, "dd/MM/yyyy")}`;
-                    }
-                    if (filterDates.from) {
-                      return `${format(filterDates.from, "dd/MM/yyyy")} - ...`;
-                    }
-                    return "Seleccionar fechas";
-                  })()}
-                  <CalendarIcon className="ml-2 size-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="range"
-                  selected={filterDates.from ? { from: filterDates.from, to: filterDates.to } : undefined}
-                  onSelect={(range) => {
-                    setFilterDates({ from: range?.from, to: range?.to });
-                    if (range?.from && range?.to && range.from.getTime() !== range.to.getTime()) {
-                      setCalendarOpen(false);
-                      setPage(1);
-                    }
-                  }}
-                  autoFocus
-                />
-                {(filterDates.from || filterDates.to) && (
-                  <div className="border-t border-border p-2 flex justify-center">
-                    <button
-                      onClick={() => { setFilterDates({}); setPage(1); }}
-                      className="text-xs text-text-muted hover:text-expense transition-colors"
-                    >
-                      Limpiar filtros
-                    </button>
-                  </div>
-                )}
-              </PopoverContent>
-            </Popover>
-            {hasActiveFilters() && (
-              <div className="w-full">
-                <Button variant="ghost" size="sm" onClick={clearFilters}>
-                  <X className="size-4 mr-1" /> Limpiar
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
+        <TransactionsFilters
+          filterType={filterType}
+          filterCategoryId={filterCategoryId}
+          filterAccountId={filterAccountId}
+          filterSearch={filterSearch}
+          filterDates={filterDates}
+          accounts={accounts}
+          categories={categories}
+          hasActiveFilters={!!hasActiveFilters()}
+          calendarOpen={calendarOpen}
+          onFilterTypeChange={(v) => { setFilterType(v); setPage(1); }}
+          onFilterCategoryIdChange={(v) => { setFilterCategoryId(v); setPage(1); }}
+          onFilterAccountIdChange={(v) => { setFilterAccountId(v); setPage(1); }}
+          onFilterSearchChange={setFilterSearch}
+          onFilterDatesChange={(dates) => { setFilterDates(dates); }}
+          onCalendarOpenChange={setCalendarOpen}
+          onClearFilters={clearFilters}
+        />
 
-        <div className="bg-white border border-border rounded-lg overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead
-                  className="cursor-pointer select-none"
-                  onClick={() => handleSort("date")}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleSort("date"); } }}
-                  tabIndex={0}
-                  role="button"
-                  aria-sort={sortBy === "date" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}
-                >
-                  Fecha <SortIcon field="date" sortBy={sortBy} sortOrder={sortOrder} />
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer select-none"
-                  onClick={() => handleSort("description")}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleSort("description"); } }}
-                  tabIndex={0}
-                  role="button"
-                  aria-sort={sortBy === "description" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}
-                >
-                  Descripcion <SortIcon field="description" sortBy={sortBy} sortOrder={sortOrder} />
-                </TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead>Cuenta</TableHead>
-                <TableHead
-                  className="cursor-pointer select-none text-right"
-                  onClick={() => handleSort("amount")}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleSort("amount"); } }}
-                  tabIndex={0}
-                  role="button"
-                  aria-sort={sortBy === "amount" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}
-                >
-                  Importe <SortIcon field="amount" sortBy={sortBy} sortOrder={sortOrder} />
-                </TableHead>
-                <TableHead className="w-10" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading && (
-                Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} />)
-              )}
-              {!loading && transactions.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12 text-text-muted">
-                    {hasActiveFilters()
-                      ? "Sin resultados. Prueba con otros filtros."
-                      : "No hay transacciones. Anade tu primera transaccion."}
-                  </TableCell>
-                </TableRow>
-              )}
-              {!loading && transactions.map((tx) => (
-                <TableRow key={tx.id} className={`${savingField && editingId === tx.id ? "opacity-60" : ""} border-gray-100`}>
-                  <TableCell className="py-1.5 px-4 text-sm whitespace-nowrap">
-                    {new Date(tx.date).toLocaleDateString("es-ES")}
-                  </TableCell>
+        <TransactionsTable
+          transactions={transactions}
+          categories={categories}
+          accounts={accounts}
+          loading={loading}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          editingId={editingId}
+          editingField={editingField}
+          editValue={editValue}
+          savingField={savingField}
+          hasActiveFilters={!!hasActiveFilters()}
+          onSort={handleSort}
+          onStartEdit={startEdit}
+          onEditValueChange={setEditValue}
+          onCancelEdit={cancelEdit}
+          onInlineEdit={handleInlineEdit}
+          onOpenEdit={handleOpenEdit}
+          onDeleteClick={(id) => setDeleteConfirmId(id)}
+        />
 
-                  <TableCell className="py-1.5 px-4 font-medium max-w-[200px]">
-                    {editingId === tx.id && editingField === "description" ? (
-                      <Input
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Escape") cancelEdit();
-                        }}
-                        onBlur={() => handleInlineEdit(tx, "description", editValue)}
-                        autoFocus
-                        className="h-8 text-sm"
-                        disabled={savingField}
-                      />
-                    ) : (
-                      <span
-                        className="cursor-pointer hover:text-primary border-b border-dashed border-transparent hover:border-primary"
-                        onClick={() => startEdit(tx, "description", tx.description)}
-                        title="Clic para editar"
-                      >
-                        {tx.description}
-                      </span>
-                    )}
-                  </TableCell>
-
-                  <TableCell className="py-1.5 px-4 text-text-muted">
-                    {editingId === tx.id && editingField === "categoryId" ? (
-                      <Select
-                        value={editValue}
-                        onValueChange={(v) => {
-                          handleInlineEdit(tx, "categoryId", v);
-                        }}
-                        onOpenChange={(open) => {
-                          if (!open && editingId === tx.id && editingField === "categoryId") cancelEdit();
-                        }}
-                        disabled={savingField}
-                      >
-                        <SelectTrigger className="h-8 text-sm" autoFocus>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__none__">Sin categoria</SelectItem>
-                          {categories.map((cat) => (
-                            <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <span
-                        className="cursor-pointer hover:text-primary border-b border-dashed border-transparent hover:border-primary"
-                        onClick={() => startEdit(tx, "categoryId", tx.categoryId ?? "__none__")}
-                        title="Clic para editar"
-                      >
-                        {tx.category?.name ?? categories.find((c) => c.id === tx.categoryId)?.name ?? "-"}
-                      </span>
-                    )}
-                  </TableCell>
-
-                  <TableCell className="py-1.5 px-4 text-text-muted">
-                    {tx.account?.name ?? accounts.find((a) => a.id === tx.accountId)?.name ?? "-"}
-                  </TableCell>
-
-                  <TableCell
-                    className={`py-1.5 px-4 text-right font-medium whitespace-nowrap ${
-                      tx.type === "income"
-                        ? "text-income"
-                        : tx.type === "expense"
-                          ? "text-expense"
-                          : "text-savings"
-                    }`}
-                  >
-                    {tx.type === "income" ? "+" : tx.type === "expense" ? "-" : "↔"}{" "}
-                    {formatCurrency(Math.abs(tx.amount))}
-                  </TableCell>
-
-                  <TableCell className="py-1.5 px-4 flex gap-1">
-                    <button
-                      onClick={() => handleOpenEdit(tx)}
-                      className="text-text-muted hover:text-primary transition-colors p-1"
-                      title="Editar"
-                    >
-                      <Pencil className="size-4" />
-                    </button>
-                    <button
-                      onClick={() => setDeleteConfirmId(tx.id)}
-                      className="text-text-muted hover:text-expense transition-colors p-1"
-                      title="Eliminar"
-                    >
-                      <Trash2 className="size-4" />
-                    </button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-
-        {total > 0 && (
-          <div className="flex items-center justify-between mt-4 text-sm text-text-muted">
-            <span>
-              Mostrando {from}-{to} de {total} transacciones
-            </span>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1">
-                <span className="text-xs">Por pagina:</span>
-                <Select
-                  value={String(limit)}
-                  onValueChange={(v) => { setLimit(Number(v)); setPage(1); }}
-                >
-                  <SelectTrigger className="h-8 w-20">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="20">20</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                    <SelectItem value="100">100</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                >
-                  Anterior
-                </Button>
-                <span className="px-2 text-xs">
-                  {page} / {totalPages()}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages()}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Siguiente
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
+        <TransactionsPagination
+          page={page}
+          total={total}
+          limit={limit}
+          totalPages={totalPages()}
+          from={from}
+          to={to}
+          onPageChange={(p) => setPage(p)}
+          onLimitChange={(l) => { setLimit(l); setPage(1); }}
+        />
       </div>
 
       <Dialog open={deleteConfirmId !== null} onOpenChange={(open) => { if (!open) setDeleteConfirmId(null); }}>
