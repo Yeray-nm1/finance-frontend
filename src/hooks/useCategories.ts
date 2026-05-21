@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { api } from "@/lib/api";
-import type { Category, CategoryType } from "@/types";
+import type { Category, CategoryType } from "@/types/categories";
 
 export function useCategories() {
   const [categories, setCategories] = useState<Category[]>([]);

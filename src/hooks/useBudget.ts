@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { api } from "@/lib/api";
-import type { MonthlyBudget } from "@/types";
+import type { MonthlyBudget } from "@/types/budgets";
 
 export function useBudget(month: number, year: number) {
   const [budget, setBudget] = useState<MonthlyBudget | null>(null);

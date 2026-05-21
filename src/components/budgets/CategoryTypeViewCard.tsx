@@ -1,6 +1,6 @@
 "use client";
 
-import type { Category, CategoryTypeConfig } from "@/types";
+import type { Category, CategoryTypeConfig } from "@/types/categories";
 import { Card } from "@/components/ui/card";
 
 interface CategoryTypeViewCardProps {
@@ -15,7 +15,7 @@ export function CategoryTypeViewCard({
   config,
   categories,
   totalIncome,
-}: CategoryTypeViewCardProps) {
+}: Readonly<CategoryTypeViewCardProps>) {
   const amount = (allocation.percentage / 100) * totalIncome;
 
   return (

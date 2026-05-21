@@ -1,12 +1,8 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import {
-  CATEGORY_CONFIGS,
-  type CategoryType,
-  type MonthlyBudget,
-  type Category,
-} from "@/types";
+import { CATEGORY_CONFIGS, type CategoryType, type Category } from "@/types/categories";
+import type { MonthlyBudget } from "@/types/budgets";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

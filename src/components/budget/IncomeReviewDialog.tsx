@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronDown, ChevronRight, Search } from "lucide-react";
 import { formatCurrency } from "@/lib/budget-constants";
-import type { IncomeGroup } from "@/types";
+import type { IncomeGroup } from "@/types/budgets";
 import { MONTH_NAMES } from "@/types";
 
 interface IncomeReviewDialogProps {

@@ -1,4 +1,4 @@
-import type { Category } from "@/types";
+import type { Category } from "@/types/categories";
 
 export interface BudgetDetailsProps {
   readonly totalIncome: number;
