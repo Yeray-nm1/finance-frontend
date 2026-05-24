@@ -3,15 +3,14 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 beforeAll(() => {
-  global.ResizeObserver = class ResizeObserver {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() { /* noop */ }
+    unobserve() { /* noop */ }
+    disconnect() { /* noop */ }
   };
 });
 
-let createDialogOpen = false;
-let createDialogOnCreated = vi.fn();
+let createDialogOnCreated: () => void = () => {};
 const mockCreateDialog = vi.fn();
 
 vi.mock('@/lib/api', () => ({
@@ -28,7 +27,6 @@ vi.mock('@/lib/api', () => ({
 
 vi.mock('../components/CreateSubscriptionDialog', () => ({
   CreateSubscriptionDialog: vi.fn((props: { open: boolean; onOpenChange: (open: boolean) => void; onCreated: () => void }) => {
-    createDialogOpen = props.open;
     createDialogOnCreated = props.onCreated;
     mockCreateDialog(props);
     return props.open ? <div data-testid="create-subscription-dialog">CreateSubscriptionDialog Mock</div> : null;
@@ -48,7 +46,6 @@ import SubscriptionsPage from '../page';
 describe('SubscriptionsPage - CreateSubscriptionDialog integration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    createDialogOpen = false;
   });
 
   it('B1: clicking "Anadir" opens CreateSubscriptionDialog', async () => {

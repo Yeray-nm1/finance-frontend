@@ -4,10 +4,10 @@ import userEvent from '@testing-library/user-event';
 import { CreateSubscriptionDialog } from '../CreateSubscriptionDialog';
 
 beforeAll(() => {
-  global.ResizeObserver = class ResizeObserver {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() { /* noop */ }
+    unobserve() { /* noop */ }
+    disconnect() { /* noop */ }
   };
 });
 
@@ -27,14 +27,14 @@ const mockCreate = api.subscriptions.create as ReturnType<typeof vi.fn>;
 const mockConfirmMatch = api.subscriptions.confirmMatch as ReturnType<typeof vi.fn>;
 
 function mockTransactionSearch(results: Array<{ id: string; description: string; amount: number; date: string }>) {
-  (global as any).fetch = vi.fn().mockResolvedValue({
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
     ok: true,
     json: () => Promise.resolve({ data: results, total: results.length }),
-  });
+  }));
 }
 
 function mockTransactionSearchError() {
-  (global as any).fetch = vi.fn().mockRejectedValue(new Error('Network error'));
+  vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')));
 }
 
 describe('CreateSubscriptionDialog - Step 1', () => {

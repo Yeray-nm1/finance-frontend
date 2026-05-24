@@ -29,7 +29,7 @@ export default function SubscriptionsPage() {
       .finally(() => setLoading(false));
   }
 
-  useEffect(() => { loadData(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { loadData(); }, []);
 
   async function handleDelete() {
     if (!deleteSub) return;
