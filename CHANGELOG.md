@@ -1,3 +1,9 @@
+## [0.3.0] - 2026-05-24
+
+- bd7e7e3 Merge pull request #13 from Yeray-nm1/feature/ynm-10-sistema-de-suscripciones-v2--ui-y-componentes
+- f079a91 fixed linter failures
+- 5ac054b feat: subscription management v2 - create/edit/autodetect with refactored data structures
+
 ## [0.2.0] - 2026-05-22
 
 - 35040bb Add release workflow (version-orchestrator caller)
