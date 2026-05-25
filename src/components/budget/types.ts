@@ -11,8 +11,10 @@ export interface BudgetDetailsProps {
   readonly onCalculateIncome?: () => void;
   readonly calculatingIncome?: boolean;
   readonly onSave?: () => void;
+  readonly onCancel?: () => void;
   readonly saving?: boolean;
   readonly canSave?: boolean;
+  readonly readOnly?: boolean;
 }
 
 export interface BudgetCategoryDetailsProps {
@@ -25,4 +27,5 @@ export interface BudgetCategoryDetailsProps {
   readonly onOpenEditCategory: (cat: Category) => void;
   readonly onDeleteCategory: (cat: Category) => void;
   readonly onAddCategory: () => void;
+  readonly readOnly?: boolean;
 }

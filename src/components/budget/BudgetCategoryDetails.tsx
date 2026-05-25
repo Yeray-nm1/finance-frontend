@@ -16,6 +16,7 @@ export function BudgetCategoryDetails({
   onOpenEditCategory,
   onDeleteCategory,
   onAddCategory,
+  readOnly = false,
 }: Readonly<BudgetCategoryDetailsProps>) {
   const categoriesByType = categories.reduce((acc, cat) => {
     if (!acc[cat.type]) acc[cat.type] = [];
@@ -29,14 +30,14 @@ export function BudgetCategoryDetails({
 
   return (
     <Card className="h-full">
-      <CardContent className="p-5">
+      <CardContent className="p-5 h-full flex flex-col">
         {!selectedType ? (
           <p className="text-sm text-text-muted text-center py-12">
             Selecciona un tipo en la columna izquierda
           </p>
         ) : (
-          <div className="space-y-5">
-            <div className="grid gap-x-3 gap-y-4" style={{ gridTemplateColumns: "40px 1fr" }}>
+          <div className="flex flex-col flex-1 min-h-0 gap-5">
+            <div className="shrink-0 grid gap-x-3 gap-y-4" style={{ gridTemplateColumns: "40px 1fr" }}>
               <div className={`w-10 h-10 rounded-lg ${typeIcons[selectedType].bg} ${typeIcons[selectedType].color} flex items-center justify-center shrink-0 self-center`}>
                 {typeIcons[selectedType].icon}
               </div>
@@ -49,56 +50,81 @@ export function BudgetCategoryDetails({
                 </span>
               </div>
               <div className="col-span-2">
-                <Slider
-                  value={[selectedAllocation?.percentage ?? 0]}
-                  onValueChange={([v]) => onPercentageChange(selectedType, v)}
-                  max={100}
-                  step={1}
-                  className="w-full"
-                />
+                {readOnly ? (
+                  <hr className="border-t border-border" />
+                ) : (
+                  <Slider
+                    value={[selectedAllocation?.percentage ?? 0]}
+                    onValueChange={([v]) => onPercentageChange(selectedType, v)}
+                    max={100}
+                    step={1}
+                    className="w-full"
+                  />
+                )}
               </div>
             </div>
 
             {saveError && (
-              <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">{saveError}</p>
+              <p className="shrink-0 text-sm text-red-600 bg-red-50 p-3 rounded-lg">{saveError}</p>
             )}
 
-            <div className="space-y-2">
-              {currentCategories.map((cat) => (
-                <div
-                  key={cat.id}
-                  className="flex items-center justify-between p-3 rounded-lg border border-border"
-                >
-                  <span className="text-sm font-medium text-text-primary">
-                    {cat.name}
-                  </span>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onOpenEditCategory(cat)}
-                    >
-                      <Pencil className="size-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onDeleteCategory(cat)}
-                    >
-                      <Trash2 className="size-4 text-expense" />
-                    </Button>
-                  </div>
+            {currentCategories.length === 0 ? (
+              <p className="shrink-0 text-sm text-text-muted text-center py-4">
+                Sin categorías en este tipo de gasto
+              </p>
+            ) : (
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                <div className="space-y-2">
+                  {currentCategories.map((cat) =>
+                    readOnly ? (
+                      <div
+                        key={cat.id}
+                        className="py-2.5 px-3 rounded-lg bg-gray-50"
+                      >
+                        <span className="text-sm text-text-primary">
+                          {cat.name}
+                        </span>
+                      </div>
+                    ) : (
+                      <div
+                        key={cat.id}
+                        className="flex items-center justify-between p-3 rounded-lg border border-border"
+                      >
+                        <span className="text-sm font-medium text-text-primary">
+                          {cat.name}
+                        </span>
+                        <div className="flex gap-1 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => onOpenEditCategory(cat)}
+                          >
+                            <Pencil className="size-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => onDeleteCategory(cat)}
+                          >
+                            <Trash2 className="size-4 text-expense" />
+                          </Button>
+                        </div>
+                      </div>
+                    )
+                  )}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
 
-            <Button
-              variant="outline"
-              className="w-full gap-2"
-              onClick={onAddCategory}
-            >
-              <Plus className="size-4" /> Añadir categoría
-            </Button>
+            {!readOnly && (
+              <Button
+                variant="outline"
+                className="w-full gap-2 shrink-0"
+                onClick={onAddCategory}
+              >
+                <Plus className="size-4" /> Añadir categoría
+              </Button>
+            )}
           </div>
         )}
       </CardContent>

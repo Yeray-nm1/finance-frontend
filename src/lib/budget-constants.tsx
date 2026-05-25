@@ -22,3 +22,9 @@ export const typeBg: Record<string, string> = {
   other: "bg-sky-100",
 };
 
+export function getBudgetBadge(editingBudget: boolean, budget: unknown) {
+  if (editingBudget) return { text: "Editando", className: "bg-amber-100 text-amber-700" };
+  if (budget) return { text: "En uso", className: "bg-green-100 text-green-700" };
+  return { text: "Sin presupuesto", className: "bg-gray-100 text-gray-500" };
+}
+

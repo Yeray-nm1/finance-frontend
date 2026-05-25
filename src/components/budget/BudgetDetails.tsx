@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calculator, Save } from "lucide-react";
+import { Calculator, Save, X } from "lucide-react";
 import { typeLabels, typeIcons, formatCurrency } from "@/lib/budget-constants";
 
 export function BudgetDetails({
@@ -17,8 +17,10 @@ export function BudgetDetails({
   onCalculateIncome,
   calculatingIncome,
   onSave,
+  onCancel,
   saving,
   canSave,
+  readOnly = false,
 }: Readonly<BudgetDetailsProps>) {
   return (
     <Card>
@@ -41,18 +43,21 @@ export function BudgetDetails({
               value={totalIncome || ""}
               onChange={(e) => onTotalIncomeChange(Number(e.target.value))}
               className="pl-7"
+              disabled={readOnly}
             />
           </div>
         </div>
 
-        <Button
-          className="w-full gap-2 bg-primary text-white hover:bg-primary-hover"
-          onClick={onCalculateIncome}
-          disabled={!onCalculateIncome || calculatingIncome}
-        >
-          <Calculator size={14} />
-          {calculatingIncome ? "Calculando..." : "Calcular ingresos a partir del mes anterior"}
-        </Button>
+        {!readOnly && (
+          <Button
+            className="w-full gap-2 bg-primary text-white hover:bg-primary-hover"
+            onClick={onCalculateIncome}
+            disabled={!onCalculateIncome || calculatingIncome}
+          >
+            <Calculator size={14} />
+            {calculatingIncome ? "Calculando..." : "Calcular ingresos a partir del mes anterior"}
+          </Button>
+        )}
 
         <div className="border-t border-border" />
 
@@ -96,14 +101,27 @@ export function BudgetDetails({
             : `Los porcentajes suman ${totalAllocated.toFixed(1)}% — deben sumar 100%`}
         </div>
 
-        <Button
-          className="w-full gap-2 bg-primary text-white hover:bg-primary-hover disabled:opacity-50"
-          onClick={onSave}
-          disabled={!onSave || !canSave || saving}
-        >
-          <Save size={14} />
-          {saving ? "Guardando..." : "Guardar presupuesto"}
-        </Button>
+        {!readOnly ? (
+          <div className="flex gap-2">
+            <Button
+              className="flex-1 gap-2 bg-primary text-white hover:bg-primary-hover disabled:opacity-50"
+              onClick={onSave}
+              disabled={!onSave || !canSave || saving}
+            >
+              <Save size={14} />
+              {saving ? "Guardando..." : "Guardar presupuesto"}
+            </Button>
+            {onCancel && (
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={onCancel}
+              >
+                <X size={14} /> Cancelar
+              </Button>
+            )}
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );
