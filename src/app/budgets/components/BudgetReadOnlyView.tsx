@@ -5,18 +5,13 @@ import type { Category } from "@/types/categories";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronDown } from "lucide-react";
 import { typeLabels, typeIcons, formatCurrency } from "@/lib/budget-constants";
-
-interface BudgetReadOnlyViewProps {
-  totalIncome: number;
-  typeAllocations: readonly { readonly type: string; readonly percentage: number }[];
-  categories: readonly Category[];
-}
+import type { BudgetReadOnlyViewProps } from "@/types/budgets";
 
 export function BudgetReadOnlyView({
   totalIncome,
   typeAllocations,
   categories,
-}: BudgetReadOnlyViewProps) {
+}: Readonly<BudgetReadOnlyViewProps>) {
   const totalAllocated = typeAllocations.reduce((s, a) => s + a.percentage, 0);
   const isValidTotal = Math.abs(totalAllocated - 100) < 0.15;
 

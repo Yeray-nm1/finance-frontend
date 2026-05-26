@@ -22,6 +22,18 @@ export const typeBg: Record<string, string> = {
   other: "bg-sky-100",
 };
 
+export const DEFAULT_ALLOCATIONS = [
+  { type: "needs", percentage: 50 },
+  { type: "leisure", percentage: 20 },
+  { type: "savings", percentage: 15 },
+  { type: "other", percentage: 15 },
+];
+
+export const MONTH_NAMES = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+];
+
 export function getBudgetBadge(editingBudget: boolean, budget: unknown) {
   if (editingBudget) return { text: "Editando", className: "bg-amber-100 text-amber-700" };
   if (budget) return { text: "En uso", className: "bg-green-100 text-green-700" };

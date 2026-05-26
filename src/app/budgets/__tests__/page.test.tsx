@@ -3,12 +3,11 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 beforeAll(() => {
-  global.ResizeObserver = class ResizeObserver {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() { void 0; }
+    unobserve() { void 0; }
+    disconnect() { void 0; }
   };
-
 });
 
 vi.mock('@/lib/api', () => ({
@@ -33,7 +32,6 @@ vi.mock('@/hooks/useBudget', () => ({
     saving: false,
     setBudget: vi.fn(),
     saveBudget: vi.fn(),
-    loadBudget: vi.fn(),
     deleteBudget: vi.fn(),
     calculateIncome: vi.fn(),
   })),
@@ -48,14 +46,14 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
 
-vi.mock('@/components/budget/BudgetDetails', () => ({
+vi.mock('@/app/budgets/components/BudgetDetails', () => ({
   BudgetDetails: ({ onCalculateIncome }: { onCalculateIncome?: () => void }) =>
     <div data-testid="budget-details">
       <button onClick={onCalculateIncome}>Calcular ingresos</button>
     </div>,
 }));
 
-vi.mock('@/components/budget/BudgetCategoryDetails', () => ({
+vi.mock('@/app/budgets/components/BudgetCategoryDetails', () => ({
   BudgetCategoryDetails: ({
     categories,
     onOpenEditCategory,
@@ -80,11 +78,11 @@ vi.mock('@/components/budget/BudgetCategoryDetails', () => ({
   ),
 }));
 
-vi.mock('@/components/budget/BudgetReadOnlyView', () => ({
+vi.mock('@/app/budgets/components/BudgetReadOnlyView', () => ({
   BudgetReadOnlyView: () => <div data-testid="budget-readonly" />,
 }));
 
-vi.mock('@/components/budget/IncomeReviewDialog', () => ({
+vi.mock('@/app/budgets/components/IncomeReviewDialog', () => ({
   IncomeReviewDialog: () => <div data-testid="income-review-dialog" />,
 }));
 
