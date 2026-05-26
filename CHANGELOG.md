@@ -1,3 +1,9 @@
+## [0.3.1] - 2026-05-26
+
+- 4af8a90 Merge pull request #15 from Yeray-nm1/feature/ynm-14-budget-month-navigation--viewedit-mode
+- 8293586 refactor: reorganize budget components, inline props, extract DEFAULT_ALLOCATIONS
+- fa69cfb feat: budget read-only view, page states, month navigation, category collapsible
+
 ## [0.3.0] - 2026-05-24
 
 - bd7e7e3 Merge pull request #13 from Yeray-nm1/feature/ynm-10-sistema-de-suscripciones-v2--ui-y-componentes
