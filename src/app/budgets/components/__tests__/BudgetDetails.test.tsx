@@ -59,3 +59,4 @@ describe('BudgetDetails calculate income button', () => {
     expect(onCalculateIncome).toHaveBeenCalledOnce();
   });
 });
+

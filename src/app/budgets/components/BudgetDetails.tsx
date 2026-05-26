@@ -1,9 +1,9 @@
-import type { BudgetDetailsProps } from "./types";
+import type { BudgetDetailsProps } from "@/types/budgets";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calculator, Save } from "lucide-react";
+import { Calculator, Save, X } from "lucide-react";
 import { typeLabels, typeIcons, formatCurrency } from "@/lib/budget-constants";
 
 export function BudgetDetails({
@@ -17,6 +17,7 @@ export function BudgetDetails({
   onCalculateIncome,
   calculatingIncome,
   onSave,
+  onCancel,
   saving,
   canSave,
 }: Readonly<BudgetDetailsProps>) {
@@ -41,6 +42,7 @@ export function BudgetDetails({
               value={totalIncome || ""}
               onChange={(e) => onTotalIncomeChange(Number(e.target.value))}
               className="pl-7"
+              disabled={false}
             />
           </div>
         </div>
@@ -96,14 +98,25 @@ export function BudgetDetails({
             : `Los porcentajes suman ${totalAllocated.toFixed(1)}% — deben sumar 100%`}
         </div>
 
-        <Button
-          className="w-full gap-2 bg-primary text-white hover:bg-primary-hover disabled:opacity-50"
-          onClick={onSave}
-          disabled={!onSave || !canSave || saving}
-        >
-          <Save size={14} />
-          {saving ? "Guardando..." : "Guardar presupuesto"}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            className="flex-1 gap-2 bg-primary text-white hover:bg-primary-hover disabled:opacity-50"
+            onClick={onSave}
+            disabled={!onSave || !canSave || saving}
+          >
+            <Save size={14} />
+            {saving ? "Guardando..." : "Guardar presupuesto"}
+          </Button>
+          {onCancel && (
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={onCancel}
+            >
+              <X size={14} /> Cancelar
+            </Button>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

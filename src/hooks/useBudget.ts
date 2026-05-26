@@ -1,30 +1,12 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { api } from "@/lib/api";
 import type { MonthlyBudget } from "@/types/budgets";
 
 export function useBudget(month: number, year: number) {
   const [budget, setBudget] = useState<MonthlyBudget | null>(null);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
-  const loadBudget = useCallback(async () => {
-    try {
-      const data = await api.budgets.monthly.get(month, year);
-      if (data) {
-        setBudget(data);
-        return data;
-      }
-      setBudget(null);
-      return null;
-    } catch (err) {
-      console.error("Error loading budget", err);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, [month, year]);
 
   async function saveBudget(
     totalIncome: number,
@@ -63,9 +45,7 @@ export function useBudget(month: number, year: number) {
   return {
     budget,
     setBudget,
-    loading,
     saving,
-    loadBudget,
     saveBudget,
     deleteBudget,
     calculateIncome,

@@ -45,3 +45,81 @@ export interface BudgetDraft {
   exists: boolean;
   budget: MonthlyBudget | null;
 }
+
+export interface BudgetDetailsProps {
+  readonly totalIncome: number;
+  readonly onTotalIncomeChange: (value: number) => void;
+  readonly typeAllocations: readonly { readonly type: string; readonly percentage: number }[];
+  readonly selectedType: string;
+  readonly onSelectType: (type: string) => void;
+  readonly totalAllocated: number;
+  readonly isValidTotal: boolean;
+  readonly onCalculateIncome?: () => void;
+  readonly calculatingIncome?: boolean;
+  readonly onSave?: () => void;
+  readonly onCancel?: () => void;
+  readonly saving?: boolean;
+  readonly canSave?: boolean;
+}
+
+export interface BudgetCategoryDetailsProps {
+  readonly categories: readonly Category[];
+  readonly selectedType: string | undefined;
+  readonly typeAllocations: readonly { readonly type: string; readonly percentage: number }[];
+  readonly onPercentageChange: (type: string, percentage: number) => void;
+  readonly totalIncome: number;
+  readonly saveError: string | null;
+  readonly onOpenEditCategory: (cat: Category) => void;
+  readonly onDeleteCategory: (cat: Category) => void;
+  readonly onAddCategory: () => void;
+}
+
+export interface BudgetHeaderProps {
+  monthLabel: string;
+  badge: { text: string; className: string };
+  canGoBack: boolean;
+  canGoForward: boolean;
+  showEditButton: boolean;
+  editButtonLabel: string;
+  onPrevMonth: () => void;
+  onNextMonth: () => void;
+  onStartEdit: () => void;
+}
+
+export interface BudgetReadOnlyViewProps {
+  totalIncome: number;
+  typeAllocations: readonly { readonly type: string; readonly percentage: number }[];
+  categories: readonly Category[];
+}
+
+export interface DeleteCategoryDialogProps {
+  open: boolean;
+  categoryName: string;
+  onConfirm: () => Promise<void>;
+  onClose: () => void;
+}
+
+export interface EditCategoryDialogProps {
+  open: boolean;
+  category: { id: string; name: string } | null;
+  onSave: (name: string) => Promise<void>;
+  onClose: () => void;
+}
+
+export interface IncomeReviewDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  groups: IncomeGroup[];
+  onConfirm: (selectedTotal: number) => void;
+}
+
+export interface GroupListProps {
+  isEmpty: boolean;
+  filteredGroups: IncomeGroup[];
+  monthName: string;
+  prevYear: number;
+  checked: Set<string>;
+  expanded: Set<string>;
+  onToggleGroup: (label: string) => void;
+  onToggleExpand: (label: string) => void;
+}

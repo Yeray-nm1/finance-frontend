@@ -3,10 +3,10 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 beforeAll(() => {
-  global.ResizeObserver = class ResizeObserver {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() { void 0; }
+    unobserve() { void 0; }
+    disconnect() { void 0; }
   };
 });
 
@@ -32,7 +32,6 @@ vi.mock('@/hooks/useBudget', () => ({
     saving: false,
     setBudget: vi.fn(),
     saveBudget: vi.fn(),
-    loadBudget: vi.fn(),
     deleteBudget: vi.fn(),
     calculateIncome: vi.fn(),
   })),
@@ -47,14 +46,14 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
 
-vi.mock('@/components/budget/BudgetDetails', () => ({
+vi.mock('@/app/budgets/components/BudgetDetails', () => ({
   BudgetDetails: ({ onCalculateIncome }: { onCalculateIncome?: () => void }) =>
     <div data-testid="budget-details">
       <button onClick={onCalculateIncome}>Calcular ingresos</button>
     </div>,
 }));
 
-vi.mock('@/components/budget/BudgetCategoryDetails', () => ({
+vi.mock('@/app/budgets/components/BudgetCategoryDetails', () => ({
   BudgetCategoryDetails: ({
     categories,
     onOpenEditCategory,
@@ -79,7 +78,11 @@ vi.mock('@/components/budget/BudgetCategoryDetails', () => ({
   ),
 }));
 
-vi.mock('@/components/budget/IncomeReviewDialog', () => ({
+vi.mock('@/app/budgets/components/BudgetReadOnlyView', () => ({
+  BudgetReadOnlyView: () => <div data-testid="budget-readonly" />,
+}));
+
+vi.mock('@/app/budgets/components/IncomeReviewDialog', () => ({
   IncomeReviewDialog: () => <div data-testid="income-review-dialog" />,
 }));
 
@@ -118,7 +121,9 @@ describe('BudgetsPage - optimistic category updates', () => {
     });
     const initialCalls = (api.categories.list as ReturnType<typeof vi.fn>).mock.calls.length;
 
-    const addButton = screen.getByRole('button', { name: /añadir categoría/i });
+    await user.click(screen.getByRole('button', { name: 'Crear presupuesto' }));
+
+    const addButton = screen.getByRole('button', { name: 'Añadir categoría' });
     await user.click(addButton);
 
     await waitFor(() => {
@@ -136,7 +141,9 @@ describe('BudgetsPage - optimistic category updates', () => {
     });
     const initialCalls = (api.categories.list as ReturnType<typeof vi.fn>).mock.calls.length;
 
-    const editButton = screen.getByRole('button', { name: /editar/i });
+    await user.click(screen.getByRole('button', { name: 'Crear presupuesto' }));
+
+    const editButton = screen.getByRole('button', { name: 'Editar' });
     await user.click(editButton);
 
     const input = screen.getByDisplayValue('Comida');
@@ -159,11 +166,16 @@ describe('BudgetsPage - optimistic category updates', () => {
     });
     const initialCalls = (api.categories.list as ReturnType<typeof vi.fn>).mock.calls.length;
 
-    const deleteButtons = screen.getAllByRole('button', { name: /eliminar/i });
-    await user.click(deleteButtons[0]);
+    await user.click(screen.getByRole('button', { name: 'Crear presupuesto' }));
 
-    const confirmButton = screen.getByRole('button', { name: /eliminar/i });
-    await user.click(confirmButton);
+    const deleteButton = screen.getByRole('button', { name: 'Eliminar' });
+    await user.click(deleteButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Eliminar' })).toBeInTheDocument();
+    });
+    const user2 = userEvent.setup({ pointerEventsCheck: 0 });
+    await user2.click(screen.getByRole('button', { name: 'Eliminar' }));
 
     await waitFor(() => {
       expect(screen.queryByText('Comida')).not.toBeInTheDocument();
