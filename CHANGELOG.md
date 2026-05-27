@@ -1,3 +1,10 @@
+## [0.3.2] - 2026-05-27
+
+- 1b4842d Merge pull request #17 from Yeray-nm1/feature/ynm-16-aadir-badge-de-suscripcin-y-checkbox-issubscriptio
+- 22625b3 #16 Fix lint: remove unused imports
+- ee14d2f #16 Refactor TransactionsTable & page.tsx into atomic components
+- 91f1635 #16 Update project version for feature branch
+
 ## [0.3.1] - 2026-05-26
 
 - 4af8a90 Merge pull request #15 from Yeray-nm1/feature/ynm-14-budget-month-navigation--viewedit-mode
