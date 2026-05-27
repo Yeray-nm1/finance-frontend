@@ -1,5 +1,6 @@
 import { request } from './client';
-import type { Transaction, CreateTransactionDTO, UpdateTransactionDTO, TransactionFilters } from '@/types/transactions';
+import type { Transaction, CreateTransactionDTO, UpdateTransactionDTO } from '@/types/transactions';
+import type { TransactionFilters } from '@/types/filter';
 import type { PaginatedResponse } from '@/types';
 
 export const transactions = {
@@ -13,6 +14,7 @@ export const transactions = {
     if (params?.dateFrom) qs.set('dateFrom', params.dateFrom)
     if (params?.dateTo) qs.set('dateTo', params.dateTo)
     if (params?.search) qs.set('search', params.search)
+    if (params?.subscriptionIds) qs.set('subscriptionIds', params.subscriptionIds)
     if (params?.sortBy) qs.set('sortBy', params.sortBy)
     if (params?.sortOrder) qs.set('sortOrder', params.sortOrder)
     const query = qs.toString()

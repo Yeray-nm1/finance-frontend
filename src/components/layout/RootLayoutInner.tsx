@@ -16,7 +16,8 @@ export default function RootLayoutInner({ children }: Readonly<RootLayoutInnerPr
   const { isCollapsed } = useSidebar();
   const pathname = usePathname();
   const showSidebar = isAuthenticated && !isLoading && !["/login", "/register"].includes(pathname);
-  const sidebarWidth = showSidebar ? (isCollapsed ? "64px" : "240px") : "0px";
+  const sidebarCollapsed = isCollapsed ? "64px" : "240px";
+  const sidebarWidth = showSidebar ? sidebarCollapsed : "0px";
 
   return (
     <>
