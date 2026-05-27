@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TableCell } from "@/components/ui/table";
-import type { EditableSelectOption, EditableSelectCellProps } from "@/types/transactions";
+import type { EditableSelectCellProps } from "@/types/transactions";
 
 export function EditableSelectCell({
   value: _value,
