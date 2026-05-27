@@ -35,7 +35,7 @@ export class ErrorBoundary extends Component<Props, State> {
               {this.state.error?.message ?? 'Error desconocido'}
             </p>
             <button
-              onClick={() => { this.setState({ hasError: false, error: null }); window.location.reload() }}
+              onClick={() => { this.setState({ hasError: false, error: null }); globalThis.location.reload() }}
               className="text-sm text-primary hover:underline"
             >
               Reintentar

@@ -8,17 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-interface TransactionsPaginationProps {
-  page: number;
-  total: number;
-  limit: number;
-  totalPages: number;
-  from: number;
-  to: number;
-  onPageChange: (page: number) => void;
-  onLimitChange: (limit: number) => void;
-}
+import type { TransactionsPaginationProps } from "@/types/transactions";
 
 export function TransactionsPagination({
   page,
