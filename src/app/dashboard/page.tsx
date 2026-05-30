@@ -1,50 +1,104 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import type { DashboardResponse } from "@/types/dashboard";
 import { api } from "@/lib/api";
-import { formatCurrency } from "@/lib/format";
+import type { MonthOption } from "@/lib/api/dashboard";
+import { MONTH_NAMES } from "@/lib/budget-constants";
+import { BalanceCard } from "./components/BalanceCard";
+import { BudgetsCard } from "./components/BudgetsCard";
+import { RecurringCard } from "./components/RecurringCard";
+import { RecentTransactionsCard } from "./components/RecentTransactionsCard";
+import { DashboardSkeleton } from "./components/DashboardSkeleton";
+import { DashboardError } from "./components/DashboardError";
 
-function formatPercent(value: number): string {
-  return `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`;
-}
-
-function BalanceRow({
-  label,
-  amount,
-  color,
-}: {
-  readonly label: string;
-  readonly amount: number;
-  readonly color: string;
-}) {
+function hasBalanceData(data: DashboardResponse): boolean {
   return (
-    <div className="flex justify-between items-center">
-      <span className="text-xs text-text-secondary uppercase tracking-wider">
-        {label}
-      </span>
-      <span className={`text-sm font-medium ${color}`}>
-        {formatCurrency(amount)}
-      </span>
-    </div>
+    data.balance.income > 0 ||
+    data.balance.expenses > 0 ||
+    data.balance.savings > 0 ||
+    data.balance.balance !== 0 ||
+    (Array.isArray(data.budgets) && data.budgets.length > 0) ||
+    (Array.isArray(data.recurring?.manual) && data.recurring.manual.length > 0) ||
+    (Array.isArray(data.transactions) && data.transactions.length > 0)
   );
 }
 
 export default function DashboardPage() {
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth() + 1;
+  const currentValue = `${currentYear}-${String(currentMonth).padStart(2, "0")}`;
+  const [viewValue, setViewValue] = useState(currentValue);
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [availableMonths, setAvailableMonths] = useState<MonthOption[]>([]);
+  const abortRef = useRef<AbortController | null>(null);
 
-  function loadDashboard() {
+  const viewYear = Number(viewValue.split("-")[0]);
+  const viewMonth = Number(viewValue.split("-")[1]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    api.dashboard.months(controller.signal)
+      .then(setAvailableMonths)
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
+
+  const loadDashboard = useCallback(() => {
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
     setError(null);
-    api.dashboard.get()
+    api.dashboard.get(viewYear, viewMonth, controller.signal)
       .then(setData)
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }
+      .catch((e: Error) => {
+        if (e.name === "AbortError") return;
+        setError(e.message);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+  }, [viewYear, viewMonth]);
 
-  useEffect(() => { loadDashboard(); }, []);
+  useEffect(() => {
+    loadDashboard();
+    return () => {
+      if (abortRef.current) abortRef.current.abort();
+    };
+  }, [loadDashboard]);
+
+  const monthOptions = (() => {
+    const seen = new Set<string>();
+    const result: Array<{ value: string; label: string }> = [];
+
+    for (const m of availableMonths) {
+      const value = `${m.year}-${String(m.month).padStart(2, "0")}`;
+      if (!seen.has(value)) {
+        seen.add(value);
+        result.push({ value, label: `${MONTH_NAMES[m.month - 1]} ${m.year}` });
+      }
+    }
+
+    if (!seen.has(currentValue)) {
+      result.push({ value: currentValue, label: `${MONTH_NAMES[currentMonth - 1]} ${currentYear}` });
+    }
+
+    result.sort((a, b) => {
+      const [ay, am] = a.value.split("-").map(Number);
+      const [by, bm] = b.value.split("-").map(Number);
+      return ay - by || am - bm;
+    });
+
+    return result;
+  })();
+
+  const selectedMonthLabel = `${MONTH_NAMES[viewMonth - 1]} ${viewYear}`;
+  const isCurrentMonth = viewValue === currentValue;
 
   if (loading) {
     return (
@@ -54,6 +108,7 @@ export default function DashboardPage() {
             <h1 className="text-xl font-semibold text-text-primary">Dashboard</h1>
             <p className="text-sm text-text-muted mt-1">Cargando...</p>
           </header>
+          <DashboardSkeleton />
         </div>
       </main>
     );
@@ -65,11 +120,50 @@ export default function DashboardPage() {
         <div className="max-w-6xl mx-auto">
           <header className="mb-8">
             <h1 className="text-xl font-semibold text-text-primary">Dashboard</h1>
-            <p className="text-sm text-expense mt-1">{error ?? "Error al cargar datos"}</p>
           </header>
-          <button onClick={loadDashboard} className="text-primary text-sm hover:underline">
-            Reintentar
-          </button>
+          <DashboardError error={error ?? "Error al cargar datos"} onRetry={loadDashboard} />
+        </div>
+      </main>
+    );
+  }
+
+  const headerContent = (
+    <header className="mb-8 animate-fade-in">
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-xl font-semibold text-text-primary">Dashboard</h1>
+        <div className="flex items-center gap-2">
+          <select
+            aria-label="Mes y año"
+            value={viewValue}
+            onChange={(e) => setViewValue(e.target.value)}
+            className="text-sm border border-border rounded-md px-2 py-1 bg-white text-text-primary"
+          >
+            {monthOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          {!isCurrentMonth && (
+            <button
+              onClick={() => setViewValue(currentValue)}
+              className="text-sm bg-primary text-white font-bold rounded-md px-2 py-1 hover:bg-primary/90 transition-colors"
+            >
+              Volver a día actual
+            </button>
+          )}
+        </div>
+      </div>
+      <p className="text-sm text-text-muted mt-1">{selectedMonthLabel}</p>
+    </header>
+  );
+
+  if (!hasBalanceData(data)) {
+    return (
+      <main className="min-h-screen bg-bg-page p-4 md:p-8">
+        <div className="max-w-6xl mx-auto">
+          {headerContent}
+          <div className="bg-white border border-border rounded-lg p-8 text-center">
+            <p className="text-sm text-text-muted">No hay datos disponibles para {selectedMonthLabel}</p>
+          </div>
         </div>
       </main>
     );
@@ -78,174 +172,25 @@ export default function DashboardPage() {
   const balance = data.balance ?? { income: 0, expenses: 0, savings: 0, available: 0, balance: 0 };
   const budgets = Array.isArray(data.budgets) ? data.budgets : [];
   const rawRecurring = data.recurring ?? {};
-  const recurring = {
-    manual: Array.isArray(rawRecurring.manual) ? rawRecurring.manual : [],
-    detected: Array.isArray(rawRecurring.detected) ? rawRecurring.detected : [],
-  };
+  const subscriptions = Array.isArray(rawRecurring.manual) ? rawRecurring.manual : [];
   const transactions = Array.isArray(data.transactions) ? data.transactions : [];
 
   return (
     <main className="min-h-screen bg-bg-page p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
-        <header className="mb-8 animate-fade-in">
-          <h1 className="text-xl font-semibold text-text-primary">
-            Dashboard
-          </h1>
-          <p className="text-sm text-text-muted mt-1">
-            ¿Cómo va tu economía este mes?
-          </p>
-        </header>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Balance Card */}
-          <section className="bg-white border border-border rounded-lg p-5 animate-fade-in stagger-1">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-xs uppercase tracking-widest text-text-muted">
-                Balance
-              </h2>
-              {balance.vsPreviousMonth !== undefined && (
-                <span
-                  className={`text-xs ${balance.vsPreviousMonth >= 0 ? "text-income" : "text-expense"
-                    }`}
-                >
-                  {formatPercent(balance.vsPreviousMonth)} vs mes anterior
-                </span>
-              )}
-            </div>
-
-            <div className="space-y-3">
-              <BalanceRow label="Ingresos" amount={balance.income} color="text-income" />
-              <BalanceRow label="Gastos" amount={balance.expenses} color="text-expense" />
-              <BalanceRow label="Ahorro" amount={balance.savings} color="text-savings" />
-              <BalanceRow label="Disponible" amount={balance.available} color="text-available" />
-
-              <div className="border-t border-border pt-3 mt-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs uppercase tracking-wider text-text-secondary">
-                    Balance
-                  </span>
-                  <span
-                    className={`font-semibold text-xl ${balance.balance >= 0 ? "text-income" : "text-expense"
-                      }`}
-                  >
-                    {balance.balance >= 0 ? "+" : ""}
-                    {formatCurrency(balance.balance)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Budgets Card */}
-          <section className="bg-white border border-border rounded-lg p-5 animate-fade-in stagger-2">
-            <h2 className="text-xs uppercase tracking-widest text-text-muted mb-5">
-              Presupuestos
-            </h2>
-
-            <div className="space-y-4">
-              {budgets.map((budget) => {
-                const isOver = budget.progress > 100;
-                return (
-                  <div key={budget.category} className="space-y-1.5">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-text-primary">{budget.category}</span>
-                      <span className={isOver ? "text-expense" : "text-income"}>
-                        {budget.progress.toFixed(1)}%
-                      </span>
-                    </div>
-                    <div className="bg-border rounded-sm overflow-hidden h-1.5">
-                      <div
-                        className={`h-full rounded-sm transition-all ${isOver ? "bg-expense" : "bg-income"
-                          }`}
-                        style={{ width: `${Math.min(budget.progress, 100)}%` }}
-                      />
-                    </div>
-                    <div className="flex justify-end text-[11px] text-text-muted">
-                      {formatCurrency(budget.spent)} / {formatCurrency(budget.budgeted)}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          {/* Recurring Card */}
-          <section className="bg-white border border-border rounded-lg p-5 animate-fade-in stagger-3">
-            <h2 className="text-xs uppercase tracking-widest text-text-muted mb-5">
-              Recurrentes
-            </h2>
-
-            <div className="space-y-3">
-              {recurring.manual.map((item) => (
-                <div
-                  key={item.name}
-                  className="flex justify-between items-center text-xs"
-                >
-                  <span className="text-text-primary">{item.name}</span>
-                  <div className="text-right">
-                    <div className="text-text-primary font-medium">
-                      {formatCurrency(item.amount)}
-                    </div>
-                    <span className="text-income text-[11px]">pagado</span>
-                  </div>
-                </div>
-              ))}
-
-              {recurring.detected.map((item) => (
-                <div
-                  key={item.name}
-                  className="flex justify-between items-center text-xs"
-                >
-                  <span className="text-text-primary">{item.name}</span>
-                  <div className="text-right">
-                    <div className="text-text-primary font-medium">
-                      {formatCurrency(item.amount)}
-                    </div>
-                    <span className="text-amber-600 text-[11px]">
-                      requiere accion
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Transactions Card */}
-          <section className="bg-white border border-border rounded-lg p-5 animate-fade-in stagger-4">
-            <h2 className="text-xs uppercase tracking-widest text-text-muted mb-5">
-              Transacciones recientes
-            </h2>
-
-            <div className="space-y-0 max-h-80 overflow-y-auto pr-2">
-              {transactions.map((tx) => (
-                <div
-                  key={tx.id}
-                  className="flex justify-between items-center py-2.5 border-b border-border last:border-0"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-text-primary truncate">
-                      {tx.description}
-                    </p>
-                    <p className="text-[11px] text-text-muted mt-0.5">
-                      {new Date(tx.date).toLocaleDateString("es-ES")}
-                      {tx.category && ` · ${tx.category}`}
-                    </p>
-                  </div>
-                  <span
-                    className={`text-xs font-medium ml-4 whitespace-nowrap ${tx.type === "income"
-                        ? "text-income"
-                        : tx.type === "expense"
-                          ? "text-expense"
-                          : "text-savings"
-                      }`}
-                  >
-                    {tx.type === "income" ? "+" : tx.type === "expense" ? "-" : "↔"}{" "}
-                    {formatCurrency(Math.abs(tx.amount))}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </section>
+        {headerContent}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+          <BalanceCard
+            income={balance.income}
+            expenses={balance.expenses}
+            savings={balance.savings}
+            available={balance.available}
+            balance={balance.balance}
+            vsPreviousMonth={balance.vsPreviousMonth}
+          />
+          <BudgetsCard budgets={budgets} />
+          <RecurringCard subscriptions={subscriptions} />
+          <RecentTransactionsCard transactions={transactions} />
         </div>
       </div>
     </main>
