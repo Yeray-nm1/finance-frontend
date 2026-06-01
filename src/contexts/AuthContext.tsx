@@ -1,23 +1,19 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
+import type { AuthContextType } from '@/types/auth-context';
 import type { User } from '@/types/auth';
 import { api } from '@/lib/api';
 
-interface AuthContextType {
-  user: User | null;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-}
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export { AuthContext };
 
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     api.auth.me()
@@ -39,28 +35,21 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const logout = useCallback(async () => {
     await api.auth.logout();
     setUser(null);
-  }, []);
+    router.push('/login');
+  }, [router]);
+
+  const value = useMemo(() => ({
+    user,
+    login,
+    register,
+    logout,
+    isAuthenticated: !!user,
+    isLoading,
+  }), [user, login, register, logout, isLoading]);
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        login,
-        register,
-        logout,
-        isAuthenticated: !!user,
-        isLoading,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { useSidebar } from "@/contexts/SidebarContext";
 import { ChevronLeft, ChevronRight, Upload, LayoutDashboard, PiggyBank, Repeat, ArrowLeftRight, Settings } from "lucide-react";
 import { CsvUploadDialog } from "@/components/CsvUploadDialog";
