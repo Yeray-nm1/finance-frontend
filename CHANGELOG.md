@@ -1,3 +1,9 @@
+## [0.3.4] - 2026-06-01
+
+- 75369ac Merge pull request #21 from Yeray-nm1/feature/ynm-20-logout-agregar-redirect-a-login
+- 9c91d03 fixed redirect and improvements when login and logout
+- 9f8cf55 #20 Update project version for feature branch
+
 ## [0.3.3] - 2026-06-01
 
 - b540f1e Merge pull request #19 from Yeray-nm1/feature/ynm-18-build-dashboard-with-balancecard-budgetscard-recur
