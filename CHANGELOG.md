@@ -1,3 +1,10 @@
+## [0.3.3] - 2026-06-01
+
+- b540f1e Merge pull request #19 from Yeray-nm1/feature/ynm-18-build-dashboard-with-balancecard-budgetscard-recur
+- 945694f Update pnpm-lock.yaml to match package.json
+- 4508e09 built dashboard
+- 1164ea1 #18 Update project version for feature branch
+
 ## [0.3.2] - 2026-05-27
 
 - 1b4842d Merge pull request #17 from Yeray-nm1/feature/ynm-16-aadir-badge-de-suscripcin-y-checkbox-issubscriptio
