@@ -1,3 +1,8 @@
+## [0.3.6] - 2026-10-29
+
+- 989f1e7 Merge pull request #23 from Yeray-nm1/fix/csv-import-feedback
+- de66ec5 fix(csv): show import summary and row errors
+
 ## [0.3.5] - 2026-10-29
 
 - 40b86df Merge pull request #22 from Yeray-nm1/feature/ui-refactor-design-system
