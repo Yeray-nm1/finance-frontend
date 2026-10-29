@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 beforeAll(() => {
@@ -26,14 +26,18 @@ vi.mock('@/lib/api', () => ({
   },
 }));
 
+const budgetHookMocks = vi.hoisted(() => ({
+  setBudget: vi.fn(),
+  saveBudget: vi.fn(),
+  deleteBudget: vi.fn(),
+  calculateIncome: vi.fn(),
+}));
+
 vi.mock('@/hooks/useBudget', () => ({
   useBudget: vi.fn(() => ({
     budget: null,
     saving: false,
-    setBudget: vi.fn(),
-    saveBudget: vi.fn(),
-    deleteBudget: vi.fn(),
-    calculateIncome: vi.fn(),
+    ...budgetHookMocks,
   })),
 }));
 
@@ -171,11 +175,11 @@ describe('BudgetsPage - optimistic category updates', () => {
     const deleteButton = screen.getByRole('button', { name: 'Eliminar' });
     await user.click(deleteButton);
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Eliminar' })).toBeInTheDocument();
-    });
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('button', { name: 'Eliminar' })).toBeInTheDocument();
+
     const user2 = userEvent.setup({ pointerEventsCheck: 0 });
-    await user2.click(screen.getByRole('button', { name: 'Eliminar' }));
+    await user2.click(within(dialog).getByRole('button', { name: 'Eliminar' }));
 
     await waitFor(() => {
       expect(screen.queryByText('Comida')).not.toBeInTheDocument();
