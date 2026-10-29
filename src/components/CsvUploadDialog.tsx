@@ -18,10 +18,16 @@ interface CsvUploadDialogProps {
   readonly onImported: () => void;
 }
 
+interface ImportMessage {
+  text: string;
+  error: boolean;
+  details?: string[];
+}
+
 export function CsvUploadDialog({ open, onClose, onImported }: Readonly<CsvUploadDialogProps>) {
   const [dragging, setDragging] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [message, setMessage] = useState<{ text: string; error: boolean } | null>(null);
+  const [message, setMessage] = useState<ImportMessage | null>(null);
 
   useEffect(() => {
     if (!open) {
@@ -51,16 +57,43 @@ export function CsvUploadDialog({ open, onClose, onImported }: Readonly<CsvUploa
             return;
           }
           const res = await api.transactions.importCsv(rows);
+
+          const duplicates = res.duplicates ?? 0;
+          const invalid = res.invalid ?? 0;
+          const errors = res.errors ?? [];
+
+          const summary = [`${res.imported} de ${res.total} filas importadas`];
+          if (duplicates > 0) {
+            summary.push(`${duplicates} ${duplicates === 1 ? "duplicada" : "duplicadas"}`);
+          }
+          if (invalid > 0) {
+            summary.push(`${invalid} ${invalid === 1 ? "inválida" : "inválidas"}`);
+          }
+
+          const details = errors.map((e) => `Fila ${e.row}: ${e.reason}`);
+          if (invalid > details.length) {
+            details.push(`… y ${invalid - details.length} fila(s) más`);
+          }
+
           setMessage({
-            text: `${res.imported} de ${res.total} filas importadas`,
-            error: false,
+            text: summary.join(" · "),
+            error: res.imported === 0,
+            details,
           });
-          setTimeout(() => {
+          setImporting(false);
+
+          if (res.imported > 0) {
             onImported();
-            onClose();
-          }, 1000);
-        } catch {
-          setMessage({ text: "Error al importar", error: true });
+          }
+
+          if (res.imported > 0 && duplicates === 0 && invalid === 0) {
+            setTimeout(onClose, 1200);
+          }
+        } catch (err) {
+          setMessage({
+            text: err instanceof Error ? err.message : "Error al importar",
+            error: true,
+          });
           setImporting(false);
         }
       },
@@ -142,17 +175,27 @@ export function CsvUploadDialog({ open, onClose, onImported }: Readonly<CsvUploa
           <p className="text-xs text-text-muted">
             o haz clic para seleccionar archivo
           </p>
-
-          {message && (
-            <p
-              className={`mt-4 text-xs ${
-                message.error ? "text-expense" : "text-income"
-              }`}
-            >
-              {message.text}
-            </p>
-          )}
         </button>
+
+        {message && (
+          <div
+            className={`rounded-lg border px-3 py-2 text-xs ${
+              message.error
+                ? "border-expense/40 bg-expense/5 text-expense"
+                : "border-income/40 bg-income/5 text-income"
+            }`}
+            aria-live="polite"
+          >
+            <p className="font-medium">{message.text}</p>
+            {message.details && message.details.length > 0 && (
+              <ul className="mt-1.5 space-y-0.5 text-text-secondary">
+                {message.details.map((detail, index) => (
+                  <li key={`${index}-${detail}`}>{detail}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         <Button variant="outline" onClick={onClose} className="w-full">
           Cerrar

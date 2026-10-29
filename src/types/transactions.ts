@@ -35,3 +35,12 @@ export interface UpdateTransactionDTO {
   accountId?: string | null;
   isSubscription?: boolean;
 }
+
+export interface ImportCsvResult {
+  imported: number;
+  total: number;
+  valid: number;
+  duplicates: number;
+  invalid: number;
+  errors: Array<{ row: number; reason: string }>;
+}
