@@ -1,3 +1,11 @@
+## [0.3.5] - 2026-10-29
+
+- 40b86df Merge pull request #22 from Yeray-nm1/feature/ui-refactor-design-system
+- 8225573 docs: update README to match current app structure and scripts
+- efb205f chore: sync pnpm-lock with package.json
+- aff352e test: stabilize budgets page mocks and scope delete confirmation
+- 610e995 refactor: consolidate accounts/categories views and extract design system primitives
+
 ## [0.3.4] - 2026-06-01
 
 - 75369ac Merge pull request #21 from Yeray-nm1/feature/ynm-20-logout-agregar-redirect-a-login
