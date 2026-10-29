@@ -2,7 +2,7 @@
 
 import { TableHead } from "@/components/ui/table";
 import { SortIcon } from "@/app/transactions/components/SortIcon";
-import type { SortableHeaderProps } from "@/types/filter";
+import type { SortableHeaderProps } from "./types/filter.types";
 
 function sortAria(field: string, sortBy: string, sortOrder: string): "ascending" | "descending" | "none" {
   if (sortBy !== field) return "none";

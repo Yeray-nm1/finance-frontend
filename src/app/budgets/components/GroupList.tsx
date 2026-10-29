@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { formatCurrency } from "@/lib/budget-constants";
-import type { GroupListProps } from "@/types/budgets";
+import { formatCurrency } from "@/lib/format";
+import type { GroupListProps } from "./types/GroupList.types";
 
 export function GroupList({
   isEmpty,
@@ -11,7 +11,7 @@ export function GroupList({
   expanded,
   onToggleGroup,
   onToggleExpand,
-}: GroupListProps) {
+}: Readonly<GroupListProps>) {
   if (isEmpty) {
     return (
       <p className="text-sm text-muted-foreground text-center py-8">

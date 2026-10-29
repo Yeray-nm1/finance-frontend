@@ -1,8 +1,9 @@
 "use client";
 
 import { formatCurrency } from "@/lib/format";
+import { getBalanceColor } from "@/components/ui/variants/dashboard.variants";
 import { BalanceDonut } from "./BalanceDonut";
-import type { BalanceCardProps } from "@/types/dashboard";
+import type { BalanceCardProps } from "./types/BalanceCard.types";
 
 export function BalanceCard({
   income,
@@ -50,7 +51,7 @@ export function BalanceCard({
           <div className="border-t border-border pt-2 mt-2">
             <div className="flex justify-between items-center">
               <span className="text-xs uppercase tracking-wider text-text-secondary">Balance</span>
-              <span className={`font-semibold text-xl ${balance >= 0 ? "text-income" : "text-expense"}`}>
+              <span className={`font-semibold text-xl ${getBalanceColor(balance)}`}>
                 {balance >= 0 ? "+" : ""}{formatCurrency(balance)}
               </span>
             </div>
@@ -61,7 +62,7 @@ export function BalanceCard({
       {vsPreviousMonth !== undefined && (
         <div className="mt-5 flex items-baseline gap-1.5">
           <span className="text-xs text-text-secondary">Diferencia respecto al mes anterior:</span>
-          <span className={`text-xs font-medium ${vsPreviousMonth.percentage >= 0 ? "text-income" : "text-expense"}`}>
+          <span className={`text-xs font-medium ${getBalanceColor(vsPreviousMonth.percentage)}`}>
             {vsPreviousMonth.percentage >= 0 ? "+" : ""}{vsPreviousMonth.percentage.toFixed(1)}%
           </span>
           <span className="text-xs text-text-muted">

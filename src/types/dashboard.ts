@@ -1,5 +1,5 @@
 import type { CategoryType } from './categories';
-import type { ReactNode } from 'react';
+import type { TransactionType } from './transactions';
 
 export interface BudgetItem {
   category: string;
@@ -34,7 +34,7 @@ export interface TransactionItem {
   date: string;
   amount: number;
   description: string;
-  type: 'income' | 'expense' | 'transfer';
+  type: TransactionType;
   category: string | null;
   account: string | null;
 }
@@ -53,74 +53,4 @@ export interface DashboardResponse {
     manual: SubscriptionItem[];
   };
   transactions: TransactionItem[];
-}
-
-export interface BalanceCardProps {
-  income: number;
-  expenses: number;
-  savings: number;
-  available: number;
-  balance: number;
-  vsPreviousMonth?: { percentage: number; amountDiff: number };
-}
-
-export interface BudgetsCardProps {
-  budgets: Array<BudgetItem>;
-}
-
-export interface BudgetTypeSectionHeaderProps {
-  label: string;
-  icon: ReactNode;
-  collapsible: boolean;
-  barProgress: number;
-  progressAccent: string;
-  isExpanded: boolean;
-  spent?: number;
-  budgeted?: number;
-}
-
-export interface BudgetTypeSectionProps {
-  type: string;
-  label: string;
-  icon: ReactNode;
-  budgets: Array<BudgetTypeItem>;
-  isExpanded: boolean;
-  onToggle: () => void;
-  collapsible?: boolean;
-  typeProgress?: number;
-}
-
-export interface DashboardErrorProps {
-  error: string;
-  onRetry: () => void;
-}
-
-export interface RecentTransactionsCardProps {
-  transactions: Array<TransactionItem>;
-}
-
-export interface RecurringCardProps {
-  subscriptions: Array<SubscriptionItem>;
-}
-
-export interface BalanceDonutProps {
-  income: number;
-  expenses: number;
-  savings: number;
-  available: number;
-  balance: number;
-}
-
-export interface CustomTooltipProps {
-  active?: boolean;
-  payload?: Array<{ name: string; value: number; payload: { percentage: number } }>;
-}
-
-export interface DashboardCardProps {
-  title: string;
-  emptyText: string;
-  href: string;
-  linkText: string;
-  isEmpty: boolean;
-  children: ReactNode;
 }

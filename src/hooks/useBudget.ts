@@ -4,6 +4,10 @@ import { useState } from "react";
 import { api } from "@/lib/api";
 import type { MonthlyBudget } from "@/types/budgets";
 
+async function deleteBudget(): Promise<boolean> {
+  return true;
+}
+
 export function useBudget(month: number, year: number) {
   const [budget, setBudget] = useState<MonthlyBudget | null>(null);
   const [saving, setSaving] = useState(false);
@@ -26,10 +30,6 @@ export function useBudget(month: number, year: number) {
     } finally {
       setSaving(false);
     }
-  }
-
-  async function deleteBudget(): Promise<boolean> {
-    return true;
   }
 
   async function calculateIncome(): Promise<number | null> {

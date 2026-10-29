@@ -11,7 +11,7 @@ import { SkeletonRow } from "@/app/transactions/components/SkeletonRow";
 import { SortableHeader } from "@/app/transactions/components/SortableHeader";
 import { TransactionRow } from "@/app/transactions/components/TransactionRow";
 import { EmptyRow } from "@/app/transactions/components/EmptyRow";
-import type { TransactionsTableProps } from "@/types/transactions";
+import type { TransactionsTableProps } from "./types/TransactionsTable.types";
 
 export function TransactionsTable({
   transactions,
@@ -49,7 +49,7 @@ export function TransactionsTable({
         </TableHeader>
         <TableBody>
           {loading && (
-            Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={`skeleton-row-${i}`} />)
+            [1, 2, 3].map((row) => <SkeletonRow key={`skeleton-row-${row}`} />)
           )}
           {!loading && transactions.length === 0 && (
             <EmptyRow hasActiveFilters={hasActiveFilters} />

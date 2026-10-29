@@ -1,8 +1,4 @@
-export const DONUT_COLORS = {
-  expenses: "#dc2626",
-  savings: "#2563eb",
-  available: "#7c3aed",
-} as const;
+export const CATEGORY_TYPES = ['needs', 'leisure', 'savings', 'other'] as const;
 
 export const freqLabels: Record<string, string> = {
   weekly: "Semanal",

@@ -1,5 +1,5 @@
 import { request } from './client';
-import type { Subscription, SubscriptionCandidate, SubscriptionConflict } from '@/types/subscriptions';
+import type { Subscription, SubscriptionCandidate } from '@/types/subscriptions';
 
 export const subscriptions = {
   list: (signal?: AbortSignal) => request<Subscription[]>('/subscriptions', { signal }),
@@ -36,13 +36,5 @@ export const subscriptions = {
     request<Subscription>(`/subscriptions/${id}/confirm-match`, {
       method: 'POST',
       body: JSON.stringify({ description, transactionId }),
-    }),
-
-  getConflicts: () => request<SubscriptionConflict[]>('/subscriptions/conflicts'),
-
-  resolveConflict: (id: string, subscriptionId: string) =>
-    request<void>(`/subscriptions/conflicts/${id}/resolve`, {
-      method: 'POST',
-      body: JSON.stringify({ subscriptionId }),
     }),
 };

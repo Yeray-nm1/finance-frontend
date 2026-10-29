@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowUpDown, ChevronUp, ChevronDown } from "lucide-react";
-import type { SortIconProps } from "@/types/transactions";
+import type { SortIconProps } from "./types/SortIcon.types";
 
 export function SortIcon({ field, sortBy, sortOrder }: Readonly<SortIconProps>) {
   if (sortBy !== field) return <ArrowUpDown className="size-3 inline ml-1 opacity-40" />;

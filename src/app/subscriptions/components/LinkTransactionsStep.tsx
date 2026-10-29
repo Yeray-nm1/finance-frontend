@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Link, X } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
-import type { LinkTransactionsStepProps } from "@/types/subscriptions";
+import type { LinkTransactionsStepProps } from "./types/LinkTransactionsStep.types";
 
 export function LinkTransactionsStep({
   name,

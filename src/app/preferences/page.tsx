@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { Card, CardTitle } from "@/components/Card";
 
 export default function PreferencesPage() {
   const { user, logout } = useAuth();
@@ -18,34 +19,25 @@ export default function PreferencesPage() {
           </p>
         </header>
 
-        {/* Account Info */}
-        <section className="bg-white border border-border rounded-lg p-5 mb-4 animate-fade-in stagger-1">
-          <h2 className="text-xs uppercase tracking-widest text-text-muted font-semibold mb-4">
-            Cuenta
-          </h2>
+        <Card className="mb-4 animate-fade-in stagger-1">
+          <CardTitle>Cuenta</CardTitle>
           <div className="space-y-3">
             <div>
               <p className="text-xs text-text-secondary uppercase tracking-wider">Email</p>
               <p className="text-sm text-text-primary mt-1">{user?.email}</p>
             </div>
           </div>
-        </section>
+        </Card>
 
-        {/* Notifications - Placeholder */}
-        <section className="bg-white border border-border rounded-lg p-5 mb-4 animate-fade-in stagger-2">
-          <h2 className="text-xs uppercase tracking-widest text-text-muted font-semibold mb-4">
-            Notificaciones
-          </h2>
+        <Card className="mb-4 animate-fade-in stagger-2">
+          <CardTitle>Notificaciones</CardTitle>
           <p className="text-sm text-text-muted">
             Proximamente: configura alertas para presupuestos y suscripciones
           </p>
-        </section>
+        </Card>
 
-        {/* Session */}
-        <section className="bg-white border border-border rounded-lg p-5 animate-fade-in stagger-3">
-          <h2 className="text-xs uppercase tracking-widest text-text-muted font-semibold mb-4">
-            Sesion
-          </h2>
+        <Card className="animate-fade-in stagger-3">
+          <CardTitle>Sesion</CardTitle>
           <div className="space-y-4">
             <Button variant="outline" onClick={logout}>
               Cerrar sesion
@@ -63,7 +55,7 @@ export default function PreferencesPage() {
               </Button>
             </div>
           </div>
-        </section>
+        </Card>
       </div>
     </main>
   );

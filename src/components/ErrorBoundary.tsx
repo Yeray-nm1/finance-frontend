@@ -24,6 +24,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      console.error(this.state.error)
       if (this.props.fallback) return this.props.fallback
       return (
         <main className="min-h-screen bg-bg-page p-8 flex items-center justify-center">
@@ -32,7 +33,7 @@ export class ErrorBoundary extends Component<Props, State> {
               Algo salió mal
             </h2>
             <p className="text-sm text-text-muted mb-4">
-              {this.state.error?.message ?? 'Error desconocido'}
+          Vuelve a intentarlo o recarga la página
             </p>
             <button
               onClick={() => { this.setState({ hasError: false, error: null }); globalThis.location.reload() }}

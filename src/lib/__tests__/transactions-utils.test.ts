@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import {
   NO_CATEGORY_SENTINEL,
   getSubmitLabel,
-  getAmountColor,
   getAmountSign,
   formatDateRange,
   typeLabel,
@@ -29,20 +28,6 @@ describe("getSubmitLabel", () => {
 
   it("returns Crear when not saving and not editing", () => {
     expect(getSubmitLabel(false, false)).toBe("Crear");
-  });
-});
-
-describe("getAmountColor", () => {
-  it('returns text-income for income', () => {
-    expect(getAmountColor("income")).toBe("text-income");
-  });
-
-  it('returns text-expense for expense', () => {
-    expect(getAmountColor("expense")).toBe("text-expense");
-  });
-
-  it('returns text-savings for transfer', () => {
-    expect(getAmountColor("transfer")).toBe("text-savings");
   });
 });
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { formatCurrency } from "@/lib/format";
-import type { CustomTooltipProps } from "@/types/dashboard";
+import type { CustomTooltipProps } from "./types/CustomTooltip.types";
 
 export function CustomTooltip({ active, payload }: Readonly<CustomTooltipProps>) {
   if (!active || !payload || payload.length === 0) return null;

@@ -2,29 +2,21 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { format } from "date-fns";
-import { Plus, Upload } from "lucide-react";
+import { Upload } from "lucide-react";
 import { CsvUploadDialog } from "@/components/CsvUploadDialog";
 import type { Subscription } from "@/types/subscriptions";
 import { LoadingSkeleton } from "@/app/transactions/components/LoadingSkeleton";
-import { ErrorState } from "@/app/transactions/components/ErrorState";
-import { ToastMessage } from "@/app/transactions/components/ToastMessage";
-import { TransactionForm } from "@/app/transactions/components/TransactionForm";
-import { DeleteConfirmDialog } from "@/app/transactions/components/DeleteConfirmDialog";
+import { ErrorState } from "@/components/ErrorState";
+import { TransactionDialog } from "@/app/transactions/components/TransactionDialog";
+import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
+import { toast } from "@/hooks/use-toast";
 import { TransactionsFilters } from "@/app/transactions/components/TransactionsFilters";
 import { TransactionsTable } from "@/app/transactions/components/TransactionsTable";
 import { TransactionsPagination } from "@/app/transactions/components/TransactionsPagination";
 import { NO_CATEGORY_SENTINEL } from "@/lib/transactions-utils";
 import { api } from "@/lib/api";
-import type { Transaction, UpdateTransactionDTO } from "@/types/transactions";
+import type { Transaction, TransactionType, UpdateTransactionDTO } from "@/types/transactions";
 import type { Account } from "@/types/accounts";
 import type { Category } from "@/types/categories";
 
@@ -39,7 +31,7 @@ export default function TransactionsPage() {
   const [error, setError] = useState<string | null>(null);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
 
-  const [filterType, setFilterType] = useState<"" | "income" | "expense" | "transfer">("");
+  const [filterType, setFilterType] = useState<"" | TransactionType>("");
   const [filterCategoryId, setFilterCategoryId] = useState("");
   const [filterAccountId, setFilterAccountId] = useState("");
   const [filterSearch, setFilterSearch] = useState("");
@@ -60,7 +52,7 @@ export default function TransactionsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [csvDialogOpen, setCsvDialogOpen] = useState(false);
   const [newDate, setNewDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [newType, setNewType] = useState<"income" | "expense" | "transfer">("expense");
+  const [newType, setNewType] = useState<TransactionType>("expense");
   const [newAmount, setNewAmount] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newAccountId, setNewAccountId] = useState("");
@@ -68,13 +60,7 @@ export default function TransactionsPage() {
   const [newIsSubscription, setNewIsSubscription] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
-
   const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
-  function showToast(message: string, type: "success" | "error") {
-    setToast({ message, type });
-  }
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -104,7 +90,8 @@ export default function TransactionsPage() {
       setCategories(cats);
       setSubscriptions(subs);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      console.error(e);
+      setError("No se pudieron cargar las transacciones");
     } finally {
       setLoading(false);
     }
@@ -163,10 +150,10 @@ export default function TransactionsPage() {
 
       const updated = await api.transactions.update(tx.id, payload);
       setTransactions((prev) => prev.map((t) => (t.id === tx.id ? updated : t)));
-      showToast("Actualizado", "success");
+        toast({ title: "Actualizado" });
     } catch (err) {
       console.error(err);
-      showToast("Error al actualizar", "error");
+      toast({ title: "Error al actualizar", variant: "destructive" });
     } finally {
       setSavingField(false);
       setEditingId(null);
@@ -181,10 +168,10 @@ export default function TransactionsPage() {
       setTransactions((prev) => prev.filter((t) => t.id !== id));
       setTotal((prev) => prev - 1);
       setDeleteConfirmId(null);
-      showToast("Transacci\u00f3n eliminada", "success");
+      toast({ title: "Transacci\u00f3n eliminada" });
     } catch (err) {
       console.error(err);
-      showToast("Error al eliminar", "error");
+      toast({ title: "Error al eliminar", variant: "destructive" });
     } finally {
       setDeleting(false);
     }
@@ -210,15 +197,15 @@ export default function TransactionsPage() {
         );
         setEditTxId(null);
         setDialogOpen(false);
-        showToast("Actualizado", "success");
+      toast({ title: "Actualizado" });
       } else {
         if (!newDescription.trim() || !newAmount) {
-          showToast("La descripci\u00f3n y el importe son obligatorios", "error");
+          toast({ title: "La descripci\u00f3n y el importe son obligatorios", variant: "destructive" });
           return;
         }
         const parsedAmount = Number(newAmount);
         if (Number.isNaN(parsedAmount) || parsedAmount <= 0) {
-          showToast("El importe debe ser un n\u00famero v\u00e1lido mayor que 0", "error");
+          toast({ title: "El importe debe ser un n\u00famero v\u00e1lido mayor que 0", variant: "destructive" });
           return;
         }
         await api.transactions.create({
@@ -241,7 +228,7 @@ export default function TransactionsPage() {
         loadData();
       }
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Error al guardar transacci\u00f3n", "error");
+      toast({ title: err instanceof Error ? err.message : "Error al guardar transacci\u00f3n", variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -280,12 +267,10 @@ export default function TransactionsPage() {
   }
 
   if (error && transactions.length === 0) {
-    return <ErrorState error={error} onRetry={loadData} />;
+    return <ErrorState message={error} onRetry={loadData} fullPage />;
   }
 
   return (
-    <>
-      {toast && <ToastMessage message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       <main className="min-h-screen bg-bg-page p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
           <div className="flex justify-between items-center mb-6">
@@ -304,10 +289,21 @@ export default function TransactionsPage() {
                 onImported={() => loadData()}
               />
 
-              <Dialog
+              <TransactionDialog
                 open={dialogOpen}
-                onOpenChange={(open) => {
-                  if (!open) {
+                editTxId={editTxId}
+                newDate={newDate}
+                newType={newType}
+                newAmount={newAmount}
+                newDescription={newDescription}
+                newAccountId={newAccountId}
+                newCategoryId={newCategoryId}
+                newIsSubscription={newIsSubscription}
+                accounts={accounts}
+                categories={categories}
+                saving={saving}
+                onOpenChange={(o) => {
+                  if (!o) {
                     setEditTxId(null);
                     setNewDate(new Date().toISOString().split("T")[0]);
                     setNewType("expense");
@@ -319,42 +315,15 @@ export default function TransactionsPage() {
                     setDialogOpen(false);
                   }
                 }}
-              >
-                <DialogTrigger asChild>
-                  <Button onClick={() => setDialogOpen(true)}>
-                    <Plus className="size-4" /> A&ntilde;adir
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>{editTxId ? "Editar Transaccion" : "Nueva Transaccion"}</DialogTitle>
-                    <DialogDescription>
-                      {editTxId ? "Modifica los campos que quieras" : "Anade un movimiento manual"}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <TransactionForm
-                    newDate={newDate}
-                    newType={newType}
-                    newAmount={newAmount}
-                    newDescription={newDescription}
-                    newAccountId={newAccountId}
-                    newCategoryId={newCategoryId}
-                    newIsSubscription={newIsSubscription}
-                    editTxId={editTxId}
-                    accounts={accounts}
-                    categories={categories}
-                    saving={saving}
-                    onDateChange={setNewDate}
-                    onTypeChange={setNewType}
-                    onAmountChange={setNewAmount}
-                    onDescriptionChange={setNewDescription}
-                    onAccountIdChange={setNewAccountId}
-                    onCategoryIdChange={setNewCategoryId}
-                    onIsSubscriptionChange={setNewIsSubscription}
-                    onSubmit={handleSubmit}
-                  />
-                </DialogContent>
-              </Dialog>
+                onDateChange={setNewDate}
+                onTypeChange={setNewType}
+                onAmountChange={setNewAmount}
+                onDescriptionChange={setNewDescription}
+                onAccountIdChange={setNewAccountId}
+                onCategoryIdChange={setNewCategoryId}
+                onIsSubscriptionChange={setNewIsSubscription}
+                onSubmit={handleSubmit}
+              />
             </div>
           </div>
 
@@ -411,13 +380,14 @@ export default function TransactionsPage() {
           />
         </div>
 
-        <DeleteConfirmDialog
+        <ConfirmDeleteDialog
           open={deleteConfirmId !== null}
-          deleting={deleting}
-          onConfirm={() => deleteConfirmId && handleDelete(deleteConfirmId)}
+          title="Eliminar transaccion"
+          description="¿Estas seguro de que quieres eliminar esta transaccion? Esta accion no se puede deshacer."
+          loading={deleting}
+          onConfirm={() => deleteConfirmId ? handleDelete(deleteConfirmId) : undefined}
           onCancel={() => setDeleteConfirmId(null)}
         />
       </main>
-    </>
   );
 }

@@ -9,7 +9,7 @@ import { SubscriptionListContent } from "./components/SubscriptionListContent";
 import { DetectCandidatesModal } from "./components/DetectCandidatesModal";
 import { EditSubscriptionDialog } from "./components/EditSubscriptionDialog";
 import { CreateSubscriptionDialog } from "./components/CreateSubscriptionDialog";
-import { DeleteSubscriptionDialog } from "./components/DeleteSubscriptionDialog";
+import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 
 export default function SubscriptionsPage() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -25,7 +25,10 @@ export default function SubscriptionsPage() {
     setError(null);
     api.subscriptions.list()
       .then((subs) => setSubscriptions(subs))
-      .catch((err) => setError(err instanceof Error ? err.message : "Error al cargar suscripciones"))
+      .catch((err) => {
+        console.error(err);
+        setError("No se pudieron cargar las suscripciones");
+      })
       .finally(() => setLoading(false));
   }
 
@@ -38,7 +41,8 @@ export default function SubscriptionsPage() {
       setDeleteSub(null);
       loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al eliminar suscripcion");
+      console.error(err);
+      setError("Error al eliminar suscripción");
       setDeleteSub(null);
     }
   }
@@ -48,7 +52,8 @@ export default function SubscriptionsPage() {
       await api.subscriptions.update(sub.id, { amount });
       loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al actualizar importe");
+      console.error(err);
+      setError("Error al actualizar importe");
     }
   }
 
@@ -57,7 +62,8 @@ export default function SubscriptionsPage() {
       await api.subscriptions.dismissPriceChanges(sub.id);
       loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al descartar cambio de precio");
+      console.error(err);
+      setError("Error al descartar cambio de precio");
     }
   }
 
@@ -120,14 +126,13 @@ export default function SubscriptionsPage() {
           />
         )}
 
-        {deleteSub && (
-          <DeleteSubscriptionDialog
-            open={true}
-            subscriptionName={deleteSub.name}
-            onConfirm={handleDelete}
-            onOpenChange={(open) => { if (!open) setDeleteSub(null); }}
-          />
-        )}
+        <ConfirmDeleteDialog
+          open={deleteSub !== null}
+          title="Eliminar suscripcion"
+          description={<>Se eliminará &quot;{deleteSub?.name}&quot; y se desvincularán sus transacciones. Esta acción no se puede deshacer.</>}
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteSub(null)}
+        />
       </div>
     </main>
   );

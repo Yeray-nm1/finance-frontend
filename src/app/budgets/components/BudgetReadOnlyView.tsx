@@ -4,8 +4,10 @@ import { useState } from "react";
 import type { Category } from "@/types/categories";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronDown } from "lucide-react";
-import { typeLabels, typeIcons, formatCurrency } from "@/lib/budget-constants";
-import type { BudgetReadOnlyViewProps } from "@/types/budgets";
+import { typeLabels } from "@/lib/budget-constants";
+import { typeIcons, getValidationColor } from "@/components/ui/variants/budget.variants";
+import { formatCurrency } from "@/lib/format";
+import type { BudgetReadOnlyViewProps } from "./types/BudgetReadOnlyView.types";
 
 export function BudgetReadOnlyView({
   totalIncome,
@@ -57,7 +59,7 @@ export function BudgetReadOnlyView({
                     {TypeIcon.icon}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-serif text-base font-semibold text-gray-800">
+                    <h3 className="font-serif text-base font-semibold text-text-primary">
                       {typeLabels[alloc.type]}
                     </h3>
                     <p className="text-sm text-text-muted">
@@ -82,7 +84,7 @@ export function BudgetReadOnlyView({
                         {typeCats.map((cat) => (
                           <span
                             key={cat.id}
-                            className="px-3 py-1.5 bg-gray-50 rounded-lg text-sm text-text-primary"
+                            className="px-3 py-1.5 bg-bg-elevated rounded-lg text-sm text-text-primary"
                           >
                             {cat.name}
                           </span>
@@ -101,9 +103,7 @@ export function BudgetReadOnlyView({
 
       <Card>
         <CardContent className="p-5">
-          <p className={`text-sm text-center font-medium ${
-            isValidTotal ? "text-green-700" : "text-red-600"
-          }`}>
+          <p className={`text-sm text-center font-medium ${getValidationColor(isValidTotal)}`}>
             {isValidTotal
               ? "✓ Distribución correcta (100%)"
               : `Los porcentajes suman ${totalAllocated.toFixed(1)}% — deben sumar 100%`

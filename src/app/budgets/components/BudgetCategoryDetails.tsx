@@ -1,10 +1,12 @@
-import type { BudgetCategoryDetailsProps } from "@/types/budgets";
+import type { BudgetCategoryDetailsProps } from "./types/BudgetCategoryDetails.types";
 import type { Category } from "@/types/categories";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Plus, Pencil, Trash2 } from "lucide-react";
-import { typeLabels, typeIcons, formatCurrency } from "@/lib/budget-constants";
+import { typeLabels } from "@/lib/budget-constants";
+import { typeIcons } from "@/components/ui/variants/budget.variants";
+import { formatCurrency } from "@/lib/format";
 
 export function BudgetCategoryDetails({
   categories,
@@ -37,7 +39,7 @@ export function BudgetCategoryDetails({
                 {typeIcons[selectedType].icon}
               </div>
               <div className="flex items-center justify-between min-w-0 self-center">
-                <h2 className="font-serif text-lg font-semibold text-gray-800">
+                <h2 className="font-serif text-lg font-semibold text-text-primary">
                   {typeLabels[selectedType]}
                 </h2>
                 <span className="text-sm font-semibold text-text-primary whitespace-nowrap shrink-0 ml-4">
@@ -56,7 +58,7 @@ export function BudgetCategoryDetails({
             </div>
 
             {saveError && (
-              <p className="shrink-0 text-sm text-red-600 bg-red-50 p-3 rounded-lg">{saveError}</p>
+              <p className="shrink-0 text-sm text-expense bg-expense/5 p-3 rounded-lg">{saveError}</p>
             )}
 
             {currentCategories.length === 0 ? (

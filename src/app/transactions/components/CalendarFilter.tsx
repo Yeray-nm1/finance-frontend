@@ -6,7 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon } from "lucide-react";
 import { formatDateRange } from "@/lib/transactions-utils";
-import type { CalendarFilterProps } from "@/types/filter";
+import type { CalendarFilterProps } from "./types/filter.types";
 
 export function CalendarFilter({ dateFrom, dateTo, onChange }: Readonly<CalendarFilterProps>) {
   const [open, setOpen] = useState(false);

@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { X } from "lucide-react";
-import type { SelectFilterProps } from "@/types/filter";
+import type { SelectFilterProps } from "./types/filter.types";
 
 export function SelectFilter({
   value,

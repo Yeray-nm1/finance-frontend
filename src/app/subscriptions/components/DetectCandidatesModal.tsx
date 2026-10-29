@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, Plus, Check, TriangleAlert } from "lucide-react";
 import { api } from "@/lib/api";
-import type { SubscriptionCandidate, DetectCandidatesModalProps } from "@/types/subscriptions";
+import type { DetectCandidatesModalProps } from "./types/DetectCandidatesModal.types";
+import type { SubscriptionCandidate } from "@/types/subscriptions";
 import { formatCurrency } from "@/lib/format";
 import { freqLabels } from "@/lib/constants";
 
@@ -132,7 +133,7 @@ export function DetectCandidatesModal({ open, onOpenChange, onConfirm }: Readonl
                           <div className="flex items-center gap-2">
                             <h3 className="font-medium text-sm text-text-primary">{c.name}</h3>
                             {hasVariance && (
-                              <TriangleAlert className="size-4 text-amber-600 shrink-0" />
+                              <TriangleAlert className="size-4 text-warning shrink-0" />
                             )}
                           </div>
                           <p className="text-xs text-text-muted mt-0.5">
@@ -146,7 +147,7 @@ export function DetectCandidatesModal({ open, onOpenChange, onConfirm }: Readonl
                         </div>
                         <div className="flex items-center gap-2">
                           {c.exists && !hasVariance && (
-                            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-amber-50 text-amber-700">
+                            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-warning/10 text-warning">
                               Ya existe
                             </span>
                           )}

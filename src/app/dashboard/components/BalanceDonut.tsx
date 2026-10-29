@@ -2,9 +2,9 @@
 
 import { PieChart, Pie, Tooltip, ResponsiveContainer } from "recharts";
 import { formatCurrency } from "@/lib/format";
-import { DONUT_COLORS } from "@/lib/constants";
+import { DONUT_COLORS, getBalanceColor } from "@/components/ui/variants/dashboard.variants";
 import { CustomTooltip } from "./CustomTooltip";
-import type { BalanceDonutProps } from "@/types/dashboard";
+import type { BalanceDonutProps } from "./types/BalanceDonut.types";
 
 export function BalanceDonut({ income, expenses, savings, available, balance }: Readonly<BalanceDonutProps>) {
   if (income <= 0) {
@@ -24,7 +24,7 @@ export function BalanceDonut({ income, expenses, savings, available, balance }: 
     percentage: income > 0 ? Math.min((d.value / income) * 100, 100) : 0,
   }));
 
-  const balanceColor = balance >= 0 ? "text-income" : "text-expense";
+  const balanceColor = getBalanceColor(balance);
   const prefix = balance >= 0 ? "+" : "-";
   const centerLabel = `${prefix}${formatCurrency(Math.abs(balance))}`;
 

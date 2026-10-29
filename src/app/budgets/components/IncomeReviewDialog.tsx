@@ -11,8 +11,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import { formatCurrency, MONTH_NAMES } from "@/lib/budget-constants";
-import type { IncomeReviewDialogProps } from "@/types/budgets";
+import { formatCurrency } from "@/lib/format";
+import { MONTH_NAMES } from "@/lib/budget-constants";
+import type { IncomeReviewDialogProps } from "./types/IncomeReviewDialog.types";
 import { GroupList } from "./GroupList";
 
 export function IncomeReviewDialog({

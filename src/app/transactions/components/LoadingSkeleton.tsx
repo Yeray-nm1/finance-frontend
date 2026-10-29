@@ -20,10 +20,10 @@ export function LoadingSkeleton() {
               </tr>
             </thead>
             <tbody>
-              {Array.from({ length: 4 }).map((_, i) => (
-                <tr key={`skeleton-row-${i}`}>
-                  {Array.from({ length: 7 }).map((_, j) => (
-                    <td key={`skeleton-cell-${j}`} className="px-4 py-1.5">
+              {[1, 2, 3, 4].map((row) => (
+                <tr key={`skeleton-row-${row}`}>
+                  {[1, 2, 3, 4, 5, 6, 7].map((cell) => (
+                    <td key={`skeleton-cell-${row}-${cell}`} className="px-4 py-1.5">
                       <div className="h-4 bg-gray-200 rounded animate-pulse" />
                     </td>
                   ))}
