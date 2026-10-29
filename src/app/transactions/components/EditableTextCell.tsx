@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { TableCell } from "@/components/ui/table";
-import type { EditableTextCellProps } from "@/types/transactions";
+import type { EditableTextCellProps } from "./types/EditableTextCell.types";
 
 export function EditableTextCell({
   value,

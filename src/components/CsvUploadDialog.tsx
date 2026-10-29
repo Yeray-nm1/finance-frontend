@@ -3,6 +3,15 @@
 import { useState, useCallback, useEffect } from "react";
 import { api } from "@/lib/api";
 import { parse } from "papaparse";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+
 interface CsvUploadDialogProps {
   readonly open: boolean;
   readonly onClose: () => void;
@@ -81,32 +90,23 @@ export function CsvUploadDialog({ open, onClose, onImported }: Readonly<CsvUploa
     if (file) processFile(file);
   };
 
-  if (!open) return null;
-
   return (
-    <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-lg p-8 w-[90%] max-w-[480px] shadow-lg"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold text-text-primary mb-1">
-            Importar CSV
-          </h3>
-          <p className="text-xs text-text-secondary uppercase tracking-wide">
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Importar CSV</DialogTitle>
+          <DialogDescription>
             Arrastra tu archivo o haz clic para seleccionar
-          </p>
-        </div>
+          </DialogDescription>
+        </DialogHeader>
 
-        <div
+        <button
+          type="button"
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={() => document.getElementById("csv-upload-input")?.click()}
-          className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors ${
+          className={`w-full border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors bg-transparent font-[inherit] ${
             dragging
               ? "border-primary bg-primary-light/20"
               : "border-border hover:border-primary-border"
@@ -152,15 +152,12 @@ export function CsvUploadDialog({ open, onClose, onImported }: Readonly<CsvUploa
               {message.text}
             </p>
           )}
-        </div>
-
-        <button
-          onClick={onClose}
-          className="mt-4 w-full py-2.5 border border-border rounded-lg text-sm text-text-secondary hover:border-primary-border hover:text-primary transition-colors"
-        >
-          Cerrar
         </button>
-      </div>
-    </div>
+
+        <Button variant="outline" onClick={onClose} className="w-full">
+          Cerrar
+        </Button>
+      </DialogContent>
+    </Dialog>
   );
 }

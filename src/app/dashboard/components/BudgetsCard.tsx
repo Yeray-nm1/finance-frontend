@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { typeLabels, typeIcons } from "@/lib/budget-constants";
+import { typeLabels } from "@/lib/budget-constants";
+import { typeIcons } from "@/components/ui/variants/budget.variants";
 import { BudgetTypeSection } from "./BudgetTypeSection";
 import { DashboardCard } from "./DashboardCard";
-import type { BudgetsCardProps } from "@/types/dashboard";
+import type { BudgetsCardProps } from "./types/BudgetsCard.types";
 
 export function BudgetsCard({ budgets }: Readonly<BudgetsCardProps>) {
   const [expandedTypes, setExpandedTypes] = useState<Set<string>>(new Set());
@@ -34,8 +35,7 @@ export function BudgetsCard({ budgets }: Readonly<BudgetsCardProps>) {
       linkText="Gestionar presupuesto"
       isEmpty={budgets.length === 0}
     >
-      <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin"
-        style={{ scrollbarWidth: 'thin', scrollbarColor: '#d1d5db transparent' }}>
+      <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin">
         {typeOrder.map((type) => {
           const typeBudgets = grouped[type];
           if (!typeBudgets) return null;

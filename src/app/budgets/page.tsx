@@ -10,7 +10,7 @@ import { BudgetReadOnlyView } from "@/app/budgets/components/BudgetReadOnlyView"
 import { IncomeReviewDialog } from "@/app/budgets/components/IncomeReviewDialog";
 import { BudgetHeader } from "@/app/budgets/components/BudgetHeader";
 import { EditCategoryDialog } from "@/app/budgets/components/EditCategoryDialog";
-import { DeleteCategoryDialog } from "@/app/budgets/components/DeleteCategoryDialog";
+import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 import { getBudgetBadge, DEFAULT_ALLOCATIONS, MONTH_NAMES } from "@/lib/budget-constants";
 import { useBudget } from "@/hooks/useBudget";
 import { toast } from "@/hooks/use-toast";
@@ -103,7 +103,8 @@ export default function BudgetsPage() {
         );
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error");
+      console.error(e);
+      setError("No se pudieron cargar los datos");
     } finally {
       setLoading(false);
     }
@@ -167,6 +168,8 @@ export default function BudgetsPage() {
   async function handleDeleteConfirm() {
     await api.categories.delete(deletingCategory!.id);
     setCategories(prev => prev.filter(c => c.id !== deletingCategory!.id));
+    setDeleteDialogOpen(false);
+    setDeletingCategory(null);
   }
 
   async function handleAddCategory() {
@@ -347,11 +350,12 @@ export default function BudgetsPage() {
           onClose={() => { setEditDialogOpen(false); setEditingCategory(null); }}
         />
 
-        <DeleteCategoryDialog
+        <ConfirmDeleteDialog
           open={deleteDialogOpen}
-          categoryName={deletingCategory?.name ?? ""}
+          title="Eliminar categoría"
+          description={<>¿Estás seguro de que quieres eliminar la categoría <strong>{deletingCategory?.name ?? ""}</strong>? Esta acción no se puede deshacer.</>}
           onConfirm={handleDeleteConfirm}
-          onClose={() => { setDeleteDialogOpen(false); setDeletingCategory(null); }}
+          onCancel={() => { setDeleteDialogOpen(false); setDeletingCategory(null); }}
         />
       </div>
     </main>

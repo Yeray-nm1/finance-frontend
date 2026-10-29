@@ -4,18 +4,11 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useSidebar } from "@/contexts/SidebarContext";
-import { ChevronLeft, ChevronRight, Upload, LayoutDashboard, PiggyBank, Repeat, ArrowLeftRight, Settings } from "lucide-react";
+import { ChevronLeft, ChevronRight, Upload } from "lucide-react";
 import { CsvUploadDialog } from "@/components/CsvUploadDialog";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/budgets", label: "Presupuestos", icon: PiggyBank },
-  { href: "/subscriptions", label: "Suscripciones", icon: Repeat },
-  { href: "/transactions", label: "Transacciones", icon: ArrowLeftRight },
-  { href: "/preferences", label: "Preferencias", icon: Settings },
-];
+import { navItems } from "@/lib/navigation";
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -75,7 +68,7 @@ export function Sidebar() {
                   isCollapsed ? "justify-center py-2.5" : "justify-start py-2.5 px-3",
                   active
                     ? "text-primary bg-primary-light border-l-2 border-primary font-semibold"
-                    : "text-text-secondary border-l-2 border-transparent font-normal hover:text-text-primary hover:bg-gray-50",
+                    : "text-text-secondary border-l-2 border-transparent font-normal hover:text-text-primary hover:bg-bg-elevated",
                   !isCollapsed && active && "border-l-2 border-primary",
                   isCollapsed && active && "border-l-0"
                 )}

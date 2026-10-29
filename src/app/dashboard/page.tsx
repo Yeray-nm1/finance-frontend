@@ -58,7 +58,8 @@ export default function DashboardPage() {
       .then(setData)
       .catch((e: Error) => {
         if (e.name === "AbortError") return;
-        setError(e.message);
+        console.error(e);
+        setError("No se pudieron cargar los datos");
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
@@ -179,7 +180,7 @@ export default function DashboardPage() {
     <main className="min-h-screen bg-bg-page p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         {headerContent}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <BalanceCard
             income={balance.income}
             expenses={balance.expenses}

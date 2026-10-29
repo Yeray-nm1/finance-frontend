@@ -1,76 +1,92 @@
 # Finance Frontend
 
-Modern finance management dashboard built with Next.js 15, React 19, TypeScript, and Tailwind CSS.
+Dashboard de finanzas personales construido con Next.js 15, React 19, TypeScript y Tailwind CSS.
 
 ## Tech Stack
-- **Framework**: Next.js 15
-- **UI**: React 19, Radix UI primitives
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS 4, Tailwind Animations
-- **Utilities**: Lucide React (icons), next-themes (theming), PapaParse (CSV parsing)
-- **Auth**: React Context-based authentication with protected routes
 
-## Prerequisites
-- Node.js 18.x+
-- npm (or compatible package manager)
+- **Framework**: Next.js 15 (App Router)
+- **UI**: React 19, primitivas de Radix UI
+- **Lenguaje**: TypeScript
+- **Estilos**: Tailwind CSS 4 con design tokens y variantes por componente
+- **Gráficos**: Recharts
+- **Utilidades**: Lucide React (iconos), date-fns, PapaParse (CSV)
+- **Auth**: JWT en cookie `httpOnly` + React Context con rutas protegidas
+- **Testing**: Vitest + Testing Library
 
-## Getting Started
+## Prerrequisitos
 
-### Installation
+- Node.js 20+ (el CI usa Node 24)
+- pnpm 10
+
+## Puesta en marcha
+
+### Instalación
+
 ```bash
 git clone <repository-url>
 cd finance-frontend
-npm install
+pnpm install
 ```
 
-### Environment Setup
-Create a `.env.local` file in the root directory:
-```env
-NEXT_PUBLIC_API_URL=<your-backend-api-endpoint>
-```
-Refer to `src/lib/api.ts` for API client configuration.
+### Configuración de la API
 
-### Run Development Server
+El frontend llama a `/api/v1/*` y Next.js lo redirige al backend en `http://localhost:3000` mediante un rewrite configurado en `next.config.ts`. Para apuntar a otro backend, cambia ese destino.
+
+### Desarrollo
+
 ```bash
-npm run dev
+pnpm dev
 ```
-App runs on `http://localhost:3001` (configured in `package.json`).
 
-## Available Scripts
-| Script | Description |
+La app se levanta en `http://localhost:3001`.
+
+## Scripts
+
+| Script | Descripción |
 |--------|-------------|
-| `dev` | Start Next.js dev server on port 3001 |
-| `build` | Create production build |
-| `start` | Start production server |
-| `lint` | Run Next.js ESLint checks |
+| `dev` | Servidor de desarrollo en el puerto 3001 |
+| `build` | Build de producción |
+| `start` | Servidor de producción |
+| `lint` | Comprobaciones de ESLint |
+| `test` | Ejecuta los tests con Vitest |
+| `test:watch` | Tests en modo watch |
 
-## Project Structure
+## Estructura del proyecto
+
 ```
 src/
-├── app/                  # Next.js App Router pages & layouts
-│   ├── (auth)/           # Login/Register pages
-│   ├── dashboard/        # Dashboard layout & main view
-│   ├── accounts/         # Account management
-│   ├── transactions/     # Transaction tracking
-│   ├── budgets/          # Budget management
-│   ├── subscriptions/    # Subscription tracking
-│   ├── categories/       # Category management
-│   └── globals.css       # Global styles
-├── components/           # Reusable components
-│   ├── layout/           # Sidebar, AuthGuard
-│   └── ui/               # Radix UI-based primitives (buttons, dialogs, etc.)
-├── contexts/             # AuthContext for user state
-├── lib/                  # API client, utility functions
-├── types/                # TypeScript type definitions
-└── middleware.ts         # Auth route protection
+├── app/                      # Páginas y layouts del App Router
+│   ├── login/                # Inicio de sesión
+│   ├── register/             # Registro
+│   ├── dashboard/            # Balance, presupuestos y movimientos recientes
+│   ├── transactions/         # Tabla de transacciones con filtros y edición inline
+│   ├── budgets/              # Presupuestos mensuales y gestión de categorías
+│   ├── subscriptions/        # Suscripciones y autodetección
+│   └── preferences/          # Preferencias del usuario
+├── components/
+│   ├── layout/               # Sidebar y layout raíz
+│   ├── ui/                   # Primitivas Radix y variantes de estilos
+│   └── *.tsx                 # Componentes compartidos (Card, diálogos, estados...)
+├── contexts/                 # AuthContext y SidebarContext
+├── hooks/                    # useAuth, useBudget, use-toast
+├── lib/                      # Cliente API, navegación, formato y utilidades
+├── types/                    # Tipos por dominio
+└── middleware.ts             # Protección de rutas
 ```
 
 ## Features
-- 🔐 Authentication with protected routes
-- 📊 Dashboard overview
-- 💳 Account management
-- 💸 Transaction tracking
-- 📉 Budget planning
-- 🔄 Subscription management
-- 🏷️ Category organization
-- 🌓 Light/Dark theme support
+
+- 🔐 Autenticación con cookie `httpOnly` y rutas protegidas
+- 📊 Dashboard con balance del mes, desglose por tipo y movimientos recientes
+- 💸 Transacciones con filtros por fecha/categoría/cuenta, ordenación, paginación y edición inline
+- 📉 Presupuestos mensuales por categoría y tipo, con navegación entre meses y vista de solo lectura
+- 🏷️ Gestión de categorías integrada en presupuestos
+- 🔄 Suscripciones: alta manual, autodetección desde transacciones y vinculación de movimientos
+- 📥 Importación de transacciones desde CSV
+- 🎨 Design system propio con tokens de color y variantes reutilizables
+
+## Tests
+
+```bash
+pnpm test
+```

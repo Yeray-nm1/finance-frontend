@@ -12,9 +12,11 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { NO_CATEGORY_SENTINEL, getSubmitLabel, getAmountColor, getAmountSign, typeLabel } from "@/lib/transactions-utils";
+import { NO_CATEGORY_SENTINEL, getSubmitLabel, getAmountSign, typeLabel } from "@/lib/transactions-utils";
 import { formatCurrency } from "@/lib/format";
-import type { TransactionFormProps } from "@/types/transactions";
+import { getAmountColor } from "@/components/ui/variants/transactions.variants";
+import type { TransactionFormProps } from "./types/TransactionForm.types";
+import type { TransactionType } from "@/types/transactions";
 
 export function TransactionForm({
   newDate,
@@ -54,7 +56,7 @@ export function TransactionForm({
         {editTxId ? (
           <p className="text-sm text-text-primary py-1.5">{typeLabel(newType)}</p>
         ) : (
-          <Select defaultValue="expense" value={newType} onValueChange={(v) => onTypeChange(v as "income" | "expense" | "transfer")}>
+          <Select defaultValue="expense" value={newType} onValueChange={(v) => onTypeChange(v as TransactionType)}>
             <SelectTrigger id="tx-type"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="income">Ingreso</SelectItem>

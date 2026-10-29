@@ -29,7 +29,7 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "bg-white fixed top-1/2 left-1/2 z-[60] grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border border-[#e5e7eb] p-6 shadow-lg duration-200 sm:max-w-lg",
+          "bg-white fixed top-1/2 left-1/2 z-[60] grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border border-border p-6 shadow-lg duration-200 sm:max-w-lg",
           className
         )}
         {...props}
@@ -77,7 +77,7 @@ function DialogDescription({
   return (
     <DialogPrimitive.Description
       data-slot="dialog-description"
-      className={cn("text-sm text-[#6b7280]", className)}
+      className={cn("text-sm text-text-secondary", className)}
       {...props}
     />
   )

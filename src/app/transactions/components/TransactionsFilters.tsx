@@ -6,7 +6,7 @@ import { SelectFilter } from "@/app/transactions/components/SelectFilter";
 import { CalendarFilter } from "@/app/transactions/components/CalendarFilter";
 import { SubscriptionFilter } from "@/app/transactions/components/SubscriptionFilter";
 import { SubscriptionTags } from "@/app/transactions/components/SubscriptionTags";
-import type { TransactionsFiltersProps } from "@/types/filter";
+import type { TransactionsFiltersProps } from "./types/filter.types";
 
 export function TransactionsFilters({
   filterType,
@@ -111,8 +111,8 @@ export function TransactionsFilters({
               subscriptions={subscriptions}
               onChange={onFilterSubscriptionIdsChange}
             />
-            <button onClick={onClearFilters} className="ml-auto text-xs text-text-muted hover:text-red-500 hover:bg-red-50 px-2 py-1 rounded transition-colors flex items-center gap-1">
-              Limpiar <X className="size-3 text-red-400" />
+            <button onClick={onClearFilters} className="ml-auto text-xs text-text-muted hover:text-expense hover:bg-expense/5 px-2 py-1 rounded transition-colors flex items-center gap-1">
+              Limpiar <X className="size-3 text-expense/70" />
             </button>
           </div>
         )}

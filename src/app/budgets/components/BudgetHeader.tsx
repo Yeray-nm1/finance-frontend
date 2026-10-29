@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { BudgetHeaderProps } from "@/types/budgets";
+import type { BudgetHeaderProps } from "./types/BudgetHeader.types";
 
 export function BudgetHeader({
   monthLabel,
@@ -29,7 +29,7 @@ export function BudgetHeader({
         <button
           onClick={onPrevMonth}
           disabled={!canGoBack}
-          className="p-1 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="p-1 rounded-md hover:bg-bg-elevated transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <ChevronLeft className="size-5 text-text-muted" />
         </button>
@@ -42,7 +42,7 @@ export function BudgetHeader({
         <button
           onClick={onNextMonth}
           disabled={!canGoForward}
-          className="p-1 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="p-1 rounded-md hover:bg-bg-elevated transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <ChevronRight className="size-5 text-text-muted" />
         </button>

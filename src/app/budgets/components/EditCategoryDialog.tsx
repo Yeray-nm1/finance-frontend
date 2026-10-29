@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { EditCategoryDialogProps } from "@/types/budgets";
+import type { EditCategoryDialogProps } from "./types/EditCategoryDialog.types";
 
 export function EditCategoryDialog({
   open,
@@ -53,7 +53,7 @@ export function EditCategoryDialog({
         </DialogHeader>
         <div className="space-y-4">
           {saveError && (
-            <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">{saveError}</p>
+            <p className="text-sm text-expense bg-expense/5 p-3 rounded-lg">{saveError}</p>
           )}
           <div className="space-y-2">
             <Label htmlFor="cat-name">Nombre</Label>

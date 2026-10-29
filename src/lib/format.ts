@@ -12,12 +12,6 @@ export function formatShortDate(iso: string): string {
   return `${d.getDate()} ${SHORT_MONTHS[d.getMonth()]}`;
 }
 
-export function getAmountColor(type: string): string {
-  if (type === "income") return "text-income";
-  if (type === "expense") return "text-expense";
-  return "text-savings";
-}
-
 export function getAmountPrefix(type: string): string {
   if (type === "income") return "+";
   if (type === "expense") return "-";

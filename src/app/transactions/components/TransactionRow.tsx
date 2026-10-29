@@ -3,11 +3,12 @@
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/format";
-import { getAmountColor, getAmountSign, NO_CATEGORY_SENTINEL } from "@/lib/transactions-utils";
+import { getAmountColor } from "@/components/ui/variants/transactions.variants";
+import { getAmountSign, NO_CATEGORY_SENTINEL } from "@/lib/transactions-utils";
 import { EditableTextCell } from "@/app/transactions/components/EditableTextCell";
 import { EditableSelectCell } from "@/app/transactions/components/EditableSelectCell";
 import { ActionCell } from "@/app/transactions/components/ActionCell";
-import type { TransactionRowProps } from "@/types/transactions";
+import type { TransactionRowProps } from "./types/TransactionRow.types";
 
 export function TransactionRow({
   tx,
@@ -28,7 +29,7 @@ export function TransactionRow({
   const isSub = tx.isSubscription || !!tx.subscriptionId;
 
   return (
-    <TableRow className={`${savingField && isEditing ? "opacity-60" : ""} border-gray-100`}>
+    <TableRow className={`${savingField && isEditing ? "opacity-60" : ""} border-border/50`}>
       <TableCell className="py-1.5 px-4 text-sm whitespace-nowrap">
         {new Date(tx.date).toLocaleDateString("es-ES")}
       </TableCell>

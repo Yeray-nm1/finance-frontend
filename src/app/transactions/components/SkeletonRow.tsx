@@ -5,8 +5,8 @@ import { TableRow, TableCell } from "@/components/ui/table";
 export function SkeletonRow() {
   return (
     <TableRow>
-      {Array.from({ length: 7 }).map((_, i) => (
-        <TableCell key={`skeleton-cell-${i}`}>
+      {[1, 2, 3, 4, 5, 6, 7].map((cell) => (
+        <TableCell key={`skeleton-cell-${cell}`}>
           <div className="h-4 bg-gray-200 rounded animate-pulse" />
         </TableCell>
       ))}

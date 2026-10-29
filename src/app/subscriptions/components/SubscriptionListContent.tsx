@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { TriangleAlert } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
-import type { SubscriptionListContentProps } from "@/types/subscriptions";
+import { ErrorState } from "@/components/ErrorState";
+import type { SubscriptionListContentProps } from "./types/SubscriptionListContent.types";
 import { SubscriptionCard } from "./SubscriptionCard";
 
 export function SubscriptionListContent({
@@ -23,14 +24,7 @@ export function SubscriptionListContent({
   }
 
   if (error && subscriptions.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-sm text-expense">{error}</p>
-        <button onClick={onRetry} className="text-primary text-sm hover:underline mt-2">
-          Reintentar
-        </button>
-      </div>
-    );
+    return <ErrorState message={error} onRetry={onRetry} />;
   }
 
   if (subscriptions.length === 0) {
@@ -61,11 +55,11 @@ export function SubscriptionListContent({
             return (
               <div
                 key={sub.id}
-                className="p-3 rounded-lg border border-amber-200 bg-amber-50 flex items-center justify-between gap-3"
+                className="p-3 rounded-lg border border-warning/20 bg-warning/10 flex items-center justify-between gap-3"
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <TriangleAlert className="size-4 text-amber-600 shrink-0" />
-                  <span className="text-sm text-amber-800 truncate">
+                  <TriangleAlert className="size-4 text-warning shrink-0" />
+                  <span className="text-sm text-warning truncate">
                     <strong>{sub.name}</strong>: antes {formatCurrency(change.previousAmount)} → {formatCurrency(change.newAmount)}
                   </span>
                 </div>

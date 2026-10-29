@@ -12,7 +12,8 @@ export const dashboard = {
     if (year) params.set('year', String(year));
     if (month) params.set('month', String(month));
     const qs = params.toString();
-    return request<DashboardResponse>(`/dashboard${qs ? `?${qs}` : ''}`, { signal });
+    const url = qs ? `/dashboard?${qs}` : '/dashboard';
+    return request<DashboardResponse>(url, { signal });
   },
 
   months: (signal?: AbortSignal) => {

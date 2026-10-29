@@ -8,7 +8,8 @@ export const categories = {
     if (params?.page) qs.set('page', String(params.page))
     if (params?.limit) qs.set('limit', String(params.limit))
     const query = qs.toString()
-    return request<Category[]>(`/categories${query ? `?${query}` : ''}`, { signal })
+    const url = query ? `/categories?${query}` : '/categories';
+    return request<Category[]>(url, { signal })
   },
   create: (data: { name: string; type: string }) =>
     request<Category>('/categories', { method: 'POST', body: JSON.stringify(data) }),

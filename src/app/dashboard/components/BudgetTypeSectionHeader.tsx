@@ -3,7 +3,7 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import { ProgressBar } from "./ProgressBar";
-import type { BudgetTypeSectionHeaderProps } from "@/types/dashboard";
+import type { BudgetTypeSectionHeaderProps } from "./types/BudgetTypeSectionHeader.types";
 
 export function BudgetTypeSectionHeader({
   label,

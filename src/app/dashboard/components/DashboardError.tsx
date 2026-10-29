@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertCircle } from "lucide-react";
-import type { DashboardErrorProps } from "@/types/dashboard";
+import type { DashboardErrorProps } from "./types/DashboardError.types";
 
 export function DashboardError({ error, onRetry }: Readonly<DashboardErrorProps>) {
   return (

@@ -7,7 +7,8 @@ export const budgets = {
     if (year) params.set('year', String(year));
     if (month) params.set('month', String(month));
     const qs = params.toString();
-    return request<BudgetWithCategory[]>(`/budgets${qs ? `?${qs}` : ''}`, { signal });
+    const url = qs ? `/budgets?${qs}` : '/budgets';
+    return request<BudgetWithCategory[]>(url, { signal });
   },
   create: (data: { categoryId: string; percentage: number }) =>
     request<BudgetWithCategory>('/budgets', { method: 'POST', body: JSON.stringify(data) }),

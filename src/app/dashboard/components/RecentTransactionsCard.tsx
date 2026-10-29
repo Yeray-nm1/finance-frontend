@@ -1,8 +1,9 @@
 "use client";
 
-import { formatCurrency, formatShortDate, getAmountColor, getAmountPrefix } from "@/lib/format";
+import { formatCurrency, formatShortDate, getAmountPrefix } from "@/lib/format";
+import { getAmountColor } from "@/components/ui/variants/transactions.variants";
 import { DashboardCard } from "./DashboardCard";
-import type { RecentTransactionsCardProps } from "@/types/dashboard";
+import type { RecentTransactionsCardProps } from "./types/RecentTransactionsCard.types";
 
 export function RecentTransactionsCard({ transactions }: Readonly<RecentTransactionsCardProps>) {
   return (
@@ -13,7 +14,7 @@ export function RecentTransactionsCard({ transactions }: Readonly<RecentTransact
       linkText="Ver más"
       isEmpty={transactions.length === 0}
     >
-      <div className="max-h-[200px] overflow-y-auto pr-2 space-y-0">
+      <div className="max-h-[200px] overflow-y-auto pr-2 space-y-0 scrollbar-thin">
         {transactions.map((tx) => (
           <div
             key={tx.id}

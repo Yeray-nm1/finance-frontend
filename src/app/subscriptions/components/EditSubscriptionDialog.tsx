@@ -20,7 +20,8 @@ import {
 } from "@/components/ui/select";
 import { TriangleAlert } from "lucide-react";
 import { api } from "@/lib/api";
-import type { SearchTx, PendingLink, EditSubscriptionDialogProps } from "@/types/subscriptions";
+import type { EditSubscriptionDialogProps } from "./types/EditSubscriptionDialog.types";
+import type { SearchTx, PendingLink } from "@/types/subscriptions";
 import { freqLabels } from "@/lib/constants";
 import { LinkTransactionsStep } from "./LinkTransactionsStep";
 
@@ -217,12 +218,12 @@ export function EditSubscriptionDialog({
               </div>
 
               {showRenameWarning && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
+                <div className="rounded-lg border border-warning/20 bg-warning/10 p-4 space-y-3">
                   <div className="flex items-start gap-2">
-                    <TriangleAlert className="size-5 text-amber-600 shrink-0 mt-0.5" />
+                    <TriangleAlert className="size-5 text-warning shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-amber-800">Nombre no coincide</p>
-                      <p className="text-xs text-amber-700 mt-1">
+                      <p className="text-sm font-medium text-warning">Nombre no coincide</p>
+                      <p className="text-xs text-warning/80 mt-1">
                         &quot;{name.trim()}&quot; no coincide con las transacciones vinculadas. 
                         Se desvincularan las transacciones actuales y se vincularan las del nuevo nombre (si las hay).
                       </p>

@@ -5,7 +5,7 @@ import { BudgetHeader } from '../BudgetHeader';
 
 const defaultProps = {
   monthLabel: 'Enero 2026',
-  badge: { text: 'Editando', className: 'bg-amber-100 text-amber-700' },
+  badge: { text: 'Editando', className: 'bg-warning/15 text-warning' },
   canGoBack: true,
   canGoForward: true,
   showEditButton: true,
@@ -35,7 +35,7 @@ describe('BudgetHeader', () => {
     const buttons = screen.getAllByRole('button');
     const editButton = screen.getByRole('button', { name: 'Editar' });
     const arrowButtons = buttons.filter(b => b !== editButton);
-    expect(arrowButtons[arrowButtons.length - 1]).toBeDisabled();
+    expect(arrowButtons.at(-1)).toBeDisabled();
   });
 
   it('B4: edit button is visible when showEditButton is true', () => {

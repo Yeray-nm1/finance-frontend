@@ -18,7 +18,8 @@ export const transactions = {
     if (params?.sortBy) qs.set('sortBy', params.sortBy)
     if (params?.sortOrder) qs.set('sortOrder', params.sortOrder)
     const query = qs.toString()
-    return request<PaginatedResponse<Transaction>>(`/transactions${query ? `?${query}` : ''}`, { signal })
+    const url = query ? `/transactions?${query}` : '/transactions';
+    return request<PaginatedResponse<Transaction>>(url, { signal })
   },
   create: (data: CreateTransactionDTO) =>
     request<Transaction>('/transactions', { method: 'POST', body: JSON.stringify(data) }),
@@ -27,8 +28,6 @@ export const transactions = {
       method: 'POST',
       body: JSON.stringify({ rows }),
     }),
-  deleteMany: (ids: string[]) =>
-    request<{ deleted: number }>(`/transactions/batch?ids=${ids.join(',')}`, { method: 'DELETE' }),
   update: (id: string, data: UpdateTransactionDTO) =>
     request<Transaction>(`/transactions/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   delete: (id: string) => request<void>(`/transactions/${id}`, { method: 'DELETE' }),

@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { TransactionsPaginationProps } from "@/types/transactions";
+import type { TransactionsPaginationProps } from "./types/TransactionsPagination.types";
 
 export function TransactionsPagination({
   page,

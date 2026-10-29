@@ -21,7 +21,8 @@ import {
 import { api } from "@/lib/api";
 import { freqLabels } from "@/lib/constants";
 import { LinkTransactionsStep } from "./LinkTransactionsStep";
-import type { SearchTx, PendingLink, CreateSubscriptionDialogProps } from "@/types/subscriptions";
+import type { CreateSubscriptionDialogProps } from "./types/CreateSubscriptionDialog.types";
+import type { SearchTx, PendingLink } from "@/types/subscriptions";
 
 export function CreateSubscriptionDialog({
   open,

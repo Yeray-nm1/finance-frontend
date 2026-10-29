@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import type { TransactionType } from "@/types/transactions";
 
 export const NO_CATEGORY_SENTINEL = "__none__";
 
@@ -9,13 +10,7 @@ export function getSubmitLabel(saving: boolean, isEditing: boolean): string {
   return "Crear";
 }
 
-export function getAmountColor(type: "income" | "expense" | "transfer"): string {
-  if (type === "income") return "text-income";
-  if (type === "expense") return "text-expense";
-  return "text-savings";
-}
-
-export function getAmountSign(type: "income" | "expense" | "transfer"): string {
+export function getAmountSign(type: TransactionType): string {
   if (type === "income") return "+";
   if (type === "expense") return "-";
   return "\u2194";

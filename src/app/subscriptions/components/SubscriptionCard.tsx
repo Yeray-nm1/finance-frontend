@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pencil, Trash2 } from "lucide-react";
-import type { SubscriptionCardProps } from "@/types/subscriptions";
+import type { SubscriptionCardProps } from "./types/SubscriptionCard.types";
 import { formatCurrency } from "@/lib/format";
 import { freqLabels } from "@/lib/constants";
 

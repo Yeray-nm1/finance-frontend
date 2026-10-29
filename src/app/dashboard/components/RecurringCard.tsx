@@ -2,7 +2,7 @@
 
 import { formatCurrency, formatShortDate } from "@/lib/format";
 import { DashboardCard } from "./DashboardCard";
-import type { RecurringCardProps } from "@/types/dashboard";
+import type { RecurringCardProps } from "./types/RecurringCard.types";
 
 export function RecurringCard({ subscriptions }: Readonly<RecurringCardProps>) {
   return (
@@ -13,8 +13,7 @@ export function RecurringCard({ subscriptions }: Readonly<RecurringCardProps>) {
       linkText="Gestionar suscripciones"
       isEmpty={subscriptions.length === 0}
     >
-      <div className="max-h-[200px] overflow-y-auto pr-1 space-y-0 scrollbar-thin"
-        style={{ scrollbarWidth: 'thin', scrollbarColor: '#d1d5db transparent' }}>
+      <div className="max-h-[200px] overflow-y-auto pr-1 space-y-0 scrollbar-thin">
         {subscriptions.map((item, i) => (
           <div
             key={item.name}
@@ -42,9 +41,6 @@ export function RecurringCard({ subscriptions }: Readonly<RecurringCardProps>) {
               <span className="text-xs font-medium text-text-primary">
                 {formatCurrency(item.amount)}
               </span>
-              {item.status === "pending" && item.lastChargeDate && (
-                <span className="text-[11px] text-text-muted">{formatShortDate(item.lastChargeDate)}</span>
-              )}
             </div>
           </div>
         ))}

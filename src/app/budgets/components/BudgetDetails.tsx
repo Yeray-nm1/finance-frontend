@@ -1,10 +1,12 @@
-import type { BudgetDetailsProps } from "@/types/budgets";
+import type { BudgetDetailsProps } from "./types/BudgetDetails.types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calculator, Save, X } from "lucide-react";
-import { typeLabels, typeIcons, formatCurrency } from "@/lib/budget-constants";
+import { typeLabels } from "@/lib/budget-constants";
+import { typeIcons, getValidationBg } from "@/components/ui/variants/budget.variants";
+import { formatCurrency } from "@/lib/format";
 
 export function BudgetDetails({
   totalIncome,
@@ -24,7 +26,7 @@ export function BudgetDetails({
   return (
     <Card>
       <CardContent className="p-5 space-y-5">
-        <h2 className="font-serif text-lg font-semibold text-gray-800">
+        <h2 className="font-serif text-lg font-semibold text-text-primary">
           Definición del presupuesto total
         </h2>
 
@@ -90,9 +92,7 @@ export function BudgetDetails({
           })}
         </div>
 
-        <div className={`p-3 rounded-lg text-sm text-center font-medium ${
-          isValidTotal ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"
-        }`}>
+        <div className={`p-3 rounded-lg text-sm text-center font-medium ${getValidationBg(isValidTotal)}`}>
           {isValidTotal
             ? "✓ Distribución correcta (100%)"
             : `Los porcentajes suman ${totalAllocated.toFixed(1)}% — deben sumar 100%`}
