@@ -84,8 +84,10 @@ export function TransactionForm({
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="tx-account">Cuenta</Label>
-          <Select value={newAccountId} onValueChange={editTxId ? undefined : onAccountIdChange} disabled={!!editTxId}>
-            <SelectTrigger id="tx-account"><SelectValue placeholder="Opcional" /></SelectTrigger>
+          <Select value={newAccountId} onValueChange={editTxId ? undefined : onAccountIdChange} disabled={!!editTxId || accounts.length === 0}>
+            <SelectTrigger id="tx-account">
+              <SelectValue placeholder={accounts.length === 0 ? "Sin cuentas" : "Opcional"} />
+            </SelectTrigger>
             <SelectContent>
               {accounts.map((acc) => (
                 <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>

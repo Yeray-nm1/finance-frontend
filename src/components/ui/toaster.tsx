@@ -3,6 +3,7 @@
 import { useToast } from "@/hooks/use-toast"
 import { ToastProvider, ToastViewport, Toast, ToastTitle, ToastDescription, ToastClose } from "@/components/ui/toast"
 import { toastVariants } from "@/components/ui/variants/toast.variants"
+import { CircleCheck, CircleX } from "lucide-react"
 
 export function Toaster() {
   const { toasts } = useToast()
@@ -11,9 +12,16 @@ export function Toaster() {
     <ToastProvider>
       {toasts.map(({ id, title, description, variant }) => (
         <Toast key={id} className={toastVariants({ variant })}>
-          <div className="grid gap-1">
-            {title && <ToastTitle>{title}</ToastTitle>}
-            {description && <ToastDescription>{description}</ToastDescription>}
+          <div className="flex min-w-0 items-center gap-2">
+            {variant === "destructive" ? (
+              <CircleX className="size-4 shrink-0 text-white" aria-hidden="true" />
+            ) : (
+              <CircleCheck className="size-4 shrink-0 text-white" aria-hidden="true" />
+            )}
+            <div className="flex min-w-0 items-baseline gap-2">
+              {title && <ToastTitle className="shrink-0 whitespace-nowrap">{title}</ToastTitle>}
+              {description && <ToastDescription className="truncate">{description}</ToastDescription>}
+            </div>
           </div>
           <ToastClose />
         </Toast>

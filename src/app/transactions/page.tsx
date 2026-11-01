@@ -132,6 +132,12 @@ export default function TransactionsPage() {
     setPage(1);
   }
 
+  function resetSort() {
+    setSortBy("date");
+    setSortOrder("desc");
+    setPage(1);
+  }
+
   function hasActiveFilters() {
     return filterType || filterCategoryId || filterAccountId || filterSearch || filterSubscriptionIds.length > 0 || filterDates.from || filterDates.to;
   }
@@ -303,6 +309,7 @@ export default function TransactionsPage() {
                 categories={categories}
                 saving={saving}
                 onOpenChange={(o) => {
+                  setDialogOpen(o);
                   if (!o) {
                     setEditTxId(null);
                     setNewDate(new Date().toISOString().split("T")[0]);
@@ -312,7 +319,6 @@ export default function TransactionsPage() {
                     setNewAccountId("");
                     setNewCategoryId(NO_CATEGORY_SENTINEL);
                     setNewIsSubscription(false);
-                    setDialogOpen(false);
                   }
                 }}
                 onDateChange={setNewDate}
@@ -338,12 +344,14 @@ export default function TransactionsPage() {
             categories={categories}
             subscriptions={subscriptions}
             hasActiveFilters={!!hasActiveFilters()}
+            isDefaultSort={sortBy === "date" && sortOrder === "desc"}
             onFilterTypeChange={(v) => { setFilterType(v); setPage(1); }}
             onFilterCategoryIdChange={(v) => { setFilterCategoryId(v); setPage(1); }}
             onFilterAccountIdChange={(v) => { setFilterAccountId(v); setPage(1); }}
             onFilterSearchChange={setFilterSearch}
             onFilterSubscriptionIdsChange={(v) => { setFilterSubscriptionIds(v); setPage(1); }}
             onFilterDatesChange={(dates) => { setFilterDates(dates); }}
+            onResetSort={resetSort}
             onClearFilters={clearFilters}
           />
 

@@ -19,7 +19,7 @@ export function SelectFilter({
   clearLabel = "Limpiar filtro",
 }: Readonly<SelectFilterProps>) {
   return (
-    <div className="relative" style={{ width }}>
+    <div className="relative shrink-0" style={{ width }}>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger className={value ? "pr-8" : ""}><SelectValue placeholder={placeholder} /></SelectTrigger>
         <SelectContent>
