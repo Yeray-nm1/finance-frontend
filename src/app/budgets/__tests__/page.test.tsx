@@ -20,6 +20,7 @@ vi.mock('@/lib/api', () => ({
     },
     budgets: {
       list: vi.fn(),
+      months: vi.fn(),
       monthly: { get: vi.fn() },
       calculateIncome: vi.fn(),
     },
@@ -101,6 +102,7 @@ describe('BudgetsPage - optimistic category updates', () => {
     ]);
     (api.budgets.list as ReturnType<typeof vi.fn>).mockResolvedValue([]);
     (api.budgets.monthly.get as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+    (api.budgets.months as ReturnType<typeof vi.fn>).mockResolvedValue([]);
     (api.categories.create as ReturnType<typeof vi.fn>).mockResolvedValue({
       id: 'cat-2',
       name: 'Nueva categoría',
@@ -185,5 +187,126 @@ describe('BudgetsPage - optimistic category updates', () => {
       expect(screen.queryByText('Comida')).not.toBeInTheDocument();
     });
     expect(api.categories.list).toHaveBeenCalledTimes(initialCalls);
+  });
+
+  it('C08: prev arrow jumps to the previous month with a budget and disables when none is left', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 10, 15));
+    (api.budgets.months as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { year: 2026, month: 5 },
+      { year: 2026, month: 11 },
+    ]);
+    try {
+      const user = userEvent.setup();
+      render(<BudgetsPage />);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
+      });
+
+      const prevButton = () => screen.getByRole('button', { name: 'Mes anterior con presupuesto' });
+
+      expect(screen.getByRole('button', { name: 'Ir a Noviembre 2026' })).toHaveAttribute('aria-pressed', 'true');
+      expect(prevButton()).toBeEnabled();
+
+      await user.click(prevButton());
+      await waitFor(() => {
+        expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
+      });
+
+      expect(screen.getByRole('button', { name: 'Ir a Mayo 2026' })).toHaveAttribute('aria-pressed', 'true');
+      expect(prevButton()).toBeDisabled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('C09: month chip jumps directly to a month with budget', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 10, 15));
+    (api.budgets.months as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { year: 2026, month: 5 },
+    ]);
+    try {
+      const user = userEvent.setup();
+      render(<BudgetsPage />);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Ir a Mayo 2026' }));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
+      });
+
+      expect(screen.getByRole('button', { name: 'Ir a Mayo 2026' })).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByRole('button', { name: 'Mes anterior con presupuesto' })).toBeDisabled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('C10: next arrow from a past month returns to the current month when there is no budget in between', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 10, 15));
+    (api.budgets.months as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { year: 2026, month: 5 },
+    ]);
+    try {
+      const user = userEvent.setup();
+      render(<BudgetsPage />);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Ir a Mayo 2026' }));
+      await waitFor(() => {
+        expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Mes siguiente' }));
+      await waitFor(() => {
+        expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
+      });
+
+      expect(screen.getByRole('button', { name: 'Ir a Noviembre 2026 (sin presupuesto)' })).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.queryByRole('button', { name: 'Ir a Junio 2026' })).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('C11: next arrow from a past month jumps to the next budget month before the current one', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 10, 15));
+    (api.budgets.months as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { year: 2026, month: 5 },
+      { year: 2026, month: 9 },
+    ]);
+    try {
+      const user = userEvent.setup();
+      render(<BudgetsPage />);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Ir a Mayo 2026' }));
+      await waitFor(() => {
+        expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Mes siguiente' }));
+      await waitFor(() => {
+        expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
+      });
+
+      expect(screen.getByRole('button', { name: 'Ir a Septiembre 2026' })).toHaveAttribute('aria-pressed', 'true');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

@@ -20,21 +20,98 @@ export default function BudgetsPage() {
   const [viewMonth, setViewMonth] = useState(today.getMonth() + 1);
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const { budget, saving, setBudget, saveBudget } = useBudget(viewMonth, viewYear);
-  const [prevMonthHasBudget, setPrevMonthHasBudget] = useState(false);
 
   const isPastMonth = viewYear < today.getFullYear() || (viewYear === today.getFullYear() && viewMonth < today.getMonth() + 1);
 
-  const prevMonth = viewMonth === 1 ? 12 : viewMonth - 1;
-  const prevYear = viewMonth === 1 ? viewYear - 1 : viewYear;
-  const isPrevPast = prevYear < today.getFullYear() || (prevYear === today.getFullYear() && prevMonth < today.getMonth() + 1);
-  const canGoBack = !isPrevPast || prevMonthHasBudget;
+  const selectedMonthValue = `${viewYear}-${String(viewMonth).padStart(2, "0")}`;
+  const [budgetMonths, setBudgetMonths] = useState<Array<{ year: number; month: number }>>([]);
 
-  const maxMonth = today.getMonth() + 1;
-  const maxYear = today.getFullYear() + 1;
+  const currentMonth = today.getMonth() + 1;
+  const currentYear = today.getFullYear();
+  const isViewingPast =
+    viewYear < currentYear || (viewYear === currentYear && viewMonth < currentMonth);
+  const isViewingFuture =
+    viewYear > currentYear || (viewYear === currentYear && viewMonth > currentMonth);
+
+  const previousBudgetMonth = useMemo(() => {
+    const beforeView = (m: { year: number; month: number }) =>
+      m.year < viewYear || (m.year === viewYear && m.month < viewMonth);
+
+    if (isViewingFuture) {
+      // Desde un mes futuro, volvemos al presupuesto más cercano sin bajar del mes actual.
+      const candidates = budgetMonths
+        .filter(
+          (m) =>
+            beforeView(m) &&
+            (m.year > currentYear || (m.year === currentYear && m.month >= currentMonth))
+        )
+        .sort((a, b) => a.year - b.year || a.month - b.month);
+      return candidates.length > 0
+        ? candidates[candidates.length - 1]
+        : { year: currentYear, month: currentMonth };
+    }
+
+    const previous = budgetMonths
+      .filter(beforeView)
+      .sort((a, b) => a.year - b.year || a.month - b.month);
+    return previous.length > 0 ? previous[previous.length - 1] : null;
+  }, [budgetMonths, viewYear, viewMonth, isViewingFuture, currentYear, currentMonth]);
+
+  const canGoBack = previousBudgetMonth !== null;
+
+  const monthOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const options: Array<{ value: string; label: string; hasBudget: boolean; isCurrent: boolean }> = [];
+    const hasBudget = (year: number, month: number) =>
+      budgetMonths.some((m) => m.year === year && m.month === month);
+    const add = (year: number, month: number) => {
+      const value = `${year}-${String(month).padStart(2, "0")}`;
+      if (seen.has(value)) return;
+      seen.add(value);
+      options.push({
+        value,
+        label: `${MONTH_NAMES[month - 1]} ${year}`,
+        hasBudget: hasBudget(year, month),
+        isCurrent: year === currentYear && month === currentMonth,
+      });
+    };
+
+    for (const m of budgetMonths) add(m.year, m.month);
+    add(viewYear, viewMonth);
+    add(today.getFullYear(), today.getMonth() + 1);
+
+    return options.sort((a, b) => a.value.localeCompare(b.value));
+  }, [budgetMonths, viewYear, viewMonth, currentYear, currentMonth, today]);
+
+  const maxMonth = currentMonth;
+  const maxYear = currentYear + 1;
   const nextMonth = viewMonth === 12 ? 1 : viewMonth + 1;
   const nextYear = viewMonth === 12 ? viewYear + 1 : viewYear;
+
+  // Desde un mes pasado, la flecha siguiente salta al siguiente mes con
+  // presupuesto y, si no hay ninguno, vuelve al mes actual en vez de ir mes a mes.
+  const nextBudgetMonth = useMemo(() => {
+    if (!isViewingPast) return null;
+
+    const afterView = budgetMonths
+      .filter(
+        (m) =>
+          (m.year > viewYear || (m.year === viewYear && m.month > viewMonth)) &&
+          (m.year < currentYear || (m.year === currentYear && m.month <= currentMonth))
+      )
+      .sort((a, b) => a.year - b.year || a.month - b.month);
+
+    return afterView.length > 0
+      ? afterView[0]
+      : { year: currentYear, month: currentMonth };
+  }, [budgetMonths, isViewingPast, viewYear, viewMonth, currentYear, currentMonth]);
+
   const isNextValid = nextYear < maxYear || (nextYear === maxYear && nextMonth <= maxMonth);
-  const canGoForward = isNextValid;
+  const canGoForward = nextBudgetMonth !== null || isNextValid;
+
+  const nextMonthLabel = nextBudgetMonth
+    ? `${MONTH_NAMES[nextBudgetMonth.month - 1]} ${nextBudgetMonth.year}`
+    : `${MONTH_NAMES[nextMonth - 1]} ${nextYear}`;
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,12 +144,14 @@ export default function BudgetsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [cats, budgets, monthly] = await Promise.all([
+      const [cats, budgets, monthly, months] = await Promise.all([
         api.categories.list(),
         api.budgets.list(),
         api.budgets.monthly.get(viewMonth, viewYear),
+        api.budgets.months(),
       ]);
       setCategories(cats);
+      setBudgetMonths(months);
 
       if (isInitialLoad.current) {
         isInitialLoad.current = false;
@@ -109,12 +188,6 @@ export default function BudgetsPage() {
       setLoading(false);
     }
   }, [viewMonth, viewYear, setBudget]);
-
-  useEffect(() => {
-    const prevM = viewMonth === 1 ? 12 : viewMonth - 1;
-    const prevY = viewMonth === 1 ? viewYear - 1 : viewYear;
-    api.budgets.monthly.get(prevM, prevY).then((m) => setPrevMonthHasBudget(m !== null));
-  }, [viewMonth, viewYear]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -195,22 +268,34 @@ export default function BudgetsPage() {
   }
 
   function goToPrevMonth() {
-    if (!canGoBack) return;
+    if (!previousBudgetMonth) return;
     setEditingBudget(false);
     editSnapshotRef.current = null;
-    setViewMonth(prevMonth);
-    setViewYear(prevYear);
+    setViewMonth(previousBudgetMonth.month);
+    setViewYear(previousBudgetMonth.year);
+  }
+
+  function goToMonth(value: string) {
+    const [year, month] = value.split("-").map(Number);
+    if (!year || !month) return;
+    setEditingBudget(false);
+    editSnapshotRef.current = null;
+    setViewMonth(month);
+    setViewYear(year);
   }
 
   function goToNextMonth() {
     if (!canGoForward) return;
     setEditingBudget(false);
     editSnapshotRef.current = null;
+    if (nextBudgetMonth) {
+      setViewMonth(nextBudgetMonth.month);
+      setViewYear(nextBudgetMonth.year);
+      return;
+    }
     setViewMonth(nextMonth);
     setViewYear(nextYear);
   }
-
-  const monthLabel = `${MONTH_NAMES[viewMonth - 1]} ${viewYear}`;
 
   const showEditButton = !editingBudget && !isPastMonth;
   const editButtonLabel = budget ? "Editar" : "Crear presupuesto";
@@ -281,14 +366,17 @@ export default function BudgetsPage() {
     <main className="min-h-screen bg-bg-page p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         <BudgetHeader
-          monthLabel={monthLabel}
+          monthOptions={monthOptions}
+          selectedMonthValue={selectedMonthValue}
           badge={badge}
           canGoBack={canGoBack}
           canGoForward={canGoForward}
+          nextMonthLabel={nextMonthLabel}
           showEditButton={showEditButton}
           editButtonLabel={editButtonLabel}
           onPrevMonth={goToPrevMonth}
           onNextMonth={goToNextMonth}
+          onMonthChange={goToMonth}
           onStartEdit={handleStartEdit}
         />
 
