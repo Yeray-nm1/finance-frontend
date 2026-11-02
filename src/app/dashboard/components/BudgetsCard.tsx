@@ -43,7 +43,7 @@ export function BudgetsCard({ budgets }: Readonly<BudgetsCardProps>) {
           const typeLabel = typeLabels[type] ?? type;
           const isTypeLevel = typeBudgets.every((b) => b.category === typeLabel);
           const totalSpent = typeBudgets.reduce((sum, b) => sum + b.spent, 0)
-          const totalBudgeted = typeBudgets[0]?.budgeted ?? 0
+          const totalBudgeted = typeBudgets.reduce((sum, b) => sum + b.budgeted, 0)
           const typeProgress = totalBudgeted > 0 ? (totalSpent / totalBudgeted) * 100 : 0
           return (
             <BudgetTypeSection

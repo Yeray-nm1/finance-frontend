@@ -52,32 +52,60 @@ vi.mock('next/navigation', () => ({
 }));
 
 vi.mock('@/app/budgets/components/BudgetDetails', () => ({
-  BudgetDetails: ({ onCalculateIncome }: { onCalculateIncome?: () => void }) =>
+  BudgetDetails: ({
+    onCalculateIncome,
+    onTotalIncomeChange,
+    onSave,
+    canSave,
+    saving,
+  }: {
+    onCalculateIncome?: () => void;
+    onTotalIncomeChange?: (value: number) => void;
+    onSave?: () => void;
+    canSave?: boolean;
+    saving?: boolean;
+  }) =>
     <div data-testid="budget-details">
       <button onClick={onCalculateIncome}>Calcular ingresos</button>
+      <button onClick={() => onTotalIncomeChange?.(1000)}>Definir ingresos 1000</button>
+      <button onClick={onSave} disabled={!canSave || saving}>Guardar presupuesto</button>
+      <span data-testid="can-save">{String(canSave)}</span>
     </div>,
 }));
 
 vi.mock('@/app/budgets/components/BudgetCategoryDetails', () => ({
   BudgetCategoryDetails: ({
     categories,
+    categoryAllocations,
     onOpenEditCategory,
     onDeleteCategory,
     onAddCategory,
+    onCategoryAmountChange,
+    remaining,
   }: {
     categories: { id: string; name: string; type: string }[];
+    categoryAllocations: { categoryId: string; amount: number }[];
     onOpenEditCategory: (cat: { id: string; name: string; type: string }) => void;
     onDeleteCategory: (cat: { id: string; name: string; type: string }) => void;
     onAddCategory: () => void;
+    onCategoryAmountChange: (categoryId: string, amount: number) => void;
+    remaining: number;
   }) => (
     <div data-testid="budget-category-details">
-      {categories.map((cat: { id: string; name: string; type: string }) => (
-        <div key={cat.id} data-testid={`cat-${cat.id}`}>
-          <span>{cat.name}</span>
-          <button onClick={() => onOpenEditCategory(cat)}>Editar</button>
-          <button onClick={() => onDeleteCategory(cat)}>Eliminar</button>
-        </div>
-      ))}
+      {categories.map((cat: { id: string; name: string; type: string }) => {
+        const amount = categoryAllocations.find((a) => a.categoryId === cat.id)?.amount ?? 0;
+        return (
+          <div key={cat.id} data-testid={`cat-${cat.id}`}>
+            <span>{cat.name}</span>
+            <span data-testid={`amount-${cat.id}`}>{amount}</span>
+            <button onClick={() => onOpenEditCategory(cat)}>Editar</button>
+            <button onClick={() => onDeleteCategory(cat)}>Eliminar</button>
+            <button onClick={() => onCategoryAmountChange(cat.id, 400)}>Asignar 400</button>
+            <button onClick={() => onCategoryAmountChange(cat.id, 500)}>Asignar 500</button>
+          </div>
+        );
+      })}
+      <span data-testid="remaining">{remaining}</span>
       <button onClick={onAddCategory}>Añadir categoría</button>
     </div>
   ),
@@ -305,6 +333,79 @@ describe('BudgetsPage - optimistic category updates', () => {
       });
 
       expect(screen.getByRole('button', { name: 'Ir a Septiembre 2026' })).toHaveAttribute('aria-pressed', 'true');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('C12: blocks saving while a type does not match its allocation', async () => {
+    const user = userEvent.setup();
+    render(<BudgetsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Crear presupuesto' }));
+    await user.click(screen.getByRole('button', { name: 'Definir ingresos 1000' }));
+    await user.click(screen.getByRole('button', { name: 'Asignar 400' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('can-save')).toHaveTextContent('false');
+    });
+    expect(screen.getByRole('button', { name: 'Guardar presupuesto' })).toBeDisabled();
+    expect(screen.getByTestId('remaining')).toHaveTextContent('100');
+  });
+
+  it('C13: saves category amounts in euros once every type matches', async () => {
+    budgetHookMocks.saveBudget.mockResolvedValue({ id: 'budget-1' });
+    const user = userEvent.setup();
+    render(<BudgetsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Crear presupuesto' }));
+    await user.click(screen.getByRole('button', { name: 'Definir ingresos 1000' }));
+    await user.click(screen.getByRole('button', { name: 'Asignar 500' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('can-save')).toHaveTextContent('true');
+    });
+    await user.click(screen.getByRole('button', { name: 'Guardar presupuesto' }));
+
+    await waitFor(() => {
+      expect(budgetHookMocks.saveBudget).toHaveBeenCalledWith(
+        1000,
+        expect.any(Array),
+        [{ categoryId: 'cat-1', amount: 500 }]
+      );
+    });
+  });
+
+  it('C14: past budget months stay read-only and cannot be edited', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 10, 15));
+    (api.budgets.months as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { year: 2026, month: 5 },
+    ]);
+    try {
+      const user = userEvent.setup();
+      render(<BudgetsPage />);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Ir a Mayo 2026' }));
+      await waitFor(() => {
+        expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
+      });
+
+      expect(screen.getByTestId('budget-readonly')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Editar' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Crear presupuesto' })).not.toBeInTheDocument();
     } finally {
       vi.useRealTimers();
     }

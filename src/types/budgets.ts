@@ -14,6 +14,11 @@ export interface IncomeGroup {
   transactions: IncomeCandidateItem[];
 }
 
+export interface CategoryAllocation {
+  categoryId: string;
+  amount: number;
+}
+
 export interface MonthlyBudget {
   id: string;
   userId: string;
@@ -23,6 +28,7 @@ export interface MonthlyBudget {
   createdAt: string;
   updatedAt: string;
   typeAllocations: Array<{ type: string; percentage: number }>;
+  categoryAllocations?: CategoryAllocation[] | null;
 }
 
 export interface BudgetWithCategory {

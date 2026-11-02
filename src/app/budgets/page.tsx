@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import type { Category } from "@/types/categories";
-import type { IncomeGroup } from "@/types/budgets";
+import type { IncomeGroup, CategoryAllocation } from "@/types/budgets";
 import { api } from "@/lib/api";
 import { BudgetDetails } from "@/app/budgets/components/BudgetDetails";
 import { BudgetCategoryDetails } from "@/app/budgets/components/BudgetCategoryDetails";
@@ -12,6 +12,12 @@ import { BudgetHeader } from "@/app/budgets/components/BudgetHeader";
 import { EditCategoryDialog } from "@/app/budgets/components/EditCategoryDialog";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 import { getBudgetBadge, DEFAULT_ALLOCATIONS, MONTH_NAMES } from "@/lib/budget-constants";
+import {
+  buildInitialAllocations,
+  getTypeRemaining,
+  rescaleAllocations,
+  roundCurrency,
+} from "@/lib/budget-allocation";
 import { useBudget } from "@/hooks/useBudget";
 import { toast } from "@/hooks/use-toast";
 
@@ -118,6 +124,7 @@ export default function BudgetsPage() {
   const [error, setError] = useState<string | null>(null);
   const [totalIncome, setTotalIncome] = useState(0);
   const [typeAllocations, setTypeAllocations] = useState(DEFAULT_ALLOCATIONS);
+  const [categoryAllocations, setCategoryAllocations] = useState<CategoryAllocation[]>([]);
   const [selectedType, setSelectedType] = useState<string>("needs");
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -136,17 +143,18 @@ export default function BudgetsPage() {
   const editSnapshotRef = useRef<{
     totalIncome: number;
     typeAllocations: typeof DEFAULT_ALLOCATIONS;
+    categoryAllocations: CategoryAllocation[];
     categories: string;
   } | null>(null);
+  const loadedAllocationsRef = useRef("[]");
   const categoriesSnapshotRef = useRef("");
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [cats, budgets, monthly, months] = await Promise.all([
+      const [cats, monthly, months] = await Promise.all([
         api.categories.list(),
-        api.budgets.list(),
         api.budgets.monthly.get(viewMonth, viewYear),
         api.budgets.months(),
       ]);
@@ -159,27 +167,24 @@ export default function BudgetsPage() {
       }
 
       if (monthly) {
+        const allocations = buildInitialAllocations(
+          cats,
+          monthly.typeAllocations,
+          monthly.totalIncome,
+          monthly.categoryAllocations ?? []
+        );
         setBudget(monthly);
         setTotalIncome(monthly.totalIncome);
         setTypeAllocations(monthly.typeAllocations);
+        setCategoryAllocations(allocations);
+        loadedAllocationsRef.current = JSON.stringify(allocations);
       } else {
+        const allocations = buildInitialAllocations(cats, DEFAULT_ALLOCATIONS, 0);
         setBudget(null);
         setTotalIncome(0);
         setTypeAllocations(DEFAULT_ALLOCATIONS);
-      }
-
-      if (budgets.length > 0) {
-        const typePct: Record<string, number> = {};
-        for (const b of budgets) {
-          const t = b.category.type;
-          typePct[t] = (typePct[t] ?? 0) + b.percentage;
-        }
-        setTypeAllocations(
-          DEFAULT_ALLOCATIONS.map((a) => ({
-            type: a.type,
-            percentage: typePct[a.type] ?? a.percentage,
-          }))
-        );
+        setCategoryAllocations(allocations);
+        loadedAllocationsRef.current = JSON.stringify(allocations);
       }
     } catch (e) {
       console.error(e);
@@ -194,13 +199,37 @@ export default function BudgetsPage() {
   const totalAllocated = typeAllocations.reduce((s, a) => s + a.percentage, 0);
   const isValidTotal = Math.abs(totalAllocated - 100) < 0.15;
 
+  const remainingByType = useMemo(
+    () =>
+      typeAllocations.map((allocation) => ({
+        type: allocation.type,
+        remaining: getTypeRemaining(
+          categories,
+          allocation.type,
+          categoryAllocations,
+          totalIncome * (allocation.percentage / 100)
+        ),
+      })),
+    [categories, typeAllocations, categoryAllocations, totalIncome]
+  );
+  const isCategoryAllocationValid = remainingByType.every(
+    (item) => Math.abs(item.remaining) < 0.005
+  );
+
   const categoriesChanged = JSON.stringify(categories) !== categoriesSnapshotRef.current;
+  const allocationsChanged =
+    JSON.stringify(categoryAllocations) !== loadedAllocationsRef.current;
   const hasChanges = budget !== null && (
     totalIncome !== budget.totalIncome ||
     JSON.stringify(typeAllocations) !== JSON.stringify(budget.typeAllocations) ||
+    allocationsChanged ||
     categoriesChanged
   );
-  const canSave = totalIncome > 0 && isValidTotal && (budget === null || hasChanges);
+  const canSave =
+    totalIncome > 0 &&
+    isValidTotal &&
+    isCategoryAllocationValid &&
+    (budget === null || hasChanges);
 
   if (loading) {
     return (
@@ -241,6 +270,9 @@ export default function BudgetsPage() {
   async function handleDeleteConfirm() {
     await api.categories.delete(deletingCategory!.id);
     setCategories(prev => prev.filter(c => c.id !== deletingCategory!.id));
+    setCategoryAllocations(prev =>
+      prev.filter((entry) => entry.categoryId !== deletingCategory!.id)
+    );
     setDeleteDialogOpen(false);
     setDeletingCategory(null);
   }
@@ -253,6 +285,10 @@ export default function BudgetsPage() {
         type: selectedType,
       });
       setCategories(prev => [...prev, created]);
+      setCategoryAllocations(prev => [
+        ...prev,
+        { categoryId: created.id, amount: 0 },
+      ]);
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Error al crear categoría");
     }
@@ -260,9 +296,32 @@ export default function BudgetsPage() {
 
   function handlePercentageChange(type: string, newPercentage: number) {
     setSaveError(null);
-    setTypeAllocations((prev) =>
-      prev.map((a) =>
-        a.type === type ? { ...a, percentage: Math.max(0, Math.min(100, newPercentage)) } : a
+    const percentage = Math.max(0, Math.min(100, newPercentage));
+    const nextAllocations = typeAllocations.map((allocation) =>
+      allocation.type === type ? { ...allocation, percentage } : allocation
+    );
+    setTypeAllocations(nextAllocations);
+    setCategoryAllocations((prev) =>
+      rescaleAllocations(prev, categories, nextAllocations, totalIncome, type)
+    );
+  }
+
+  function handleTotalIncomeChange(value: number) {
+    setSaveError(null);
+    const income = Math.max(0, value);
+    setTotalIncome(income);
+    setCategoryAllocations((prev) =>
+      rescaleAllocations(prev, categories, typeAllocations, income)
+    );
+  }
+
+  function handleCategoryAmountChange(categoryId: string, amount: number) {
+    setSaveError(null);
+    setCategoryAllocations((prev) =>
+      prev.map((entry) =>
+        entry.categoryId === categoryId
+          ? { ...entry, amount: roundCurrency(Math.max(0, amount)) }
+          : entry
       )
     );
   }
@@ -305,6 +364,7 @@ export default function BudgetsPage() {
     editSnapshotRef.current = {
       totalIncome,
       typeAllocations,
+      categoryAllocations,
       categories: JSON.stringify(categories),
     };
     setEditingBudget(true);
@@ -315,6 +375,7 @@ export default function BudgetsPage() {
     if (snapshot) {
       setTotalIncome(snapshot.totalIncome);
       setTypeAllocations(snapshot.typeAllocations);
+      setCategoryAllocations(snapshot.categoryAllocations);
       setCategories(JSON.parse(snapshot.categories));
     }
     editSnapshotRef.current = null;
@@ -342,14 +403,15 @@ export default function BudgetsPage() {
   }
 
   function handleIncomeConfirm(selectedTotal: number) {
-    setTotalIncome(selectedTotal);
+    handleTotalIncomeChange(selectedTotal);
     setIncomeDialogOpen(false);
   }
 
   async function handleSave() {
-    const saved = await saveBudget(totalIncome, typeAllocations);
+    const saved = await saveBudget(totalIncome, typeAllocations, categoryAllocations);
     if (saved) {
       categoriesSnapshotRef.current = JSON.stringify(categories);
+      loadedAllocationsRef.current = JSON.stringify(categoryAllocations);
       setEditingBudget(false);
       editSnapshotRef.current = null;
       toast({ title: "Presupuesto guardado", description: "Los cambios se han guardado correctamente." });
@@ -384,6 +446,7 @@ export default function BudgetsPage() {
           <BudgetReadOnlyView
             totalIncome={totalIncome}
             typeAllocations={typeAllocations}
+            categoryAllocations={categoryAllocations}
             categories={categories}
           />
         ) : (
@@ -391,7 +454,7 @@ export default function BudgetsPage() {
             <div className="lg:col-span-1 self-start">
               <BudgetDetails
                 totalIncome={totalIncome}
-                onTotalIncomeChange={setTotalIncome}
+                onTotalIncomeChange={handleTotalIncomeChange}
                 typeAllocations={typeAllocations}
                 selectedType={selectedType}
                 onSelectType={setSelectedType}
@@ -412,8 +475,11 @@ export default function BudgetsPage() {
                   categories={categories}
                   selectedType={selectedType}
                   typeAllocations={typeAllocations}
+                  categoryAllocations={categoryAllocations}
                   onPercentageChange={handlePercentageChange}
+                  onCategoryAmountChange={handleCategoryAmountChange}
                   totalIncome={totalIncome}
+                  remaining={remainingByType.find((item) => item.type === selectedType)?.remaining ?? 0}
                   saveError={saveError}
                   onOpenEditCategory={openEditCategory}
                   onDeleteCategory={handleDeleteCategory}

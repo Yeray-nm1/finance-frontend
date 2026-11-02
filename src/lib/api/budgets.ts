@@ -30,7 +30,11 @@ export const budgets = {
       params.set('year', String(year));
       return requestNullable<MonthlyBudget>(`/budgets/monthly?${params.toString()}`);
     },
-    upsert: (month: number, year: number, data: { totalIncome: number; typeAllocations: Array<{ type: string; percentage: number }> }) => {
+    upsert: (month: number, year: number, data: {
+      totalIncome: number;
+      typeAllocations: Array<{ type: string; percentage: number }>;
+      categoryAllocations: Array<{ categoryId: string; amount: number }>;
+    }) => {
       const params = new URLSearchParams();
       params.set('month', String(month));
       params.set('year', String(year));

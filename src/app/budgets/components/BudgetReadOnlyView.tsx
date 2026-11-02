@@ -7,11 +7,13 @@ import { ChevronDown } from "lucide-react";
 import { typeLabels } from "@/lib/budget-constants";
 import { typeIcons, getValidationColor } from "@/components/ui/variants/budget.variants";
 import { formatCurrency } from "@/lib/format";
+import { getAllocation } from "@/lib/budget-allocation";
 import type { BudgetReadOnlyViewProps } from "./types/BudgetReadOnlyView.types";
 
 export function BudgetReadOnlyView({
   totalIncome,
   typeAllocations,
+  categoryAllocations,
   categories,
 }: Readonly<BudgetReadOnlyViewProps>) {
   const totalAllocated = typeAllocations.reduce((s, a) => s + a.percentage, 0);
@@ -87,6 +89,10 @@ export function BudgetReadOnlyView({
                             className="px-3 py-1.5 bg-bg-elevated rounded-lg text-sm text-text-primary"
                           >
                             {cat.name}
+                            <span className="text-text-muted">
+                              {" · "}
+                              {formatCurrency(getAllocation(categoryAllocations, cat.id))}
+                            </span>
                           </span>
                         ))}
                       </div>
