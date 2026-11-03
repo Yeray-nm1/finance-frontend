@@ -1,5 +1,12 @@
 import { request } from './client';
-import type { Transaction, CreateTransactionDTO, UpdateTransactionDTO, ImportCsvResult } from '@/types/transactions';
+import type {
+  Transaction,
+  CreateTransactionDTO,
+  UpdateTransactionDTO,
+  ImportCsvResult,
+  CsvMapping,
+  CsvPreviewResult,
+} from '@/types/transactions';
 import type { TransactionFilters } from '@/types/filter';
 import type { PaginatedResponse } from '@/types';
 
@@ -23,10 +30,15 @@ export const transactions = {
   },
   create: (data: CreateTransactionDTO) =>
     request<Transaction>('/transactions', { method: 'POST', body: JSON.stringify(data) }),
-  importCsv: (rows: Record<string, string>[]) =>
+  importCsv: (rows: Record<string, string>[], mapping?: CsvMapping) =>
     request<ImportCsvResult>('/transactions/import', {
       method: 'POST',
-      body: JSON.stringify({ rows }),
+      body: JSON.stringify({ rows, ...(mapping ? { mapping } : {}) }),
+    }),
+  previewCsv: (rows: Record<string, string>[], mapping?: CsvMapping) =>
+    request<CsvPreviewResult>('/transactions/import/preview', {
+      method: 'POST',
+      body: JSON.stringify({ rows, ...(mapping ? { mapping } : {}) }),
     }),
   update: (id: string, data: UpdateTransactionDTO) =>
     request<Transaction>(`/transactions/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),

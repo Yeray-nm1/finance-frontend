@@ -44,3 +44,34 @@ export interface ImportCsvResult {
   invalid: number;
   errors: Array<{ row: number; reason: string }>;
 }
+
+export type CsvField = 'date' | 'amount' | 'description' | 'type';
+
+export type CsvMapping = Record<CsvField, string | null>;
+
+export type CsvRowStatus = 'ok' | 'error' | 'duplicate';
+
+export interface CsvPreviewRow {
+  row: number;
+  date: string | null;
+  amount: number | null;
+  description: string;
+  type: TransactionType;
+  status: CsvRowStatus;
+  reason?: string;
+}
+
+export interface CsvPreviewResult {
+  total: number;
+  valid: number;
+  invalid: number;
+  duplicates: number;
+  rows: CsvPreviewRow[];
+  truncated: boolean;
+  errors: Array<{ row: number; reason: string }>;
+  mapping: CsvMapping;
+  detected: {
+    date: string | null;
+    amount: string | null;
+  };
+}
