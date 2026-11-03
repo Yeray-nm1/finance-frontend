@@ -30,6 +30,10 @@ vi.mock('../components/RecentTransactionsCard', () => ({
   RecentTransactionsCard: () => <div>RecentTransactionsCard mock</div>,
 }));
 
+vi.mock('../components/OnboardingChecklist', () => ({
+  OnboardingChecklist: () => <div>OnboardingChecklist mock</div>,
+}));
+
 describe('DashboardPage month navigation', () => {
   beforeEach(() => {
     vi.clearAllMocks();

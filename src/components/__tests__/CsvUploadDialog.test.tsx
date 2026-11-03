@@ -12,6 +12,9 @@ import type { CsvMapping, CsvPreviewResult } from "@/types/transactions";
 
 vi.mock("@/lib/api", () => ({
   api: {
+    accounts: {
+      list: vi.fn(),
+    },
     transactions: {
       previewCsv: vi.fn(),
       importCsv: vi.fn(),
@@ -19,8 +22,16 @@ vi.mock("@/lib/api", () => ({
   },
 }));
 
+const accountsList = vi.mocked(api.accounts.list);
 const previewCsv = vi.mocked(api.transactions.previewCsv);
 const importCsv = vi.mocked(api.transactions.importCsv);
+const account = {
+  id: "account-1",
+  userId: "user-1",
+  name: "Cuenta principal",
+  type: "checking" as const,
+  createdAt: "2026-01-01T00:00:00.000Z",
+};
 
 const mapping: CsvMapping = {
   date: "Fecha",
@@ -80,6 +91,7 @@ async function uploadFile(file = createFile()) {
 beforeEach(() => {
   localStorage.clear();
   vi.clearAllMocks();
+  accountsList.mockResolvedValue([account]);
   previewCsv.mockResolvedValue(buildPreview());
   importCsv.mockResolvedValue({
     imported: 1,
@@ -117,6 +129,9 @@ describe("CsvUploadDialog", () => {
     expect(screen.queryByText(/No tiene relación con las suscripciones/)).not.toBeInTheDocument();
     expect(screen.queryByText(/se deduce por el signo del importe/)).not.toBeInTheDocument();
     expect(screen.getByLabelText("Columna de fecha")).toHaveValue("Fecha");
+    await waitFor(() => {
+      expect(screen.getByLabelText("Cuenta de destino")).toHaveValue("account-1");
+    });
 
     const importButton = screen.getByRole("button", { name: "Importar 1 fila" });
     await waitFor(() => expect(importButton).toBeEnabled());
@@ -125,6 +140,7 @@ describe("CsvUploadDialog", () => {
     await waitFor(() => {
       expect(importCsv).toHaveBeenCalledTimes(1);
       expect(importCsv.mock.calls[0][1]).toEqual(mapping);
+      expect(importCsv.mock.calls[0][2]).toBe("account-1");
     });
 
     expect(await screen.findByText("1 de 2 filas importadas · 1 duplicada")).toBeInTheDocument();

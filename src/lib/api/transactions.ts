@@ -30,10 +30,14 @@ export const transactions = {
   },
   create: (data: CreateTransactionDTO) =>
     request<Transaction>('/transactions', { method: 'POST', body: JSON.stringify(data) }),
-  importCsv: (rows: Record<string, string>[], mapping?: CsvMapping) =>
+  importCsv: (rows: Record<string, string>[], mapping?: CsvMapping, accountId?: string) =>
     request<ImportCsvResult>('/transactions/import', {
       method: 'POST',
-      body: JSON.stringify({ rows, ...(mapping ? { mapping } : {}) }),
+      body: JSON.stringify({
+        rows,
+        ...(mapping ? { mapping } : {}),
+        ...(accountId ? { accountId } : {}),
+      }),
     }),
   previewCsv: (rows: Record<string, string>[], mapping?: CsvMapping) =>
     request<CsvPreviewResult>('/transactions/import/preview', {

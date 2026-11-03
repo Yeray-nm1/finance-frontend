@@ -34,6 +34,7 @@ interface TransactionDialogProps {
   onAmountChange: (v: string) => void;
   onDescriptionChange: (v: string) => void;
   onAccountIdChange: (v: string) => void;
+  onAccountCreated: (account: Account) => void;
   onCategoryIdChange: (v: string) => void;
   onIsSubscriptionChange: (v: boolean) => void;
   onSubmit: (e: React.SyntheticEvent<HTMLFormElement>) => void;
@@ -58,6 +59,7 @@ export function TransactionDialog({
   onAmountChange,
   onDescriptionChange,
   onAccountIdChange,
+  onAccountCreated,
   onCategoryIdChange,
   onIsSubscriptionChange,
   onSubmit,
@@ -93,6 +95,7 @@ export function TransactionDialog({
             onAmountChange={onAmountChange}
             onDescriptionChange={onDescriptionChange}
             onAccountIdChange={onAccountIdChange}
+            onAccountCreated={onAccountCreated}
             onCategoryIdChange={onCategoryIdChange}
             onIsSubscriptionChange={onIsSubscriptionChange}
             onSubmit={onSubmit}

@@ -19,6 +19,7 @@ export interface TransactionFormProps {
   onAmountChange: (amount: string) => void;
   onDescriptionChange: (description: string) => void;
   onAccountIdChange: (accountId: string) => void;
+  onAccountCreated: (account: Account) => void;
   onCategoryIdChange: (categoryId: string) => void;
   onIsSubscriptionChange: (isSubscription: boolean) => void;
   onSubmit: (e: React.SyntheticEvent<HTMLFormElement>) => void;

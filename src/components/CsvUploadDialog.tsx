@@ -36,6 +36,7 @@ import type {
   ImportCsvResult,
   TransactionType,
 } from "@/types/transactions";
+import type { Account } from "@/types/accounts";
 
 interface CsvUploadDialogProps {
   readonly open: boolean;
@@ -111,6 +112,8 @@ export function CsvUploadDialog({ open, onClose, onImported }: Readonly<CsvUploa
   const [mapping, setMapping] = useState<CsvMapping | null>(null);
   const [preview, setPreview] = useState<CsvPreviewResult | null>(null);
   const [result, setResult] = useState<ImportCsvResult | null>(null);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accountId, setAccountId] = useState("");
   const [dragging, setDragging] = useState(false);
   const [reading, setReading] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -136,6 +139,23 @@ export function CsvUploadDialog({ open, onClose, onImported }: Readonly<CsvUploa
   useEffect(() => {
     if (!open) resetState();
   }, [open, resetState]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    let active = true;
+    api.accounts.list()
+      .then((list) => {
+        if (!active) return;
+        setAccounts(list);
+        setAccountId((current) => current || list[0]?.id || "");
+      })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+    };
+  }, [open]);
 
   const runPreview = useCallback(
     async (rows: Record<string, string>[], nextMapping?: CsvMapping) => {
@@ -242,7 +262,11 @@ export function CsvUploadDialog({ open, onClose, onImported }: Readonly<CsvUploa
     setError(null);
 
     try {
-      const res = await api.transactions.importCsv(file.rows, mapping);
+      const res = await api.transactions.importCsv(
+        file.rows,
+        mapping,
+        accountId || undefined
+      );
       setResult(res);
       setStep("result");
 
@@ -254,7 +278,7 @@ export function CsvUploadDialog({ open, onClose, onImported }: Readonly<CsvUploa
     } finally {
       setImporting(false);
     }
-  }, [file, mapping, preview, onImported]);
+  }, [file, mapping, preview, accountId, onImported]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -375,6 +399,28 @@ export function CsvUploadDialog({ open, onClose, onImported }: Readonly<CsvUploa
                 Codificación detectada:{" "}
                 {file.encoding === "utf-8" ? "UTF-8" : "Windows-1252"}
               </span>
+            </div>
+
+            <div className="max-w-xs">
+              <label className="block text-xs">
+                <span className="mb-1 block font-medium text-text-primary">
+                  Cuenta de destino
+                </span>
+                <select
+                  aria-label="Cuenta de destino"
+                  value={accountId}
+                  onChange={(e) => setAccountId(e.target.value)}
+                  disabled={accounts.length === 0}
+                  className="w-full rounded-md border border-border bg-white px-2 py-1.5 text-sm text-text-primary disabled:opacity-60"
+                >
+                  {accounts.length === 0 && <option value="">Sin cuentas</option>}
+                  {accounts.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
 
             <p className="text-xs text-text-secondary">

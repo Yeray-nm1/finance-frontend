@@ -11,6 +11,7 @@ import { RecurringCard } from "./components/RecurringCard";
 import { RecentTransactionsCard } from "./components/RecentTransactionsCard";
 import { DashboardSkeleton } from "./components/DashboardSkeleton";
 import { DashboardError } from "./components/DashboardError";
+import { OnboardingChecklist } from "./components/OnboardingChecklist";
 
 function hasBalanceData(data: DashboardResponse): boolean {
   return (
@@ -162,6 +163,7 @@ export default function DashboardPage() {
       <main className="min-h-screen bg-bg-page p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
           {headerContent}
+          <OnboardingChecklist />
           <div className="bg-white border border-border rounded-lg p-8 text-center">
             <p className="text-sm text-text-muted">No hay datos disponibles para {selectedMonthLabel}</p>
           </div>
@@ -180,6 +182,7 @@ export default function DashboardPage() {
     <main className="min-h-screen bg-bg-page p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         {headerContent}
+        <OnboardingChecklist />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <BalanceCard
             income={balance.income}

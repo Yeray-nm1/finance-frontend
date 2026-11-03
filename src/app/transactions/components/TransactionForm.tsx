@@ -12,9 +12,10 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { NO_CATEGORY_SENTINEL, getSubmitLabel, getAmountSign, typeLabel } from "@/lib/transactions-utils";
+import { NO_ACCOUNT_SENTINEL, NO_CATEGORY_SENTINEL, getSubmitLabel, getAmountSign, typeLabel } from "@/lib/transactions-utils";
 import { formatCurrency } from "@/lib/format";
 import { getAmountColor } from "@/components/ui/variants/transactions.variants";
+import { QuickAccountCreate } from "./QuickAccountCreate";
 import type { TransactionFormProps } from "./types/TransactionForm.types";
 import type { TransactionType } from "@/types/transactions";
 
@@ -35,6 +36,7 @@ export function TransactionForm({
   onAmountChange,
   onDescriptionChange,
   onAccountIdChange,
+  onAccountCreated,
   onCategoryIdChange,
   onIsSubscriptionChange,
   onSubmit,
@@ -84,16 +86,18 @@ export function TransactionForm({
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="tx-account">Cuenta</Label>
-          <Select value={newAccountId} onValueChange={editTxId ? undefined : onAccountIdChange} disabled={!!editTxId || accounts.length === 0}>
+          <Select value={newAccountId} onValueChange={onAccountIdChange} disabled={accounts.length === 0}>
             <SelectTrigger id="tx-account">
-              <SelectValue placeholder={accounts.length === 0 ? "Sin cuentas" : "Opcional"} />
+              <SelectValue placeholder={accounts.length === 0 ? "Sin cuentas" : "Sin cuenta"} />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value={NO_ACCOUNT_SENTINEL}>Sin cuenta</SelectItem>
               {accounts.map((acc) => (
                 <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
+          <QuickAccountCreate onCreated={onAccountCreated} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="tx-category">Categoria</Label>

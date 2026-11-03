@@ -14,7 +14,7 @@ import { toast } from "@/hooks/use-toast";
 import { TransactionsFilters } from "@/app/transactions/components/TransactionsFilters";
 import { TransactionsTable } from "@/app/transactions/components/TransactionsTable";
 import { TransactionsPagination } from "@/app/transactions/components/TransactionsPagination";
-import { NO_CATEGORY_SENTINEL } from "@/lib/transactions-utils";
+import { NO_ACCOUNT_SENTINEL, NO_CATEGORY_SENTINEL } from "@/lib/transactions-utils";
 import { api } from "@/lib/api";
 import type { Transaction, TransactionType, UpdateTransactionDTO } from "@/types/transactions";
 import type { Account } from "@/types/accounts";
@@ -100,6 +100,12 @@ export default function TransactionsPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    if (!editTxId && accounts.length > 0 && !newAccountId) {
+      setNewAccountId(accounts[0].id);
+    }
+  }, [accounts, editTxId, newAccountId]);
 
   useEffect(() => {
     if (searchTimer.current) clearTimeout(searchTimer.current);
@@ -189,15 +195,28 @@ export default function TransactionsPage() {
     try {
       if (editTxId) {
         const resolvedCategory = newCategoryId === NO_CATEGORY_SENTINEL ? null : newCategoryId;
+        const resolvedAccount =
+          newAccountId === NO_ACCOUNT_SENTINEL || !newAccountId ? null : newAccountId;
         await api.transactions.update(editTxId, {
           description: newDescription.trim(),
           categoryId: resolvedCategory,
+          accountId: resolvedAccount,
           isSubscription: newIsSubscription,
         });
+        const selectedAccount = accounts.find((acc) => acc.id === resolvedAccount);
         setTransactions((prev) =>
           prev.map((t) =>
             t.id === editTxId
-              ? { ...t, description: newDescription.trim(), categoryId: resolvedCategory, isSubscription: newIsSubscription }
+              ? {
+                  ...t,
+                  description: newDescription.trim(),
+                  categoryId: resolvedCategory,
+                  accountId: resolvedAccount,
+                  account: selectedAccount
+                    ? { id: selectedAccount.id, name: selectedAccount.name, type: selectedAccount.type }
+                    : undefined,
+                  isSubscription: newIsSubscription,
+                }
               : t
           )
         );
@@ -219,7 +238,7 @@ export default function TransactionsPage() {
           amount: parsedAmount,
           description: newDescription.trim(),
           type: newType,
-          accountId: newAccountId || undefined,
+          accountId: newAccountId === NO_ACCOUNT_SENTINEL ? undefined : newAccountId || undefined,
           categoryId: newCategoryId === NO_CATEGORY_SENTINEL ? undefined : newCategoryId || undefined,
           isSubscription: newIsSubscription,
         });
@@ -258,11 +277,16 @@ export default function TransactionsPage() {
     setNewType(tx.type);
     setNewAmount(String(tx.amount));
     setNewDescription(tx.description);
-    setNewAccountId(tx.accountId ?? "");
+    setNewAccountId(tx.accountId ?? NO_ACCOUNT_SENTINEL);
     setNewCategoryId(tx.categoryId ?? NO_CATEGORY_SENTINEL);
     setNewIsSubscription(tx.isSubscription);
     setEditTxId(tx.id);
     setDialogOpen(true);
+  }
+
+  function handleAccountCreated(account: Account) {
+    setAccounts((prev) => [...prev, account]);
+    setNewAccountId(account.id);
   }
 
   const from = total === 0 ? 0 : (page - 1) * limit + 1;
@@ -326,6 +350,7 @@ export default function TransactionsPage() {
                 onAmountChange={setNewAmount}
                 onDescriptionChange={setNewDescription}
                 onAccountIdChange={setNewAccountId}
+                onAccountCreated={handleAccountCreated}
                 onCategoryIdChange={setNewCategoryId}
                 onIsSubscriptionChange={setNewIsSubscription}
                 onSubmit={handleSubmit}
