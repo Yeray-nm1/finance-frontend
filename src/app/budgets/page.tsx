@@ -9,7 +9,7 @@ import { BudgetCategoryDetails } from "@/app/budgets/components/BudgetCategoryDe
 import { BudgetReadOnlyView } from "@/app/budgets/components/BudgetReadOnlyView";
 import { IncomeReviewDialog } from "@/app/budgets/components/IncomeReviewDialog";
 import { BudgetHeader } from "@/app/budgets/components/BudgetHeader";
-import { EditCategoryDialog } from "@/app/budgets/components/EditCategoryDialog";
+import { CategoryDialog } from "@/app/categories/components/CategoryDialog";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 import { getBudgetBadge, DEFAULT_ALLOCATIONS, MONTH_NAMES } from "@/lib/budget-constants";
 import {
@@ -129,6 +129,7 @@ export default function BudgetsPage() {
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [savingCategory, setSavingCategory] = useState(false);
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
@@ -144,13 +145,12 @@ export default function BudgetsPage() {
     totalIncome: number;
     typeAllocations: typeof DEFAULT_ALLOCATIONS;
     categoryAllocations: CategoryAllocation[];
-    categories: string;
   } | null>(null);
   const loadedAllocationsRef = useRef("[]");
   const categoriesSnapshotRef = useRef("");
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const [cats, monthly, months] = await Promise.all([
@@ -190,7 +190,7 @@ export default function BudgetsPage() {
       console.error(e);
       setError("No se pudieron cargar los datos");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [viewMonth, viewYear, setBudget]);
 
@@ -215,6 +215,16 @@ export default function BudgetsPage() {
   const isCategoryAllocationValid = remainingByType.every(
     (item) => Math.abs(item.remaining) < 0.005
   );
+
+  // En meses pasados solo mostramos las categorías que quedaron guardadas en ese
+  // presupuesto. Así una categoría creada hoy no altera el histórico.
+  const readOnlyCategories = useMemo(() => {
+    if (!isPastMonth) return categories;
+    const stored = budget?.categoryAllocations;
+    if (!Array.isArray(stored) || stored.length === 0) return [];
+    const storedIds = new Set(stored.map((entry) => entry.categoryId));
+    return categories.filter((category) => storedIds.has(category.id));
+  }, [budget, categories, isPastMonth]);
 
   const categoriesChanged = JSON.stringify(categories) !== categoriesSnapshotRef.current;
   const allocationsChanged =
@@ -244,7 +254,7 @@ export default function BudgetsPage() {
       <main className="min-h-screen bg-bg-page p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
           <p className="text-sm text-expense">{error}</p>
-          <button onClick={loadData} className="text-primary text-sm hover:underline mt-2">
+          <button onClick={() => void loadData()} className="text-primary text-sm hover:underline mt-2">
             Reintentar
           </button>
         </div>
@@ -257,8 +267,8 @@ export default function BudgetsPage() {
     setEditDialogOpen(true);
   }
 
-  async function handleEditSave(name: string) {
-    const updated = await api.categories.update(editingCategory!.id, { name });
+  async function handleEditSave(name: string, type: Category["type"]) {
+    const updated = await api.categories.update(editingCategory!.id, { name, type });
     setCategories(prev => prev.map(c => c.id === updated.id ? updated : c));
   }
 
@@ -268,29 +278,59 @@ export default function BudgetsPage() {
   }
 
   async function handleDeleteConfirm() {
-    await api.categories.delete(deletingCategory!.id);
-    setCategories(prev => prev.filter(c => c.id !== deletingCategory!.id));
-    setCategoryAllocations(prev =>
-      prev.filter((entry) => entry.categoryId !== deletingCategory!.id)
-    );
-    setDeleteDialogOpen(false);
-    setDeletingCategory(null);
+    try {
+      await api.categories.delete(deletingCategory!.id);
+      setCategories(prev => prev.filter(c => c.id !== deletingCategory!.id));
+      setCategoryAllocations(prev =>
+        prev.filter((entry) => entry.categoryId !== deletingCategory!.id)
+      );
+      setDeleteDialogOpen(false);
+      setDeletingCategory(null);
+      toast({
+        title: "Categoría eliminada",
+        description: "Se eliminó al instante; cancelar el presupuesto no la recupera.",
+      });
+    } catch (err) {
+      toast({
+        title: "No se pudo eliminar la categoría",
+        description: err instanceof Error ? err.message : undefined,
+        variant: "destructive",
+      });
+    }
   }
 
-  async function handleAddCategory() {
-    if (!selectedType) return;
+  function handleAddCategory() {
+    setEditingCategory(null);
+    setEditDialogOpen(true);
+  }
+
+  async function handleCategorySubmit(name: string, type: Category["type"]) {
+    setSavingCategory(true);
     try {
-      const created = await api.categories.create({
-        name: "Nueva categoría",
-        type: selectedType,
-      });
-      setCategories(prev => [...prev, created]);
-      setCategoryAllocations(prev => [
-        ...prev,
-        { categoryId: created.id, amount: 0 },
-      ]);
+      if (editingCategory) {
+        await handleEditSave(name, type);
+        toast({
+          title: "Categoría actualizada",
+          description: "Se guardó al instante; cancelar el presupuesto no la deshace.",
+        });
+      } else {
+        const created = await api.categories.create({ name, type });
+        setCategories(prev => [...prev, created]);
+        setCategoryAllocations(prev => [
+          ...prev,
+          { categoryId: created.id, amount: 0 },
+        ]);
+        toast({
+          title: "Categoría creada",
+          description: "Se guardó al instante; cancelar el presupuesto no la deshace.",
+        });
+      }
+      setEditDialogOpen(false);
+      setEditingCategory(null);
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Error al crear categoría");
+      setSaveError(err instanceof Error ? err.message : "Error al guardar la categoría");
+    } finally {
+      setSavingCategory(false);
     }
   }
 
@@ -365,7 +405,6 @@ export default function BudgetsPage() {
       totalIncome,
       typeAllocations,
       categoryAllocations,
-      categories: JSON.stringify(categories),
     };
     setEditingBudget(true);
   }
@@ -376,10 +415,12 @@ export default function BudgetsPage() {
       setTotalIncome(snapshot.totalIncome);
       setTypeAllocations(snapshot.typeAllocations);
       setCategoryAllocations(snapshot.categoryAllocations);
-      setCategories(JSON.parse(snapshot.categories));
     }
     editSnapshotRef.current = null;
     setEditingBudget(false);
+    // Las categorías se crean, editan y borran al instante en el servidor.
+    // Recargamos en silencio para que el resumen refleje el estado real.
+    void loadData(true);
   }
 
   async function handleCalculateIncome() {
@@ -447,7 +488,7 @@ export default function BudgetsPage() {
             totalIncome={totalIncome}
             typeAllocations={typeAllocations}
             categoryAllocations={categoryAllocations}
-            categories={categories}
+            categories={readOnlyCategories}
           />
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -497,11 +538,16 @@ export default function BudgetsPage() {
           onConfirm={handleIncomeConfirm}
         />
 
-        <EditCategoryDialog
+        <CategoryDialog
           open={editDialogOpen}
           category={editingCategory}
-          onSave={handleEditSave}
-          onClose={() => { setEditDialogOpen(false); setEditingCategory(null); }}
+          defaultType={(selectedType as Category["type"] | null) ?? "needs"}
+          saving={savingCategory}
+          onOpenChange={(open) => {
+            setEditDialogOpen(open);
+            if (!open) setEditingCategory(null);
+          }}
+          onSubmit={handleCategorySubmit}
         />
 
         <ConfirmDeleteDialog

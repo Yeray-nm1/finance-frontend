@@ -117,6 +117,7 @@ export function BudgetCategoryDetails({
                           <Button
                             variant="ghost"
                             size="icon"
+                            aria-label={`Editar ${cat.name}`}
                             onClick={() => onOpenEditCategory(cat)}
                           >
                             <Pencil className="size-4" />
@@ -124,6 +125,7 @@ export function BudgetCategoryDetails({
                           <Button
                             variant="ghost"
                             size="icon"
+                            aria-label={`Eliminar ${cat.name}`}
                             onClick={() => onDeleteCategory(cat)}
                           >
                             <Trash2 className="size-4 text-expense" />

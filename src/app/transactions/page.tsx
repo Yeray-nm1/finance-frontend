@@ -72,6 +72,7 @@ export default function TransactionsPage() {
           limit,
           type: filterType || undefined,
           categoryId: filterCategoryId || undefined,
+          uncategorized: filterCategoryId === NO_CATEGORY_SENTINEL || undefined,
           accountId: filterAccountId || undefined,
           search: searchQuery || undefined,
           subscriptionIds: filterSubscriptionIds.length > 0 ? filterSubscriptionIds.join(',') : undefined,

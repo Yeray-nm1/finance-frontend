@@ -2,6 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { ArrowDownWideNarrow, Search, X } from "lucide-react";
+import { NO_CATEGORY_SENTINEL } from "@/lib/transactions-utils";
 import { SelectFilter } from "@/app/transactions/components/SelectFilter";
 import { CalendarFilter } from "@/app/transactions/components/CalendarFilter";
 import { SubscriptionFilter } from "@/app/transactions/components/SubscriptionFilter";
@@ -48,7 +49,10 @@ export function TransactionsFilters({
       value: filterCategoryId,
       placeholder: "Categoria",
       width: "150px",
-      options: categories.map((c) => ({ value: c.id, label: c.name })),
+      options: [
+        { value: NO_CATEGORY_SENTINEL, label: "Sin categoría" },
+        ...categories.map((c) => ({ value: c.id, label: c.name })),
+      ],
       onChange: onFilterCategoryIdChange,
       clearLabel: "Limpiar filtro de categoria",
     },

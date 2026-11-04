@@ -28,6 +28,7 @@ vi.mock('@/lib/api', () => ({
 }));
 
 const budgetHookMocks = vi.hoisted(() => ({
+  budget: null as null | Record<string, unknown>,
   setBudget: vi.fn(),
   saveBudget: vi.fn(),
   deleteBudget: vi.fn(),
@@ -36,7 +37,6 @@ const budgetHookMocks = vi.hoisted(() => ({
 
 vi.mock('@/hooks/useBudget', () => ({
   useBudget: vi.fn(() => ({
-    budget: null,
     saving: false,
     ...budgetHookMocks,
   })),
@@ -56,12 +56,14 @@ vi.mock('@/app/budgets/components/BudgetDetails', () => ({
     onCalculateIncome,
     onTotalIncomeChange,
     onSave,
+    onCancel,
     canSave,
     saving,
   }: {
     onCalculateIncome?: () => void;
     onTotalIncomeChange?: (value: number) => void;
     onSave?: () => void;
+    onCancel?: () => void;
     canSave?: boolean;
     saving?: boolean;
   }) =>
@@ -69,6 +71,7 @@ vi.mock('@/app/budgets/components/BudgetDetails', () => ({
       <button onClick={onCalculateIncome}>Calcular ingresos</button>
       <button onClick={() => onTotalIncomeChange?.(1000)}>Definir ingresos 1000</button>
       <button onClick={onSave} disabled={!canSave || saving}>Guardar presupuesto</button>
+      <button onClick={onCancel}>Cancelar</button>
       <span data-testid="can-save">{String(canSave)}</span>
     </div>,
 }));
@@ -98,8 +101,8 @@ vi.mock('@/app/budgets/components/BudgetCategoryDetails', () => ({
           <div key={cat.id} data-testid={`cat-${cat.id}`}>
             <span>{cat.name}</span>
             <span data-testid={`amount-${cat.id}`}>{amount}</span>
-            <button onClick={() => onOpenEditCategory(cat)}>Editar</button>
-            <button onClick={() => onDeleteCategory(cat)}>Eliminar</button>
+            <button aria-label={`Editar ${cat.name}`} onClick={() => onOpenEditCategory(cat)}>Editar</button>
+            <button aria-label={`Eliminar ${cat.name}`} onClick={() => onDeleteCategory(cat)}>Eliminar</button>
             <button onClick={() => onCategoryAmountChange(cat.id, 400)}>Asignar 400</button>
             <button onClick={() => onCategoryAmountChange(cat.id, 500)}>Asignar 500</button>
           </div>
@@ -112,7 +115,13 @@ vi.mock('@/app/budgets/components/BudgetCategoryDetails', () => ({
 }));
 
 vi.mock('@/app/budgets/components/BudgetReadOnlyView', () => ({
-  BudgetReadOnlyView: () => <div data-testid="budget-readonly" />,
+  BudgetReadOnlyView: ({ categories }: { categories: { id: string; name: string }[] }) => (
+    <div data-testid="budget-readonly">
+      {categories.map((category) => (
+        <span key={category.id}>{category.name}</span>
+      ))}
+    </div>
+  ),
 }));
 
 vi.mock('@/app/budgets/components/IncomeReviewDialog', () => ({
@@ -120,11 +129,13 @@ vi.mock('@/app/budgets/components/IncomeReviewDialog', () => ({
 }));
 
 import { api } from '@/lib/api';
+import { toast } from '@/hooks/use-toast';
 import BudgetsPage from '../page';
 
 describe('BudgetsPage - optimistic category updates', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    budgetHookMocks.budget = null;
     (api.categories.list as ReturnType<typeof vi.fn>).mockResolvedValue([
       { id: 'cat-1', name: 'Comida', type: 'needs', userId: '1' },
     ]);
@@ -133,7 +144,7 @@ describe('BudgetsPage - optimistic category updates', () => {
     (api.budgets.months as ReturnType<typeof vi.fn>).mockResolvedValue([]);
     (api.categories.create as ReturnType<typeof vi.fn>).mockResolvedValue({
       id: 'cat-2',
-      name: 'Nueva categoría',
+      name: 'Cine',
       type: 'needs',
       userId: '1',
     });
@@ -160,10 +171,16 @@ describe('BudgetsPage - optimistic category updates', () => {
     const addButton = screen.getByRole('button', { name: 'Añadir categoría' });
     await user.click(addButton);
 
+    await user.type(screen.getByLabelText('Nombre'), 'Cine');
+    await user.click(screen.getByRole('button', { name: 'Crear categoría' }));
+
     await waitFor(() => {
-      expect(screen.getByText('Nueva categoría')).toBeInTheDocument();
+      expect(screen.getByText('Cine')).toBeInTheDocument();
     });
     expect(api.categories.list).toHaveBeenCalledTimes(initialCalls);
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Categoría creada' })
+    );
   });
 
   it('C06: edits category name without refetching list', async () => {
@@ -177,7 +194,7 @@ describe('BudgetsPage - optimistic category updates', () => {
 
     await user.click(screen.getByRole('button', { name: 'Crear presupuesto' }));
 
-    const editButton = screen.getByRole('button', { name: 'Editar' });
+    const editButton = screen.getByRole('button', { name: 'Editar Comida' });
     await user.click(editButton);
 
     const input = screen.getByDisplayValue('Comida');
@@ -189,6 +206,9 @@ describe('BudgetsPage - optimistic category updates', () => {
       expect(screen.getByText('Supermercado')).toBeInTheDocument();
     });
     expect(api.categories.list).toHaveBeenCalledTimes(initialCalls);
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Categoría actualizada' })
+    );
   });
 
   it('C07: deletes category without refetching list', async () => {
@@ -202,7 +222,7 @@ describe('BudgetsPage - optimistic category updates', () => {
 
     await user.click(screen.getByRole('button', { name: 'Crear presupuesto' }));
 
-    const deleteButton = screen.getByRole('button', { name: 'Eliminar' });
+    const deleteButton = screen.getByRole('button', { name: 'Eliminar Comida' });
     await user.click(deleteButton);
 
     const dialog = await screen.findByRole('dialog');
@@ -215,6 +235,9 @@ describe('BudgetsPage - optimistic category updates', () => {
       expect(screen.queryByText('Comida')).not.toBeInTheDocument();
     });
     expect(api.categories.list).toHaveBeenCalledTimes(initialCalls);
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Categoría eliminada' })
+    );
   });
 
   it('C08: prev arrow jumps to the previous month with a budget and disables when none is left', async () => {
@@ -404,8 +427,143 @@ describe('BudgetsPage - optimistic category updates', () => {
       });
 
       expect(screen.getByTestId('budget-readonly')).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'Editar' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^Editar/ })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Crear presupuesto' })).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('C15: cancelar tras eliminar una categoría no la resucita en el resumen', async () => {
+    let serverCategories = [
+      { id: 'cat-1', name: 'Comida', type: 'needs', userId: '1' },
+    ];
+    (api.categories.list as ReturnType<typeof vi.fn>).mockImplementation(
+      async () => serverCategories
+    );
+    (api.categories.delete as ReturnType<typeof vi.fn>).mockImplementation(
+      async () => {
+        serverCategories = [];
+      }
+    );
+
+    const user = userEvent.setup();
+    render(<BudgetsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Crear presupuesto' }));
+    await user.click(screen.getByRole('button', { name: 'Eliminar Comida' }));
+
+    const dialog = await screen.findByRole('dialog');
+    const user2 = userEvent.setup({ pointerEventsCheck: 0 });
+    await user2.click(within(dialog).getByRole('button', { name: 'Eliminar' }));
+
+    await waitFor(() => {
+      expect(screen.queryByText('Comida')).not.toBeInTheDocument();
+    });
+
+    const callsBeforeCancel = (api.categories.list as ReturnType<typeof vi.fn>).mock.calls.length;
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('budget-readonly')).toBeInTheDocument();
+      expect((api.categories.list as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(
+        callsBeforeCancel
+      );
+    });
+    expect(screen.queryByText('Comida')).not.toBeInTheDocument();
+  });
+
+  it('C16: cancelar tras añadir una categoría mantiene la categoría nueva', async () => {
+    let serverCategories = [
+      { id: 'cat-1', name: 'Comida', type: 'needs', userId: '1' },
+    ];
+    (api.categories.list as ReturnType<typeof vi.fn>).mockImplementation(
+      async () => serverCategories
+    );
+    (api.categories.create as ReturnType<typeof vi.fn>).mockImplementation(
+      async ({ name, type }: { name: string; type: string }) => {
+        const created = { id: 'cat-2', name, type, userId: '1' };
+        serverCategories = [...serverCategories, created];
+        return created;
+      }
+    );
+
+    const user = userEvent.setup();
+    render(<BudgetsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Crear presupuesto' }));
+    await user.click(screen.getByRole('button', { name: 'Añadir categoría' }));
+    await user.type(screen.getByLabelText('Nombre'), 'Cine');
+    await user.click(screen.getByRole('button', { name: 'Crear categoría' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Cine')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('budget-readonly')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Cine')).toBeInTheDocument();
+  });
+
+  it('C17: un mes pasado solo muestra las categorías guardadas en su presupuesto', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 10, 15));
+    const monthly = {
+      id: 'budget-1',
+      userId: '1',
+      month: 5,
+      year: 2026,
+      totalIncome: 2500,
+      createdAt: '2026-05-01T00:00:00.000Z',
+      updatedAt: '2026-05-01T00:00:00.000Z',
+      typeAllocations: [
+        { type: 'needs', percentage: 50 },
+        { type: 'leisure', percentage: 20 },
+        { type: 'savings', percentage: 20 },
+        { type: 'other', percentage: 10 },
+      ],
+      categoryAllocations: [{ categoryId: 'cat-1', amount: 1250 }],
+    };
+    budgetHookMocks.budget = monthly;
+    (api.categories.list as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { id: 'cat-1', name: 'Comida', type: 'needs', userId: '1' },
+      { id: 'cat-2', name: 'Categoría nueva', type: 'needs', userId: '1' },
+    ]);
+    (api.budgets.months as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { year: 2026, month: 5 },
+    ]);
+    (api.budgets.monthly.get as ReturnType<typeof vi.fn>).mockImplementation(
+      async (month: number, year: number) =>
+        month === 5 && year === 2026 ? monthly : null
+    );
+
+    try {
+      const user = userEvent.setup();
+      render(<BudgetsPage />);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Ir a Mayo 2026' }));
+      await waitFor(() => {
+        expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
+      });
+
+      const view = screen.getByTestId('budget-readonly');
+      expect(within(view).getByText('Comida')).toBeInTheDocument();
+      expect(within(view).queryByText('Categoría nueva')).not.toBeInTheDocument();
     } finally {
       vi.useRealTimers();
     }
