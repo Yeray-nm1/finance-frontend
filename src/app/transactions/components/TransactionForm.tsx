@@ -17,11 +17,13 @@ import { formatCurrency } from "@/lib/format";
 import { getAmountColor } from "@/components/ui/variants/transactions.variants";
 import { QuickAccountCreate } from "./QuickAccountCreate";
 import type { TransactionFormProps } from "./types/TransactionForm.types";
-import type { TransactionType } from "@/types/transactions";
+import type { TransactionType, TransferKind, TransferDirection } from "@/types/transactions";
 
 export function TransactionForm({
   newDate,
   newType,
+  newTransferKind,
+  newTransferDirection,
   newAmount,
   newDescription,
   newAccountId,
@@ -33,6 +35,8 @@ export function TransactionForm({
   saving,
   onDateChange,
   onTypeChange,
+  onTransferKindChange,
+  onTransferDirectionChange,
   onAmountChange,
   onDescriptionChange,
   onAccountIdChange,
@@ -68,6 +72,36 @@ export function TransactionForm({
           </Select>
         )}
       </div>
+      {newType === "transfer" && (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="tx-transfer-kind">Movimiento</Label>
+            <Select
+              value={newTransferKind}
+              onValueChange={(v) => onTransferKindChange(v as TransferKind)}
+            >
+              <SelectTrigger id="tx-transfer-kind"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="internal">Entre mis cuentas</SelectItem>
+                <SelectItem value="external">Con un tercero</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="tx-transfer-direction">Dirección</Label>
+            <Select
+              value={newTransferDirection}
+              onValueChange={(v) => onTransferDirectionChange(v as TransferDirection)}
+            >
+              <SelectTrigger id="tx-transfer-direction"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="out">Salida</SelectItem>
+                <SelectItem value="in">Entrada</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
       <div className="space-y-2">
         <Label htmlFor="tx-amount">Importe</Label>
         {editTxId ? (

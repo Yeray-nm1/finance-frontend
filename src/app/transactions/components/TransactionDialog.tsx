@@ -13,13 +13,15 @@ import { Plus } from "lucide-react";
 import { TransactionForm } from "@/app/transactions/components/TransactionForm";
 import type { Account } from "@/types/accounts";
 import type { Category } from "@/types/categories";
-import type { TransactionType } from "@/types/transactions";
+import type { TransactionType, TransferKind, TransferDirection } from "@/types/transactions";
 
 interface TransactionDialogProps {
   open: boolean;
   editTxId: string | null;
   newDate: string;
   newType: TransactionType;
+  newTransferKind: TransferKind;
+  newTransferDirection: TransferDirection;
   newAmount: string;
   newDescription: string;
   newAccountId: string;
@@ -31,6 +33,8 @@ interface TransactionDialogProps {
   onOpenChange: (open: boolean) => void;
   onDateChange: (v: string) => void;
   onTypeChange: (v: TransactionType) => void;
+  onTransferKindChange: (v: TransferKind) => void;
+  onTransferDirectionChange: (v: TransferDirection) => void;
   onAmountChange: (v: string) => void;
   onDescriptionChange: (v: string) => void;
   onAccountIdChange: (v: string) => void;
@@ -45,6 +49,8 @@ export function TransactionDialog({
   editTxId,
   newDate,
   newType,
+  newTransferKind,
+  newTransferDirection,
   newAmount,
   newDescription,
   newAccountId,
@@ -56,6 +62,8 @@ export function TransactionDialog({
   onOpenChange,
   onDateChange,
   onTypeChange,
+  onTransferKindChange,
+  onTransferDirectionChange,
   onAmountChange,
   onDescriptionChange,
   onAccountIdChange,
@@ -81,6 +89,8 @@ export function TransactionDialog({
           <TransactionForm
             newDate={newDate}
             newType={newType}
+            newTransferKind={newTransferKind}
+            newTransferDirection={newTransferDirection}
             newAmount={newAmount}
             newDescription={newDescription}
             newAccountId={newAccountId}
@@ -92,6 +102,8 @@ export function TransactionDialog({
             saving={saving}
             onDateChange={onDateChange}
             onTypeChange={onTypeChange}
+            onTransferKindChange={onTransferKindChange}
+            onTransferDirectionChange={onTransferDirectionChange}
             onAmountChange={onAmountChange}
             onDescriptionChange={onDescriptionChange}
             onAccountIdChange={onAccountIdChange}

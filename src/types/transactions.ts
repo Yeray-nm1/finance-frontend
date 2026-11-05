@@ -1,4 +1,6 @@
 export type TransactionType = 'income' | 'expense' | 'transfer';
+export type TransferKind = 'internal' | 'external';
+export type TransferDirection = 'out' | 'in';
 
 export interface Transaction {
   id: string;
@@ -9,6 +11,7 @@ export interface Transaction {
   amount: number;
   description: string;
   type: TransactionType;
+  transferKind?: TransferKind | null;
   isSubscription: boolean;
   subscriptionId?: string | null;
   createdAt: string;
@@ -21,6 +24,7 @@ export interface CreateTransactionDTO {
   amount: number;
   description: string;
   type: TransactionType;
+  transferKind?: TransferKind;
   accountId?: string;
   categoryId?: string;
   isSubscription?: boolean;
@@ -29,6 +33,7 @@ export interface CreateTransactionDTO {
 export interface UpdateTransactionDTO {
   description?: string;
   type?: TransactionType;
+  transferKind?: TransferKind | null;
   amount?: number;
   date?: string;
   categoryId?: string | null;

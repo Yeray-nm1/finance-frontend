@@ -1,10 +1,12 @@
 import type { Account } from "@/types/accounts";
 import type { Category } from "@/types/categories";
-import type { TransactionType } from "@/types/transactions";
+import type { TransactionType, TransferKind, TransferDirection } from "@/types/transactions";
 
 export interface TransactionFormProps {
   newDate: string;
   newType: TransactionType;
+  newTransferKind: TransferKind;
+  newTransferDirection: TransferDirection;
   newAmount: string;
   newDescription: string;
   newAccountId: string;
@@ -16,6 +18,8 @@ export interface TransactionFormProps {
   saving: boolean;
   onDateChange: (date: string) => void;
   onTypeChange: (type: TransactionType) => void;
+  onTransferKindChange: (transferKind: TransferKind) => void;
+  onTransferDirectionChange: (direction: TransferDirection) => void;
   onAmountChange: (amount: string) => void;
   onDescriptionChange: (description: string) => void;
   onAccountIdChange: (accountId: string) => void;

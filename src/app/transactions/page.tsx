@@ -16,7 +16,7 @@ import { TransactionsTable } from "@/app/transactions/components/TransactionsTab
 import { TransactionsPagination } from "@/app/transactions/components/TransactionsPagination";
 import { NO_ACCOUNT_SENTINEL, NO_CATEGORY_SENTINEL } from "@/lib/transactions-utils";
 import { api } from "@/lib/api";
-import type { Transaction, TransactionType, UpdateTransactionDTO } from "@/types/transactions";
+import type { Transaction, TransactionType, TransferKind, TransferDirection, UpdateTransactionDTO } from "@/types/transactions";
 import type { Account } from "@/types/accounts";
 import type { Category } from "@/types/categories";
 
@@ -53,6 +53,8 @@ export default function TransactionsPage() {
   const [csvDialogOpen, setCsvDialogOpen] = useState(false);
   const [newDate, setNewDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [newType, setNewType] = useState<TransactionType>("expense");
+  const [newTransferKind, setNewTransferKind] = useState<TransferKind>("internal");
+  const [newTransferDirection, setNewTransferDirection] = useState<TransferDirection>("out");
   const [newAmount, setNewAmount] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newAccountId, setNewAccountId] = useState("");
@@ -198,11 +200,17 @@ export default function TransactionsPage() {
         const resolvedCategory = newCategoryId === NO_CATEGORY_SENTINEL ? null : newCategoryId;
         const resolvedAccount =
           newAccountId === NO_ACCOUNT_SENTINEL || !newAccountId ? null : newAccountId;
+        const signedTransferAmount = newTransferDirection === "out"
+          ? -Math.abs(Number(newAmount))
+          : Math.abs(Number(newAmount));
         await api.transactions.update(editTxId, {
           description: newDescription.trim(),
           categoryId: resolvedCategory,
           accountId: resolvedAccount,
           isSubscription: newIsSubscription,
+          ...(newType === "transfer"
+            ? { transferKind: newTransferKind, amount: signedTransferAmount }
+            : {}),
         });
         const selectedAccount = accounts.find((acc) => acc.id === resolvedAccount);
         setTransactions((prev) =>
@@ -217,6 +225,8 @@ export default function TransactionsPage() {
                     ? { id: selectedAccount.id, name: selectedAccount.name, type: selectedAccount.type }
                     : undefined,
                   isSubscription: newIsSubscription,
+                  transferKind: newType === "transfer" ? newTransferKind : null,
+                  amount: newType === "transfer" ? signedTransferAmount : t.amount,
                 }
               : t
           )
@@ -236,9 +246,15 @@ export default function TransactionsPage() {
         }
         await api.transactions.create({
           date: newDate,
-          amount: parsedAmount,
+          amount:
+            newType === "transfer"
+              ? newTransferDirection === "out"
+                ? -parsedAmount
+                : parsedAmount
+              : parsedAmount,
           description: newDescription.trim(),
           type: newType,
+          ...(newType === "transfer" ? { transferKind: newTransferKind } : {}),
           accountId: newAccountId === NO_ACCOUNT_SENTINEL ? undefined : newAccountId || undefined,
           categoryId: newCategoryId === NO_CATEGORY_SENTINEL ? undefined : newCategoryId || undefined,
           isSubscription: newIsSubscription,
@@ -248,6 +264,8 @@ export default function TransactionsPage() {
         setNewDate(new Date().toISOString().split("T")[0]);
         setNewAccountId("");
         setNewType("expense");
+        setNewTransferKind("internal");
+        setNewTransferDirection("out");
         setNewCategoryId(NO_CATEGORY_SENTINEL);
         setNewIsSubscription(false);
         setDialogOpen(false);
@@ -276,6 +294,8 @@ export default function TransactionsPage() {
     cancelEdit();
     setNewDate(tx.date);
     setNewType(tx.type);
+    setNewTransferKind(tx.transferKind ?? "internal");
+    setNewTransferDirection(tx.amount < 0 ? "out" : "in");
     setNewAmount(String(tx.amount));
     setNewDescription(tx.description);
     setNewAccountId(tx.accountId ?? NO_ACCOUNT_SENTINEL);
@@ -325,6 +345,8 @@ export default function TransactionsPage() {
                 editTxId={editTxId}
                 newDate={newDate}
                 newType={newType}
+                newTransferKind={newTransferKind}
+                newTransferDirection={newTransferDirection}
                 newAmount={newAmount}
                 newDescription={newDescription}
                 newAccountId={newAccountId}
@@ -339,6 +361,8 @@ export default function TransactionsPage() {
                     setEditTxId(null);
                     setNewDate(new Date().toISOString().split("T")[0]);
                     setNewType("expense");
+                    setNewTransferKind("internal");
+                    setNewTransferDirection("out");
                     setNewAmount("");
                     setNewDescription("");
                     setNewAccountId("");
@@ -348,6 +372,8 @@ export default function TransactionsPage() {
                 }}
                 onDateChange={setNewDate}
                 onTypeChange={setNewType}
+                onTransferKindChange={setNewTransferKind}
+                onTransferDirectionChange={setNewTransferDirection}
                 onAmountChange={setNewAmount}
                 onDescriptionChange={setNewDescription}
                 onAccountIdChange={setNewAccountId}
