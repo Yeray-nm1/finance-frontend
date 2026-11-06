@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { Suspense, useState, useEffect, useCallback, useRef } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { Upload } from "lucide-react";
@@ -19,8 +20,47 @@ import { api } from "@/lib/api";
 import type { Transaction, TransactionType, TransferKind, TransferDirection, UpdateTransactionDTO } from "@/types/transactions";
 import type { Account } from "@/types/accounts";
 import type { Category } from "@/types/categories";
+import {
+  formatMonthValue,
+  getMonthDateRange,
+  isValidMonthValue,
+  writeStoredMonth,
+} from "@/lib/selected-month";
+
+function parseDateParam(value: string | null): Date | undefined {
+  if (!value) return undefined;
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return undefined;
+  return new Date(year, month - 1, day);
+}
+
+function getFullMonthValue(dates: { from?: Date; to?: Date }): string | null {
+  if (!dates.from || !dates.to) return null;
+  const { from, to } = dates;
+  if (from.getDate() !== 1) return null;
+  if (from.getFullYear() !== to.getFullYear() || from.getMonth() !== to.getMonth()) return null;
+  const lastDay = new Date(to.getFullYear(), to.getMonth() + 1, 0).getDate();
+  if (to.getDate() !== lastDay) return null;
+  return formatMonthValue(from.getFullYear(), from.getMonth() + 1);
+}
 
 export default function TransactionsPage() {
+  return (
+    <Suspense fallback={<LoadingSkeleton />}>
+      <TransactionsPageContent />
+    </Suspense>
+  );
+}
+
+function TransactionsPageContent() {
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const searchString = searchParams.toString();
+  const urlType = searchParams.get("type");
+  const urlCategoryId = searchParams.get("categoryId");
+  const urlUncategorized = searchParams.get("uncategorized") === "true";
+  const urlMonth = searchParams.get("month");
+
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -31,13 +71,26 @@ export default function TransactionsPage() {
   const [error, setError] = useState<string | null>(null);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
 
-  const [filterType, setFilterType] = useState<"" | TransactionType>("");
-  const [filterCategoryId, setFilterCategoryId] = useState("");
+  const [filterType, setFilterType] = useState<"" | TransactionType>(
+    urlType === "income" || urlType === "expense" || urlType === "transfer"
+      ? urlType
+      : ""
+  );
+  const [filterCategoryId, setFilterCategoryId] = useState(
+    urlUncategorized ? NO_CATEGORY_SENTINEL : urlCategoryId ?? ""
+  );
   const [filterAccountId, setFilterAccountId] = useState("");
   const [filterSearch, setFilterSearch] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterSubscriptionIds, setFilterSubscriptionIds] = useState<string[]>([]);
-  const [filterDates, setFilterDates] = useState<{ from?: Date; to?: Date }>({});
+  const [pendingCategoryName, setPendingCategoryName] = useState<string | null>(null);
+  const [pendingAccountName, setPendingAccountName] = useState<string | null>(null);
+  const [pendingSubscriptionNames, setPendingSubscriptionNames] = useState<string[] | null>(null);
+  const [listsReady, setListsReady] = useState(false);
+  const [filterDates, setFilterDates] = useState<{ from?: Date; to?: Date }>(
+    getMonthDateRange(urlMonth) ?? {}
+  );
+  const [monthReady, setMonthReady] = useState(false);
 
   const [sortBy, setSortBy] = useState<"date" | "amount" | "description">("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
@@ -63,6 +116,7 @@ export default function TransactionsPage() {
   const [saving, setSaving] = useState(false);
 
   const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const lastAppliedSearchRef = useRef<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -73,7 +127,7 @@ export default function TransactionsPage() {
           page,
           limit,
           type: filterType || undefined,
-          categoryId: filterCategoryId || undefined,
+          categoryId: filterCategoryId === NO_CATEGORY_SENTINEL ? undefined : filterCategoryId || undefined,
           uncategorized: filterCategoryId === NO_CATEGORY_SENTINEL || undefined,
           accountId: filterAccountId || undefined,
           search: searchQuery || undefined,
@@ -92,6 +146,7 @@ export default function TransactionsPage() {
       setAccounts(accs);
       setCategories(cats);
       setSubscriptions(subs);
+      setListsReady(true);
     } catch (e) {
       console.error(e);
       setError("No se pudieron cargar las transacciones");
@@ -101,8 +156,217 @@ export default function TransactionsPage() {
   }, [page, limit, filterType, filterCategoryId, filterAccountId, searchQuery, filterSubscriptionIds, filterDates, sortBy, sortOrder]);
 
   useEffect(() => {
+    if (lastAppliedSearchRef.current === searchString) return;
+    lastAppliedSearchRef.current = searchString;
+
+    const params = new URLSearchParams(searchString);
+    const type = params.get("type");
+    const category = params.get("category");
+    const categoryId = params.get("categoryId");
+    const uncategorized = params.get("uncategorized") === "true";
+    const account = params.get("account");
+    const accountId = params.get("accountId");
+    const subscriptionNames = params.getAll("subscriptions");
+    const month = params.get("month");
+    const from = parseDateParam(params.get("dateFrom"));
+    const to = parseDateParam(params.get("dateTo"));
+    const search = params.get("search") ?? "";
+
+    setFilterType(
+      type === "income" || type === "expense" || type === "transfer" ? type : ""
+    );
+    if (category) {
+      setPendingCategoryName(category);
+      setFilterCategoryId("");
+    } else {
+      setPendingCategoryName(null);
+      setFilterCategoryId(uncategorized ? NO_CATEGORY_SENTINEL : categoryId ?? "");
+    }
+    if (account) {
+      setPendingAccountName(account);
+      setFilterAccountId("");
+    } else {
+      setPendingAccountName(null);
+      setFilterAccountId(accountId ?? "");
+    }
+    if (subscriptionNames.length > 0) {
+      setPendingSubscriptionNames(subscriptionNames);
+      setFilterSubscriptionIds([]);
+    } else {
+      setPendingSubscriptionNames(null);
+      setFilterSubscriptionIds(
+        (params.get("subscriptionIds") ?? "").split(",").filter(Boolean)
+      );
+    }
+    setFilterSearch(search);
+    setSearchQuery(search);
+
+    if (from || to) {
+      setFilterDates({ from, to });
+    } else if (isValidMonthValue(month)) {
+      writeStoredMonth(month);
+      setFilterDates(getMonthDateRange(month) ?? {});
+    } else {
+      setFilterDates({});
+    }
+
+    const parsedPage = Number(params.get("page") ?? "1");
+    const parsedLimit = Number(params.get("limit") ?? "20");
+    const parsedSortBy = params.get("sortBy");
+    const parsedSortOrder = params.get("sortOrder");
+
+    setPage(Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1);
+    setLimit(parsedLimit === 50 || parsedLimit === 100 ? parsedLimit : 20);
+    setSortBy(
+      parsedSortBy === "amount" || parsedSortBy === "description" ? parsedSortBy : "date"
+    );
+    setSortOrder(parsedSortOrder === "asc" ? "asc" : "desc");
+    setMonthReady(true);
+  }, [searchString]);
+
+  useEffect(() => {
+    if (!listsReady) return;
+
+    if (pendingCategoryName !== null) {
+      const match = categories.find((category) => category.name === pendingCategoryName);
+      setFilterCategoryId(match?.id ?? "");
+      setPendingCategoryName(null);
+    }
+
+    if (pendingAccountName !== null) {
+      const match = accounts.find((account) => account.name === pendingAccountName);
+      setFilterAccountId(match?.id ?? "");
+      setPendingAccountName(null);
+    }
+
+    if (pendingSubscriptionNames !== null) {
+      const ids = pendingSubscriptionNames
+        .map((name) => subscriptions.find((subscription) => subscription.name === name)?.id)
+        .filter((id): id is string => Boolean(id));
+      setFilterSubscriptionIds(ids);
+      setPendingSubscriptionNames(null);
+    }
+  }, [
+    listsReady,
+    pendingCategoryName,
+    pendingAccountName,
+    pendingSubscriptionNames,
+    categories,
+    accounts,
+    subscriptions,
+  ]);
+
+  useEffect(() => {
+    if (!listsReady) return;
+
+    if (
+      filterCategoryId &&
+      filterCategoryId !== NO_CATEGORY_SENTINEL &&
+      !categories.some((category) => category.id === filterCategoryId)
+    ) {
+      setFilterCategoryId("");
+    }
+
+    if (filterAccountId && !accounts.some((account) => account.id === filterAccountId)) {
+      setFilterAccountId("");
+    }
+
+    if (filterSubscriptionIds.length > 0) {
+      const resolved = filterSubscriptionIds.filter((id) =>
+        subscriptions.some((subscription) => subscription.id === id)
+      );
+      if (resolved.length !== filterSubscriptionIds.length) {
+        setFilterSubscriptionIds(resolved);
+      }
+    }
+  }, [
+    listsReady,
+    filterCategoryId,
+    filterAccountId,
+    filterSubscriptionIds,
+    categories,
+    accounts,
+    subscriptions,
+  ]);
+
+  useEffect(() => {
+    if (!monthReady || !listsReady) return;
+    if (
+      pendingCategoryName !== null ||
+      pendingAccountName !== null ||
+      pendingSubscriptionNames !== null
+    ) {
+      return;
+    }
+
+    const params = new URLSearchParams();
+    if (filterType) params.set("type", filterType);
+    if (filterCategoryId === NO_CATEGORY_SENTINEL) {
+      params.set("uncategorized", "true");
+    } else if (filterCategoryId) {
+      const category = categories.find((item) => item.id === filterCategoryId);
+      if (category) params.set("category", category.name);
+    }
+    if (filterAccountId) {
+      const account = accounts.find((item) => item.id === filterAccountId);
+      if (account) params.set("account", account.name);
+    }
+    if (filterSearch.trim()) params.set("search", filterSearch.trim());
+    if (filterSubscriptionIds.length > 0) {
+      for (const id of filterSubscriptionIds) {
+        const subscription = subscriptions.find((item) => item.id === id);
+        if (subscription) params.append("subscriptions", subscription.name);
+      }
+    }
+
+    const monthValue = getFullMonthValue(filterDates);
+    if (monthValue) {
+      params.set("month", monthValue);
+    } else {
+      if (filterDates.from) params.set("dateFrom", format(filterDates.from, "yyyy-MM-dd"));
+      if (filterDates.to) params.set("dateTo", format(filterDates.to, "yyyy-MM-dd"));
+    }
+
+    if (page > 1) params.set("page", String(page));
+    if (limit !== 20) params.set("limit", String(limit));
+    if (sortBy !== "date" || sortOrder !== "desc") {
+      params.set("sortBy", sortBy);
+      params.set("sortOrder", sortOrder);
+    }
+
+    const query = params.toString();
+    const nextUrl = query ? `${pathname}?${query}` : pathname;
+    const currentUrl = `${window.location.pathname}${window.location.search}`;
+    if (nextUrl === currentUrl) return;
+
+    lastAppliedSearchRef.current = query;
+    window.history.replaceState(null, "", nextUrl);
+  }, [
+    monthReady,
+    listsReady,
+    pendingCategoryName,
+    pendingAccountName,
+    pendingSubscriptionNames,
+    filterType,
+    filterCategoryId,
+    filterAccountId,
+    filterSearch,
+    filterSubscriptionIds,
+    filterDates,
+    categories,
+    accounts,
+    subscriptions,
+    page,
+    limit,
+    sortBy,
+    sortOrder,
+    pathname,
+  ]);
+
+  useEffect(() => {
+    if (!monthReady) return;
     loadData();
-  }, [loadData]);
+  }, [loadData, monthReady]);
 
   useEffect(() => {
     if (!editTxId && accounts.length > 0 && !newAccountId) {
@@ -138,6 +402,9 @@ export default function TransactionsPage() {
     setFilterSearch("");
     setFilterSubscriptionIds([]);
     setFilterDates({});
+    setPendingCategoryName(null);
+    setPendingAccountName(null);
+    setPendingSubscriptionNames(null);
     setPage(1);
   }
 
@@ -148,7 +415,18 @@ export default function TransactionsPage() {
   }
 
   function hasActiveFilters() {
-    return filterType || filterCategoryId || filterAccountId || filterSearch || filterSubscriptionIds.length > 0 || filterDates.from || filterDates.to;
+    return (
+      filterType ||
+      filterCategoryId ||
+      filterAccountId ||
+      filterSearch ||
+      filterSubscriptionIds.length > 0 ||
+      filterDates.from ||
+      filterDates.to ||
+      pendingCategoryName ||
+      pendingAccountName ||
+      (pendingSubscriptionNames?.length ?? 0) > 0
+    );
   }
 
   function totalPages() {
@@ -402,7 +680,7 @@ export default function TransactionsPage() {
             onFilterAccountIdChange={(v) => { setFilterAccountId(v); setPage(1); }}
             onFilterSearchChange={setFilterSearch}
             onFilterSubscriptionIdsChange={(v) => { setFilterSubscriptionIds(v); setPage(1); }}
-            onFilterDatesChange={(dates) => { setFilterDates(dates); }}
+            onFilterDatesChange={(dates) => { setFilterDates(dates); setPage(1); }}
             onResetSort={resetSort}
             onClearFilters={clearFilters}
           />

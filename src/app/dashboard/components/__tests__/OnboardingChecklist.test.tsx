@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { OnboardingChecklist } from "../OnboardingChecklist";
 import { api } from "@/lib/api";
 
@@ -32,7 +32,7 @@ describe("OnboardingChecklist", () => {
     vi.mocked(api.budgets.monthly.get).mockResolvedValue(null);
   });
 
-  it("muestra los tres pasos y cuántos están completados", async () => {
+  it("muestra el resumen y despliega los tres pasos", async () => {
     vi.mocked(api.accounts.list).mockResolvedValue([account]);
     vi.mocked(api.transactions.list).mockResolvedValue({
       data: [],
@@ -45,6 +45,10 @@ describe("OnboardingChecklist", () => {
 
     expect(await screen.findByText("Primeros pasos")).toBeInTheDocument();
     expect(screen.getByText("2 de 3 completados")).toBeInTheDocument();
+    expect(screen.queryByText("Crea tu cuenta")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Desplegar primeros pasos" }));
+
     expect(screen.getByText("Crea tu cuenta")).toBeInTheDocument();
     expect(screen.getByText("Añade o importa un movimiento")).toBeInTheDocument();
     expect(screen.getByText("Define tu presupuesto")).toBeInTheDocument();
@@ -52,6 +56,21 @@ describe("OnboardingChecklist", () => {
       "href",
       "/budgets"
     );
+  });
+
+  it("se puede desplegar y plegar", async () => {
+    render(<OnboardingChecklist />);
+
+    expect(await screen.findByText("Primeros pasos")).toBeInTheDocument();
+    expect(screen.queryByText("Crea tu cuenta")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Desplegar primeros pasos" }));
+    expect(screen.getByText("Crea tu cuenta")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Contraer primeros pasos" }));
+
+    expect(screen.queryByText("Crea tu cuenta")).not.toBeInTheDocument();
+    expect(screen.getByText("0 de 3 completados")).toBeInTheDocument();
   });
 
   it("no se muestra cuando los tres pasos están completos", async () => {

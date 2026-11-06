@@ -135,6 +135,7 @@ import BudgetsPage from '../page';
 describe('BudgetsPage - optimistic category updates', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.localStorage.clear();
     budgetHookMocks.budget = null;
     (api.categories.list as ReturnType<typeof vi.fn>).mockResolvedValue([
       { id: 'cat-1', name: 'Comida', type: 'needs', userId: '1' },

@@ -7,7 +7,7 @@ import { SelectFilter } from "@/app/transactions/components/SelectFilter";
 import { CalendarFilter } from "@/app/transactions/components/CalendarFilter";
 import { SubscriptionFilter } from "@/app/transactions/components/SubscriptionFilter";
 import { SubscriptionTags } from "@/app/transactions/components/SubscriptionTags";
-import type { TransactionsFiltersProps } from "./types/filter.types";
+import type { SelectFilterOption, TransactionsFiltersProps } from "./types/filter.types";
 
 export function TransactionsFilters({
   filterType,
@@ -30,7 +30,16 @@ export function TransactionsFilters({
   onResetSort,
   onClearFilters,
 }: Readonly<TransactionsFiltersProps>) {
-  const selectFilters = [
+  const selectFilters: Array<{
+    key: string;
+    value: string;
+    placeholder: string;
+    width: string;
+    options: SelectFilterOption[];
+    onChange: (value: string) => void;
+    clearLabel: string;
+    disabled?: boolean;
+  }> = [
     {
       key: "type",
       value: filterType,
@@ -64,6 +73,7 @@ export function TransactionsFilters({
       options: accounts.map((a) => ({ value: a.id, label: a.name })),
       onChange: onFilterAccountIdChange,
       clearLabel: "Limpiar filtro de cuenta",
+      disabled: accounts.length === 0,
     },
   ];
 
@@ -97,6 +107,7 @@ export function TransactionsFilters({
             options={f.options}
             onChange={f.onChange}
             clearLabel={f.clearLabel}
+            disabled={f.disabled}
           />
         ))}
         <SubscriptionFilter

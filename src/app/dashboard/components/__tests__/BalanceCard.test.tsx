@@ -24,7 +24,7 @@ describe('BalanceCard', () => {
 
   it('shows total balance with sign', () => {
     render(<BalanceCard {...defaultProps} />);
-    expect(screen.getByText(/\+2000/)).toBeInTheDocument();
+    expect(screen.getByText(/\+2\.000,00/)).toBeInTheDocument();
   });
 
   it('shows vsPreviousMonth footer when provided', () => {
@@ -62,5 +62,29 @@ describe('BalanceCard', () => {
     expect(screen.getByText('Gastos')).toBeInTheDocument();
     expect(screen.getByText('Ahorro')).toBeInTheDocument();
     expect(screen.getByText('Disponible')).toBeInTheDocument();
+  });
+
+  it('links income, expenses and savings to transactions filtered by type and month', () => {
+    render(<BalanceCard {...defaultProps} monthValue="2026-05" />);
+    expect(screen.getByRole('link', { name: /Ingresos/ })).toHaveAttribute(
+      'href',
+      '/transactions?type=income&month=2026-05'
+    );
+    expect(screen.getByRole('link', { name: /Gastos/ })).toHaveAttribute(
+      'href',
+      '/transactions?type=expense&month=2026-05'
+    );
+    expect(screen.getByRole('link', { name: /Ahorro/ })).toHaveAttribute(
+      'href',
+      '/transactions?type=transfer&month=2026-05'
+    );
+  });
+
+  it('omits the month from links when it is not provided', () => {
+    render(<BalanceCard {...defaultProps} />);
+    expect(screen.getByRole('link', { name: /Ingresos/ })).toHaveAttribute(
+      'href',
+      '/transactions?type=income'
+    );
   });
 });

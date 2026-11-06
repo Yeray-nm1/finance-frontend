@@ -24,6 +24,7 @@ export interface SelectFilterProps {
   onChange: (value: string) => void;
   width?: string;
   clearLabel?: string;
+  disabled?: boolean;
 }
 
 export interface CalendarFilterProps {

@@ -18,8 +18,12 @@ vi.mock('../components/BalanceCard', () => ({
   BalanceCard: () => <div>BalanceCard mock</div>,
 }));
 
-vi.mock('../components/BudgetsCard', () => ({
-  BudgetsCard: () => <div>BudgetsCard mock</div>,
+vi.mock('../components/MonthlyEvolutionCard', () => ({
+  MonthlyEvolutionCard: () => <div>MonthlyEvolutionCard mock</div>,
+}));
+
+vi.mock('../components/BudgetOverviewCard', () => ({
+  BudgetOverviewCard: () => <div>BudgetOverviewCard mock</div>,
 }));
 
 vi.mock('../components/RecurringCard', () => ({
@@ -37,6 +41,8 @@ vi.mock('../components/OnboardingChecklist', () => ({
 describe('DashboardPage month navigation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.localStorage.clear();
+    window.history.replaceState(null, '', '/');
     mockMonths.mockResolvedValue([]);
     mockGet.mockResolvedValue({
       balance: { income: 5000, expenses: 3000, savings: 1000, available: 1000, balance: 2000 },
@@ -114,7 +120,8 @@ describe('DashboardPage month navigation', () => {
     render(<DashboardPage />);
     await waitFor(() => expect(screen.queryByText('Cargando...')).not.toBeInTheDocument());
     expect(screen.getByText('BalanceCard mock')).toBeInTheDocument();
-    expect(screen.getByText('BudgetsCard mock')).toBeInTheDocument();
+    expect(screen.getByText('MonthlyEvolutionCard mock')).toBeInTheDocument();
+    expect(screen.getByText('BudgetOverviewCard mock')).toBeInTheDocument();
     expect(screen.getByText('RecurringCard mock')).toBeInTheDocument();
     expect(screen.getByText('RecentTransactionsCard mock')).toBeInTheDocument();
   });

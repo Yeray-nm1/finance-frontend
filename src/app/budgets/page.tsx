@@ -20,6 +20,12 @@ import {
 } from "@/lib/budget-allocation";
 import { useBudget } from "@/hooks/useBudget";
 import { toast } from "@/hooks/use-toast";
+import {
+  formatMonthValue,
+  parseMonthValue,
+  readStoredMonth,
+  writeStoredMonth,
+} from "@/lib/selected-month";
 
 export default function BudgetsPage() {
   const today = useMemo(() => new Date(), []);
@@ -194,6 +200,13 @@ export default function BudgetsPage() {
     }
   }, [viewMonth, viewYear, setBudget]);
 
+  useEffect(() => {
+    const parsed = parseMonthValue(readStoredMonth());
+    if (!parsed) return;
+    setViewMonth(parsed.month);
+    setViewYear(parsed.year);
+  }, []);
+
   useEffect(() => { loadData(); }, [loadData]);
 
   const totalAllocated = typeAllocations.reduce((s, a) => s + a.percentage, 0);
@@ -366,12 +379,17 @@ export default function BudgetsPage() {
     );
   }
 
+  function applyMonth(year: number, month: number) {
+    setViewMonth(month);
+    setViewYear(year);
+    writeStoredMonth(formatMonthValue(year, month));
+  }
+
   function goToPrevMonth() {
     if (!previousBudgetMonth) return;
     setEditingBudget(false);
     editSnapshotRef.current = null;
-    setViewMonth(previousBudgetMonth.month);
-    setViewYear(previousBudgetMonth.year);
+    applyMonth(previousBudgetMonth.year, previousBudgetMonth.month);
   }
 
   function goToMonth(value: string) {
@@ -379,8 +397,7 @@ export default function BudgetsPage() {
     if (!year || !month) return;
     setEditingBudget(false);
     editSnapshotRef.current = null;
-    setViewMonth(month);
-    setViewYear(year);
+    applyMonth(year, month);
   }
 
   function goToNextMonth() {
@@ -388,12 +405,10 @@ export default function BudgetsPage() {
     setEditingBudget(false);
     editSnapshotRef.current = null;
     if (nextBudgetMonth) {
-      setViewMonth(nextBudgetMonth.month);
-      setViewYear(nextBudgetMonth.year);
+      applyMonth(nextBudgetMonth.year, nextBudgetMonth.month);
       return;
     }
-    setViewMonth(nextMonth);
-    setViewYear(nextYear);
+    applyMonth(nextYear, nextMonth);
   }
 
   const showEditButton = !editingBudget && !isPastMonth;

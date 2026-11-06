@@ -5,12 +5,12 @@ import { getAmountColor } from "@/components/ui/variants/transactions.variants";
 import { DashboardCard } from "./DashboardCard";
 import type { RecentTransactionsCardProps } from "./types/RecentTransactionsCard.types";
 
-export function RecentTransactionsCard({ transactions }: Readonly<RecentTransactionsCardProps>) {
+export function RecentTransactionsCard({ transactions, monthValue }: Readonly<RecentTransactionsCardProps>) {
   return (
     <DashboardCard
       title="Transacciones recientes"
       emptyText="No hay transacciones este mes"
-      href="/transactions"
+      href={monthValue ? `/transactions?month=${monthValue}` : "/transactions"}
       linkText="Ver más"
       isEmpty={transactions.length === 0}
     >
