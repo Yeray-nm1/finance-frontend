@@ -1,5 +1,12 @@
 import { request } from './client';
-import type { Transaction, CreateTransactionDTO, UpdateTransactionDTO, ImportCsvResult } from '@/types/transactions';
+import type {
+  Transaction,
+  CreateTransactionDTO,
+  UpdateTransactionDTO,
+  ImportCsvResult,
+  CsvMapping,
+  CsvPreviewResult,
+} from '@/types/transactions';
 import type { TransactionFilters } from '@/types/filter';
 import type { PaginatedResponse } from '@/types';
 
@@ -10,6 +17,7 @@ export const transactions = {
     if (params?.limit) qs.set('limit', String(params.limit))
     if (params?.type) qs.set('type', params.type)
     if (params?.categoryId) qs.set('categoryId', params.categoryId)
+    if (params?.uncategorized) qs.set('uncategorized', 'true')
     if (params?.accountId) qs.set('accountId', params.accountId)
     if (params?.dateFrom) qs.set('dateFrom', params.dateFrom)
     if (params?.dateTo) qs.set('dateTo', params.dateTo)
@@ -23,12 +31,33 @@ export const transactions = {
   },
   create: (data: CreateTransactionDTO) =>
     request<Transaction>('/transactions', { method: 'POST', body: JSON.stringify(data) }),
-  importCsv: (rows: Record<string, string>[]) =>
+  importCsv: (rows: Record<string, string>[], mapping?: CsvMapping, accountId?: string) =>
     request<ImportCsvResult>('/transactions/import', {
       method: 'POST',
-      body: JSON.stringify({ rows }),
+      body: JSON.stringify({
+        rows,
+        ...(mapping ? { mapping } : {}),
+        ...(accountId ? { accountId } : {}),
+      }),
+    }),
+  previewCsv: (rows: Record<string, string>[], mapping?: CsvMapping) =>
+    request<CsvPreviewResult>('/transactions/import/preview', {
+      method: 'POST',
+      body: JSON.stringify({ rows, ...(mapping ? { mapping } : {}) }),
     }),
   update: (id: string, data: UpdateTransactionDTO) =>
     request<Transaction>(`/transactions/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  updateMany: (
+    ids: string[],
+    data: { categoryId?: string | null; accountId?: string | null }
+  ) =>
+    request<{ updated: number }>('/transactions/batch', {
+      method: 'PATCH',
+      body: JSON.stringify({ ids, ...data }),
+    }),
+  deleteMany: (ids: string[]) =>
+    request<{ deleted: number }>(`/transactions/batch?ids=${ids.map(encodeURIComponent).join(',')}`, {
+      method: 'DELETE',
+    }),
   delete: (id: string) => request<void>(`/transactions/${id}`, { method: 'DELETE' }),
 };

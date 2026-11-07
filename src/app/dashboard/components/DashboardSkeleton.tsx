@@ -1,6 +1,6 @@
 "use client";
 
-const SKELETON_KEYS = ["skeleton-0", "skeleton-1", "skeleton-2", "skeleton-3"];
+const SKELETON_KEYS = ["skeleton-0", "skeleton-1", "skeleton-2", "skeleton-3", "skeleton-4"];
 
 export function DashboardSkeleton() {
   return (

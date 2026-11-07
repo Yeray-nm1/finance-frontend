@@ -24,6 +24,7 @@ export interface SelectFilterProps {
   onChange: (value: string) => void;
   width?: string;
   clearLabel?: string;
+  disabled?: boolean;
 }
 
 export interface CalendarFilterProps {
@@ -49,11 +50,13 @@ export interface TransactionsFiltersProps {
   categories: Category[];
   subscriptions: Subscription[];
   hasActiveFilters: boolean;
+  isDefaultSort: boolean;
   onFilterTypeChange: (value: "" | TransactionType) => void;
   onFilterCategoryIdChange: (value: string) => void;
   onFilterAccountIdChange: (value: string) => void;
   onFilterSearchChange: (value: string) => void;
   onFilterSubscriptionIdsChange: (value: string[]) => void;
   onFilterDatesChange: (dates: { from?: Date; to?: Date }) => void;
+  onResetSort: () => void;
   onClearFilters: () => void;
 }

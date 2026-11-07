@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { TableCell } from "@/components/ui/table";
 import type { EditableTextCellProps } from "./types/EditableTextCell.types";
@@ -16,14 +17,32 @@ export function EditableTextCell({
   className,
   displayClassName,
 }: Readonly<EditableTextCellProps>) {
+  const submittedWithEnter = useRef(false);
+
   return (
     <TableCell className={className}>
       {isEditing ? (
         <Input
           value={editValue}
           onChange={(e) => onEditValueChange(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Escape") onCancelEdit(); }}
-          onBlur={() => onInlineEdit(editValue)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              submittedWithEnter.current = false;
+              onCancelEdit();
+            }
+            if (e.key === "Enter") {
+              e.preventDefault();
+              submittedWithEnter.current = true;
+              onInlineEdit(editValue);
+            }
+          }}
+          onBlur={() => {
+            if (submittedWithEnter.current) {
+              submittedWithEnter.current = false;
+              return;
+            }
+            onInlineEdit(editValue);
+          }}
           autoFocus
           className="h-8 text-sm"
           disabled={savingField}

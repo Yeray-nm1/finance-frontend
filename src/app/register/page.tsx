@@ -79,18 +79,21 @@ export default function RegisterPage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="password" className="text-xs text-text-secondary font-medium">
-                Contrasena
+                Contraseña
               </Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Minimo 6 caracteres"
+                placeholder="Mínimo 8 caracteres"
                 autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={8}
               />
+              <p className="text-[11px] text-text-muted">
+                Mínimo 8 caracteres, con mayúscula, minúscula y número.
+              </p>
             </div>
 
             {error && (

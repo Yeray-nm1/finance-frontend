@@ -1,6 +1,6 @@
 import type { Category } from "@/types/categories";
 import { describe, it, expect, vi, beforeAll } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { BudgetCategoryDetails } from '../BudgetCategoryDetails';
 
 beforeAll(() => {
@@ -29,8 +29,14 @@ function renderDefault(props: Record<string, unknown> = {}) {
       categories={categories}
       selectedType="needs"
       typeAllocations={typeAllocations}
+      categoryAllocations={[
+        { categoryId: '1', amount: 1500 },
+        { categoryId: '2', amount: 600 },
+      ]}
       onPercentageChange={vi.fn()}
+      onCategoryAmountChange={vi.fn()}
       totalIncome={3000}
+      remaining={0}
       saveError={null}
       onOpenEditCategory={vi.fn()}
       onDeleteCategory={vi.fn()}
@@ -63,6 +69,41 @@ describe('BudgetCategoryDetails default mode', () => {
     const { container } = renderDefault({});
     const borderedItems = container.querySelectorAll('.border-border');
     expect(borderedItems.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('shows the euro amount assigned to each category', () => {
+    renderDefault({});
+    expect(screen.getByLabelText('Importe de Comida')).toHaveValue(1500);
+  });
+
+  it('shows the percentage each category represents inside its type', () => {
+    renderDefault({});
+    expect(screen.getByText('100.0% del tipo')).toBeInTheDocument();
+  });
+
+  it('notifies the amount change when editing a category amount', () => {
+    const onCategoryAmountChange = vi.fn();
+    renderDefault({ onCategoryAmountChange });
+
+    const input = screen.getByLabelText('Importe de Comida');
+    fireEvent.change(input, { target: { value: '900' } });
+
+    expect(onCategoryAmountChange).toHaveBeenLastCalledWith('1', 900);
+  });
+
+  it('shows the remaining amount when the type is not fully distributed', () => {
+    renderDefault({ remaining: 300 });
+    expect(screen.getByText(/Te quedan 300,00/)).toBeInTheDocument();
+  });
+
+  it('shows how much the type is over-allocated', () => {
+    renderDefault({ remaining: -150 });
+    expect(screen.getByText(/Te has pasado en 150,00/)).toBeInTheDocument();
+  });
+
+  it('confirms when the type is fully distributed', () => {
+    renderDefault({ remaining: 0 });
+    expect(screen.getByText('✓ Reparto completo')).toBeInTheDocument();
   });
 });
 

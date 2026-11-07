@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/Card";
@@ -15,7 +16,7 @@ export default function PreferencesPage() {
             Preferencias
           </h1>
           <p className="text-sm text-text-muted mt-1">
-            Gestiona tu cuenta y notificaciones
+            Gestiona tu perfil, tus cuentas bancarias y las notificaciones
           </p>
         </header>
 
@@ -30,13 +31,23 @@ export default function PreferencesPage() {
         </Card>
 
         <Card className="mb-4 animate-fade-in stagger-2">
+          <CardTitle>Cuentas bancarias</CardTitle>
+          <p className="text-sm text-text-muted">
+            Organiza tus movimientos por cuenta y elige dónde importar cada extracto.
+          </p>
+          <Button variant="outline" className="mt-3" asChild>
+            <Link href="/accounts">Gestionar cuentas</Link>
+          </Button>
+        </Card>
+
+        <Card className="mb-4 animate-fade-in stagger-3">
           <CardTitle>Notificaciones</CardTitle>
           <p className="text-sm text-text-muted">
             Proximamente: configura alertas para presupuestos y suscripciones
           </p>
         </Card>
 
-        <Card className="animate-fade-in stagger-3">
+        <Card className="animate-fade-in stagger-4">
           <CardTitle>Sesion</CardTitle>
           <div className="space-y-4">
             <Button variant="outline" onClick={logout}>

@@ -84,6 +84,16 @@ describe('api.transactions.list() with filters', () => {
     expect(calledUrl).toContain('dateTo=2026-01-31');
   });
 
+  it('sends uncategorized=true when filtering transactions without category', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({ data: [], total: 0, page: 1, limit: 50 }), { status: 200 })
+    );
+    await api.transactions.list({ uncategorized: true });
+    const calledUrl = getFetchMock().mock.calls[0][0];
+    expect(calledUrl).toContain('uncategorized=true');
+    expect(calledUrl).not.toContain('categoryId=');
+  });
+
   it('returns PaginatedResponse shape', async () => {
     const paginated = { data: [{ id: '1' }], total: 1, page: 1, limit: 50 };
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(

@@ -2,49 +2,140 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import type { Category } from "@/types/categories";
-import type { IncomeGroup } from "@/types/budgets";
+import type { IncomeGroup, CategoryAllocation } from "@/types/budgets";
 import { api } from "@/lib/api";
 import { BudgetDetails } from "@/app/budgets/components/BudgetDetails";
 import { BudgetCategoryDetails } from "@/app/budgets/components/BudgetCategoryDetails";
 import { BudgetReadOnlyView } from "@/app/budgets/components/BudgetReadOnlyView";
 import { IncomeReviewDialog } from "@/app/budgets/components/IncomeReviewDialog";
 import { BudgetHeader } from "@/app/budgets/components/BudgetHeader";
-import { EditCategoryDialog } from "@/app/budgets/components/EditCategoryDialog";
+import { CategoryDialog } from "@/app/categories/components/CategoryDialog";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 import { getBudgetBadge, DEFAULT_ALLOCATIONS, MONTH_NAMES } from "@/lib/budget-constants";
+import {
+  buildInitialAllocations,
+  getTypeRemaining,
+  rescaleAllocations,
+  roundCurrency,
+} from "@/lib/budget-allocation";
 import { useBudget } from "@/hooks/useBudget";
 import { toast } from "@/hooks/use-toast";
+import {
+  formatMonthValue,
+  parseMonthValue,
+  readStoredMonth,
+  writeStoredMonth,
+} from "@/lib/selected-month";
 
 export default function BudgetsPage() {
   const today = useMemo(() => new Date(), []);
   const [viewMonth, setViewMonth] = useState(today.getMonth() + 1);
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const { budget, saving, setBudget, saveBudget } = useBudget(viewMonth, viewYear);
-  const [prevMonthHasBudget, setPrevMonthHasBudget] = useState(false);
 
   const isPastMonth = viewYear < today.getFullYear() || (viewYear === today.getFullYear() && viewMonth < today.getMonth() + 1);
 
-  const prevMonth = viewMonth === 1 ? 12 : viewMonth - 1;
-  const prevYear = viewMonth === 1 ? viewYear - 1 : viewYear;
-  const isPrevPast = prevYear < today.getFullYear() || (prevYear === today.getFullYear() && prevMonth < today.getMonth() + 1);
-  const canGoBack = !isPrevPast || prevMonthHasBudget;
+  const selectedMonthValue = `${viewYear}-${String(viewMonth).padStart(2, "0")}`;
+  const [budgetMonths, setBudgetMonths] = useState<Array<{ year: number; month: number }>>([]);
 
-  const maxMonth = today.getMonth() + 1;
-  const maxYear = today.getFullYear() + 1;
+  const currentMonth = today.getMonth() + 1;
+  const currentYear = today.getFullYear();
+  const isViewingPast =
+    viewYear < currentYear || (viewYear === currentYear && viewMonth < currentMonth);
+  const isViewingFuture =
+    viewYear > currentYear || (viewYear === currentYear && viewMonth > currentMonth);
+
+  const previousBudgetMonth = useMemo(() => {
+    const beforeView = (m: { year: number; month: number }) =>
+      m.year < viewYear || (m.year === viewYear && m.month < viewMonth);
+
+    if (isViewingFuture) {
+      // Desde un mes futuro, volvemos al presupuesto más cercano sin bajar del mes actual.
+      const candidates = budgetMonths
+        .filter(
+          (m) =>
+            beforeView(m) &&
+            (m.year > currentYear || (m.year === currentYear && m.month >= currentMonth))
+        )
+        .sort((a, b) => a.year - b.year || a.month - b.month);
+      return candidates.length > 0
+        ? candidates[candidates.length - 1]
+        : { year: currentYear, month: currentMonth };
+    }
+
+    const previous = budgetMonths
+      .filter(beforeView)
+      .sort((a, b) => a.year - b.year || a.month - b.month);
+    return previous.length > 0 ? previous[previous.length - 1] : null;
+  }, [budgetMonths, viewYear, viewMonth, isViewingFuture, currentYear, currentMonth]);
+
+  const canGoBack = previousBudgetMonth !== null;
+
+  const monthOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const options: Array<{ value: string; label: string; hasBudget: boolean; isCurrent: boolean }> = [];
+    const hasBudget = (year: number, month: number) =>
+      budgetMonths.some((m) => m.year === year && m.month === month);
+    const add = (year: number, month: number) => {
+      const value = `${year}-${String(month).padStart(2, "0")}`;
+      if (seen.has(value)) return;
+      seen.add(value);
+      options.push({
+        value,
+        label: `${MONTH_NAMES[month - 1]} ${year}`,
+        hasBudget: hasBudget(year, month),
+        isCurrent: year === currentYear && month === currentMonth,
+      });
+    };
+
+    for (const m of budgetMonths) add(m.year, m.month);
+    add(viewYear, viewMonth);
+    add(today.getFullYear(), today.getMonth() + 1);
+
+    return options.sort((a, b) => a.value.localeCompare(b.value));
+  }, [budgetMonths, viewYear, viewMonth, currentYear, currentMonth, today]);
+
+  const maxMonth = currentMonth;
+  const maxYear = currentYear + 1;
   const nextMonth = viewMonth === 12 ? 1 : viewMonth + 1;
   const nextYear = viewMonth === 12 ? viewYear + 1 : viewYear;
+
+  // Desde un mes pasado, la flecha siguiente salta al siguiente mes con
+  // presupuesto y, si no hay ninguno, vuelve al mes actual en vez de ir mes a mes.
+  const nextBudgetMonth = useMemo(() => {
+    if (!isViewingPast) return null;
+
+    const afterView = budgetMonths
+      .filter(
+        (m) =>
+          (m.year > viewYear || (m.year === viewYear && m.month > viewMonth)) &&
+          (m.year < currentYear || (m.year === currentYear && m.month <= currentMonth))
+      )
+      .sort((a, b) => a.year - b.year || a.month - b.month);
+
+    return afterView.length > 0
+      ? afterView[0]
+      : { year: currentYear, month: currentMonth };
+  }, [budgetMonths, isViewingPast, viewYear, viewMonth, currentYear, currentMonth]);
+
   const isNextValid = nextYear < maxYear || (nextYear === maxYear && nextMonth <= maxMonth);
-  const canGoForward = isNextValid;
+  const canGoForward = nextBudgetMonth !== null || isNextValid;
+
+  const nextMonthLabel = nextBudgetMonth
+    ? `${MONTH_NAMES[nextBudgetMonth.month - 1]} ${nextBudgetMonth.year}`
+    : `${MONTH_NAMES[nextMonth - 1]} ${nextYear}`;
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalIncome, setTotalIncome] = useState(0);
   const [typeAllocations, setTypeAllocations] = useState(DEFAULT_ALLOCATIONS);
+  const [categoryAllocations, setCategoryAllocations] = useState<CategoryAllocation[]>([]);
   const [selectedType, setSelectedType] = useState<string>("needs");
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [savingCategory, setSavingCategory] = useState(false);
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
@@ -59,20 +150,22 @@ export default function BudgetsPage() {
   const editSnapshotRef = useRef<{
     totalIncome: number;
     typeAllocations: typeof DEFAULT_ALLOCATIONS;
-    categories: string;
+    categoryAllocations: CategoryAllocation[];
   } | null>(null);
+  const loadedAllocationsRef = useRef("[]");
   const categoriesSnapshotRef = useRef("");
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
-      const [cats, budgets, monthly] = await Promise.all([
+      const [cats, monthly, months] = await Promise.all([
         api.categories.list(),
-        api.budgets.list(),
         api.budgets.monthly.get(viewMonth, viewYear),
+        api.budgets.months(),
       ]);
       setCategories(cats);
+      setBudgetMonths(months);
 
       if (isInitialLoad.current) {
         isInitialLoad.current = false;
@@ -80,54 +173,86 @@ export default function BudgetsPage() {
       }
 
       if (monthly) {
+        const allocations = buildInitialAllocations(
+          cats,
+          monthly.typeAllocations,
+          monthly.totalIncome,
+          monthly.categoryAllocations ?? []
+        );
         setBudget(monthly);
         setTotalIncome(monthly.totalIncome);
         setTypeAllocations(monthly.typeAllocations);
+        setCategoryAllocations(allocations);
+        loadedAllocationsRef.current = JSON.stringify(allocations);
       } else {
+        const allocations = buildInitialAllocations(cats, DEFAULT_ALLOCATIONS, 0);
         setBudget(null);
         setTotalIncome(0);
         setTypeAllocations(DEFAULT_ALLOCATIONS);
-      }
-
-      if (budgets.length > 0) {
-        const typePct: Record<string, number> = {};
-        for (const b of budgets) {
-          const t = b.category.type;
-          typePct[t] = (typePct[t] ?? 0) + b.percentage;
-        }
-        setTypeAllocations(
-          DEFAULT_ALLOCATIONS.map((a) => ({
-            type: a.type,
-            percentage: typePct[a.type] ?? a.percentage,
-          }))
-        );
+        setCategoryAllocations(allocations);
+        loadedAllocationsRef.current = JSON.stringify(allocations);
       }
     } catch (e) {
       console.error(e);
       setError("No se pudieron cargar los datos");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [viewMonth, viewYear, setBudget]);
 
   useEffect(() => {
-    const prevM = viewMonth === 1 ? 12 : viewMonth - 1;
-    const prevY = viewMonth === 1 ? viewYear - 1 : viewYear;
-    api.budgets.monthly.get(prevM, prevY).then((m) => setPrevMonthHasBudget(m !== null));
-  }, [viewMonth, viewYear]);
+    const parsed = parseMonthValue(readStoredMonth());
+    if (!parsed) return;
+    setViewMonth(parsed.month);
+    setViewYear(parsed.year);
+  }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
 
   const totalAllocated = typeAllocations.reduce((s, a) => s + a.percentage, 0);
   const isValidTotal = Math.abs(totalAllocated - 100) < 0.15;
 
+  const remainingByType = useMemo(
+    () =>
+      typeAllocations.map((allocation) => ({
+        type: allocation.type,
+        remaining: getTypeRemaining(
+          categories,
+          allocation.type,
+          categoryAllocations,
+          totalIncome * (allocation.percentage / 100)
+        ),
+      })),
+    [categories, typeAllocations, categoryAllocations, totalIncome]
+  );
+  const isCategoryAllocationValid = remainingByType.every(
+    (item) => Math.abs(item.remaining) < 0.005
+  );
+
+  // En meses pasados solo mostramos las categorías que quedaron guardadas en ese
+  // presupuesto. Así una categoría creada hoy no altera el histórico.
+  const readOnlyCategories = useMemo(() => {
+    if (!isPastMonth) return categories;
+    const stored = budget?.categoryAllocations;
+    if (!Array.isArray(stored) || stored.length === 0) return [];
+    const storedIds = new Set(stored.map((entry) => entry.categoryId));
+    return categories.filter((category) => storedIds.has(category.id));
+  }, [budget, categories, isPastMonth]);
+
   const categoriesChanged = JSON.stringify(categories) !== categoriesSnapshotRef.current;
+  const allocationsChanged =
+    JSON.stringify(categoryAllocations) !== loadedAllocationsRef.current;
   const hasChanges = budget !== null && (
     totalIncome !== budget.totalIncome ||
     JSON.stringify(typeAllocations) !== JSON.stringify(budget.typeAllocations) ||
+    allocationsChanged ||
     categoriesChanged
   );
-  const canSave = totalIncome > 0 && isValidTotal && (budget === null || hasChanges);
+  const canSave =
+    totalIncome > 0 &&
+    isValidTotal &&
+    isCategoryAllocationValid &&
+    (budget === null || hasChanges);
 
   if (loading) {
     return (
@@ -142,7 +267,7 @@ export default function BudgetsPage() {
       <main className="min-h-screen bg-bg-page p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
           <p className="text-sm text-expense">{error}</p>
-          <button onClick={loadData} className="text-primary text-sm hover:underline mt-2">
+          <button onClick={() => void loadData()} className="text-primary text-sm hover:underline mt-2">
             Reintentar
           </button>
         </div>
@@ -155,8 +280,8 @@ export default function BudgetsPage() {
     setEditDialogOpen(true);
   }
 
-  async function handleEditSave(name: string) {
-    const updated = await api.categories.update(editingCategory!.id, { name });
+  async function handleEditSave(name: string, type: Category["type"]) {
+    const updated = await api.categories.update(editingCategory!.id, { name, type });
     setCategories(prev => prev.map(c => c.id === updated.id ? updated : c));
   }
 
@@ -166,51 +291,125 @@ export default function BudgetsPage() {
   }
 
   async function handleDeleteConfirm() {
-    await api.categories.delete(deletingCategory!.id);
-    setCategories(prev => prev.filter(c => c.id !== deletingCategory!.id));
-    setDeleteDialogOpen(false);
-    setDeletingCategory(null);
+    try {
+      await api.categories.delete(deletingCategory!.id);
+      setCategories(prev => prev.filter(c => c.id !== deletingCategory!.id));
+      setCategoryAllocations(prev =>
+        prev.filter((entry) => entry.categoryId !== deletingCategory!.id)
+      );
+      setDeleteDialogOpen(false);
+      setDeletingCategory(null);
+      toast({
+        title: "Categoría eliminada",
+        description: "Se eliminó al instante; cancelar el presupuesto no la recupera.",
+      });
+    } catch (err) {
+      toast({
+        title: "No se pudo eliminar la categoría",
+        description: err instanceof Error ? err.message : undefined,
+        variant: "destructive",
+      });
+    }
   }
 
-  async function handleAddCategory() {
-    if (!selectedType) return;
+  function handleAddCategory() {
+    setEditingCategory(null);
+    setEditDialogOpen(true);
+  }
+
+  async function handleCategorySubmit(name: string, type: Category["type"]) {
+    setSavingCategory(true);
     try {
-      const created = await api.categories.create({
-        name: "Nueva categoría",
-        type: selectedType,
-      });
-      setCategories(prev => [...prev, created]);
+      if (editingCategory) {
+        await handleEditSave(name, type);
+        toast({
+          title: "Categoría actualizada",
+          description: "Se guardó al instante; cancelar el presupuesto no la deshace.",
+        });
+      } else {
+        const created = await api.categories.create({ name, type });
+        setCategories(prev => [...prev, created]);
+        setCategoryAllocations(prev => [
+          ...prev,
+          { categoryId: created.id, amount: 0 },
+        ]);
+        toast({
+          title: "Categoría creada",
+          description: "Se guardó al instante; cancelar el presupuesto no la deshace.",
+        });
+      }
+      setEditDialogOpen(false);
+      setEditingCategory(null);
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Error al crear categoría");
+      setSaveError(err instanceof Error ? err.message : "Error al guardar la categoría");
+    } finally {
+      setSavingCategory(false);
     }
   }
 
   function handlePercentageChange(type: string, newPercentage: number) {
     setSaveError(null);
-    setTypeAllocations((prev) =>
-      prev.map((a) =>
-        a.type === type ? { ...a, percentage: Math.max(0, Math.min(100, newPercentage)) } : a
+    const percentage = Math.max(0, Math.min(100, newPercentage));
+    const nextAllocations = typeAllocations.map((allocation) =>
+      allocation.type === type ? { ...allocation, percentage } : allocation
+    );
+    setTypeAllocations(nextAllocations);
+    setCategoryAllocations((prev) =>
+      rescaleAllocations(prev, categories, nextAllocations, totalIncome, type)
+    );
+  }
+
+  function handleTotalIncomeChange(value: number) {
+    setSaveError(null);
+    const income = Math.max(0, value);
+    setTotalIncome(income);
+    setCategoryAllocations((prev) =>
+      rescaleAllocations(prev, categories, typeAllocations, income)
+    );
+  }
+
+  function handleCategoryAmountChange(categoryId: string, amount: number) {
+    setSaveError(null);
+    setCategoryAllocations((prev) =>
+      prev.map((entry) =>
+        entry.categoryId === categoryId
+          ? { ...entry, amount: roundCurrency(Math.max(0, amount)) }
+          : entry
       )
     );
   }
 
+  function applyMonth(year: number, month: number) {
+    setViewMonth(month);
+    setViewYear(year);
+    writeStoredMonth(formatMonthValue(year, month));
+  }
+
   function goToPrevMonth() {
-    if (!canGoBack) return;
+    if (!previousBudgetMonth) return;
     setEditingBudget(false);
     editSnapshotRef.current = null;
-    setViewMonth(prevMonth);
-    setViewYear(prevYear);
+    applyMonth(previousBudgetMonth.year, previousBudgetMonth.month);
+  }
+
+  function goToMonth(value: string) {
+    const [year, month] = value.split("-").map(Number);
+    if (!year || !month) return;
+    setEditingBudget(false);
+    editSnapshotRef.current = null;
+    applyMonth(year, month);
   }
 
   function goToNextMonth() {
     if (!canGoForward) return;
     setEditingBudget(false);
     editSnapshotRef.current = null;
-    setViewMonth(nextMonth);
-    setViewYear(nextYear);
+    if (nextBudgetMonth) {
+      applyMonth(nextBudgetMonth.year, nextBudgetMonth.month);
+      return;
+    }
+    applyMonth(nextYear, nextMonth);
   }
-
-  const monthLabel = `${MONTH_NAMES[viewMonth - 1]} ${viewYear}`;
 
   const showEditButton = !editingBudget && !isPastMonth;
   const editButtonLabel = budget ? "Editar" : "Crear presupuesto";
@@ -220,7 +419,7 @@ export default function BudgetsPage() {
     editSnapshotRef.current = {
       totalIncome,
       typeAllocations,
-      categories: JSON.stringify(categories),
+      categoryAllocations,
     };
     setEditingBudget(true);
   }
@@ -230,10 +429,13 @@ export default function BudgetsPage() {
     if (snapshot) {
       setTotalIncome(snapshot.totalIncome);
       setTypeAllocations(snapshot.typeAllocations);
-      setCategories(JSON.parse(snapshot.categories));
+      setCategoryAllocations(snapshot.categoryAllocations);
     }
     editSnapshotRef.current = null;
     setEditingBudget(false);
+    // Las categorías se crean, editan y borran al instante en el servidor.
+    // Recargamos en silencio para que el resumen refleje el estado real.
+    void loadData(true);
   }
 
   async function handleCalculateIncome() {
@@ -257,14 +459,15 @@ export default function BudgetsPage() {
   }
 
   function handleIncomeConfirm(selectedTotal: number) {
-    setTotalIncome(selectedTotal);
+    handleTotalIncomeChange(selectedTotal);
     setIncomeDialogOpen(false);
   }
 
   async function handleSave() {
-    const saved = await saveBudget(totalIncome, typeAllocations);
+    const saved = await saveBudget(totalIncome, typeAllocations, categoryAllocations);
     if (saved) {
       categoriesSnapshotRef.current = JSON.stringify(categories);
+      loadedAllocationsRef.current = JSON.stringify(categoryAllocations);
       setEditingBudget(false);
       editSnapshotRef.current = null;
       toast({ title: "Presupuesto guardado", description: "Los cambios se han guardado correctamente." });
@@ -281,14 +484,17 @@ export default function BudgetsPage() {
     <main className="min-h-screen bg-bg-page p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         <BudgetHeader
-          monthLabel={monthLabel}
+          monthOptions={monthOptions}
+          selectedMonthValue={selectedMonthValue}
           badge={badge}
           canGoBack={canGoBack}
           canGoForward={canGoForward}
+          nextMonthLabel={nextMonthLabel}
           showEditButton={showEditButton}
           editButtonLabel={editButtonLabel}
           onPrevMonth={goToPrevMonth}
           onNextMonth={goToNextMonth}
+          onMonthChange={goToMonth}
           onStartEdit={handleStartEdit}
         />
 
@@ -296,14 +502,15 @@ export default function BudgetsPage() {
           <BudgetReadOnlyView
             totalIncome={totalIncome}
             typeAllocations={typeAllocations}
-            categories={categories}
+            categoryAllocations={categoryAllocations}
+            categories={readOnlyCategories}
           />
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-1 self-start">
               <BudgetDetails
                 totalIncome={totalIncome}
-                onTotalIncomeChange={setTotalIncome}
+                onTotalIncomeChange={handleTotalIncomeChange}
                 typeAllocations={typeAllocations}
                 selectedType={selectedType}
                 onSelectType={setSelectedType}
@@ -324,8 +531,11 @@ export default function BudgetsPage() {
                   categories={categories}
                   selectedType={selectedType}
                   typeAllocations={typeAllocations}
+                  categoryAllocations={categoryAllocations}
                   onPercentageChange={handlePercentageChange}
+                  onCategoryAmountChange={handleCategoryAmountChange}
                   totalIncome={totalIncome}
+                  remaining={remainingByType.find((item) => item.type === selectedType)?.remaining ?? 0}
                   saveError={saveError}
                   onOpenEditCategory={openEditCategory}
                   onDeleteCategory={handleDeleteCategory}
@@ -343,11 +553,16 @@ export default function BudgetsPage() {
           onConfirm={handleIncomeConfirm}
         />
 
-        <EditCategoryDialog
+        <CategoryDialog
           open={editDialogOpen}
           category={editingCategory}
-          onSave={handleEditSave}
-          onClose={() => { setEditDialogOpen(false); setEditingCategory(null); }}
+          defaultType={(selectedType as Category["type"] | null) ?? "needs"}
+          saving={savingCategory}
+          onOpenChange={(open) => {
+            setEditDialogOpen(open);
+            if (!open) setEditingCategory(null);
+          }}
+          onSubmit={handleCategorySubmit}
         />
 
         <ConfirmDeleteDialog

@@ -8,6 +8,8 @@ export interface SubscriptionListContentProps {
   onDismissError: () => void;
   onEdit: (sub: Subscription) => void;
   onDelete: (sub: Subscription) => void;
+  onToggleActive: (sub: Subscription) => void;
+  onHistory: (sub: Subscription) => void;
   onUpdateAmount: (sub: Subscription, amount: number) => void;
   onDismissPriceChange: (sub: Subscription) => void;
 }

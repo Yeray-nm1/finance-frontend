@@ -2,18 +2,23 @@ import type { BudgetCategoryDetailsProps } from "./types/BudgetCategoryDetails.t
 import type { Category } from "@/types/categories";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { typeLabels } from "@/lib/budget-constants";
 import { typeIcons } from "@/components/ui/variants/budget.variants";
 import { formatCurrency } from "@/lib/format";
+import { getAllocation, roundCurrency } from "@/lib/budget-allocation";
 
 export function BudgetCategoryDetails({
   categories,
   selectedType,
   typeAllocations,
+  categoryAllocations,
   onPercentageChange,
+  onCategoryAmountChange,
   totalIncome,
+  remaining,
   saveError,
   onOpenEditCategory,
   onDeleteCategory,
@@ -28,6 +33,13 @@ export function BudgetCategoryDetails({
   const currentCategories = selectedType ? categoriesByType[selectedType] ?? [] : [];
   const selectedAllocation = typeAllocations.find((a) => a.type === selectedType);
   const typeAmount = totalIncome * ((selectedAllocation?.percentage ?? 0) / 100);
+
+  const isBalanced = Math.abs(remaining) < 0.005;
+  const remainingMessage = isBalanced
+    ? "✓ Reparto completo"
+    : remaining > 0
+      ? `Te quedan ${formatCurrency(remaining)} por repartir`
+      : `Te has pasado en ${formatCurrency(Math.abs(remaining))}`;
 
   return (
     <Card className="h-full">
@@ -68,35 +80,71 @@ export function BudgetCategoryDetails({
             ) : (
               <div className="flex-1 min-h-0 overflow-y-auto">
                 <div className="space-y-2">
-                  {currentCategories.map((cat) => (
-                    <div
-                      key={cat.id}
-                      className="flex items-center justify-between p-3 rounded-lg border border-border"
-                    >
-                      <span className="text-sm font-medium text-text-primary">
-                        {cat.name}
-                      </span>
-                      <div className="flex gap-1 shrink-0">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => onOpenEditCategory(cat)}
-                        >
-                          <Pencil className="size-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => onDeleteCategory(cat)}
-                        >
-                          <Trash2 className="size-4 text-expense" />
-                        </Button>
+                  {currentCategories.map((cat) => {
+                    const amount = getAllocation(categoryAllocations, cat.id);
+                    const percentage = typeAmount > 0 ? (amount / typeAmount) * 100 : 0;
+                    return (
+                      <div
+                        key={cat.id}
+                        className="flex items-center gap-3 p-3 rounded-lg border border-border"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-text-primary truncate">
+                            {cat.name}
+                          </p>
+                          <p className="text-xs text-text-muted">
+                            {percentage.toFixed(1)}% del tipo
+                          </p>
+                        </div>
+                        <div className="relative w-28 shrink-0">
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder="0,00"
+                            aria-label={`Importe de ${cat.name}`}
+                            value={amount || ""}
+                            onChange={(e) =>
+                              onCategoryAmountChange(cat.id, roundCurrency(Number(e.target.value)))
+                            }
+                            className="pr-6 text-right"
+                          />
+                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-text-muted">
+                            €
+                          </span>
+                        </div>
+                        <div className="flex gap-1 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Editar ${cat.name}`}
+                            onClick={() => onOpenEditCategory(cat)}
+                          >
+                            <Pencil className="size-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Eliminar ${cat.name}`}
+                            onClick={() => onDeleteCategory(cat)}
+                          >
+                            <Trash2 className="size-4 text-expense" />
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
+
+            <div
+              className={`shrink-0 p-3 rounded-lg text-sm text-center font-medium ${
+                isBalanced ? "bg-income/5 text-income" : "bg-expense/5 text-expense"
+              }`}
+            >
+              {remainingMessage}
+            </div>
 
             <Button
               variant="outline"

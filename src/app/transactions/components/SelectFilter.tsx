@@ -17,11 +17,17 @@ export function SelectFilter({
   onChange,
   width = "160px",
   clearLabel = "Limpiar filtro",
+  disabled = false,
 }: Readonly<SelectFilterProps>) {
   return (
-    <div className="relative" style={{ width }}>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className={value ? "pr-8" : ""}><SelectValue placeholder={placeholder} /></SelectTrigger>
+    <div className="relative shrink-0" style={{ width }}>
+      <Select value={value} onValueChange={onChange} disabled={disabled}>
+        <SelectTrigger
+          disabled={disabled}
+          className={`${value ? "pr-8" : ""} ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
+        >
+          <SelectValue placeholder={disabled ? "Sin cuentas" : placeholder} />
+        </SelectTrigger>
         <SelectContent>
           {options.map((opt) => (
             <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>

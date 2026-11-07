@@ -5,6 +5,7 @@ export interface TransactionFilters {
   limit?: number;
   type?: TransactionType;
   categoryId?: string;
+  uncategorized?: boolean;
   accountId?: string;
   dateFrom?: string;
   dateTo?: string;

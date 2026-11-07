@@ -1,6 +1,7 @@
 "use client";
 
 import { TableRow, TableCell } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/format";
 import { getAmountColor } from "@/components/ui/variants/transactions.variants";
@@ -18,18 +19,28 @@ export function TransactionRow({
   editingField,
   editValue,
   savingField,
+  selected,
   onStartEdit,
   onEditValueChange,
   onCancelEdit,
   onInlineEdit,
   onOpenEdit,
   onDeleteClick,
+  onToggleSelect,
 }: Readonly<TransactionRowProps>) {
   const isEditing = editingId === tx.id;
   const isSub = tx.isSubscription || !!tx.subscriptionId;
 
   return (
-    <TableRow className={`${savingField && isEditing ? "opacity-60" : ""} border-border/50`}>
+    <TableRow className={`${savingField && isEditing ? "opacity-60" : ""} ${selected ? "bg-primary/5" : ""} border-border/50`}>
+      <TableCell className="py-1.5 px-2">
+        <Checkbox
+          checked={selected}
+          onCheckedChange={() => onToggleSelect(tx.id)}
+          aria-label={`Seleccionar ${tx.description}`}
+        />
+      </TableCell>
+
       <TableCell className="py-1.5 px-4 text-sm whitespace-nowrap">
         {new Date(tx.date).toLocaleDateString("es-ES")}
       </TableCell>
