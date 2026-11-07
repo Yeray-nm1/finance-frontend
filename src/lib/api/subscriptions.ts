@@ -10,7 +10,7 @@ export const subscriptions = {
       body: JSON.stringify(data),
     }),
 
-  update: (id: string, data: Partial<{ name: string; amount: number; frequency: string; matchDescriptions: string[] }>) =>
+  update: (id: string, data: Partial<{ name: string; amount: number; frequency: string; matchDescriptions: string[]; active: boolean }>) =>
     request<Subscription>(`/subscriptions/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),

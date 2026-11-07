@@ -15,6 +15,7 @@ import { toast } from "@/hooks/use-toast";
 import { TransactionsFilters } from "@/app/transactions/components/TransactionsFilters";
 import { TransactionsTable } from "@/app/transactions/components/TransactionsTable";
 import { TransactionsPagination } from "@/app/transactions/components/TransactionsPagination";
+import { BulkActionsBar } from "@/app/transactions/components/BulkActionsBar";
 import { NO_ACCOUNT_SENTINEL, NO_CATEGORY_SENTINEL } from "@/lib/transactions-utils";
 import { api } from "@/lib/api";
 import type { Transaction, TransactionType, TransferKind, TransferDirection, UpdateTransactionDTO } from "@/types/transactions";
@@ -101,6 +102,12 @@ function TransactionsPageContent() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [editTxId, setEditTxId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkCategoryId, setBulkCategoryId] = useState("");
+  const [bulkAccountId, setBulkAccountId] = useState("");
+  const [bulkApplying, setBulkApplying] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [csvDialogOpen, setCsvDialogOpen] = useState(false);
@@ -369,6 +376,23 @@ function TransactionsPageContent() {
   }, [loadData, monthReady]);
 
   useEffect(() => {
+    setSelectedIds(new Set());
+    setBulkCategoryId("");
+    setBulkAccountId("");
+  }, [
+    page,
+    limit,
+    filterType,
+    filterCategoryId,
+    filterAccountId,
+    searchQuery,
+    filterSubscriptionIds,
+    filterDates,
+    sortBy,
+    sortOrder,
+  ]);
+
+  useEffect(() => {
     if (!editTxId && accounts.length > 0 && !newAccountId) {
       setNewAccountId(accounts[0].id);
     }
@@ -467,6 +491,138 @@ function TransactionsPageContent() {
       toast({ title: "Error al eliminar", variant: "destructive" });
     } finally {
       setDeleting(false);
+    }
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (transactions.length === 0) return;
+    const allSelected = transactions.every((tx) => selectedIds.has(tx.id));
+    setSelectedIds(allSelected ? new Set() : new Set(transactions.map((tx) => tx.id)));
+  }
+
+  async function handleBulkApply() {
+    if (selectedIds.size === 0) return;
+
+    const categoryChanged = bulkCategoryId !== "";
+    const accountChanged = bulkAccountId !== "";
+    if (!categoryChanged && !accountChanged) return;
+
+    const ids = [...selectedIds];
+    const previous = new Map<string, { categoryId: string | null; accountId: string | null }>();
+    for (const tx of transactions) {
+      if (selectedIds.has(tx.id)) {
+        previous.set(tx.id, { categoryId: tx.categoryId, accountId: tx.accountId });
+      }
+    }
+
+    const payload: { categoryId?: string | null; accountId?: string | null } = {};
+    if (categoryChanged) {
+      payload.categoryId = bulkCategoryId === NO_CATEGORY_SENTINEL ? null : bulkCategoryId;
+    }
+    if (accountChanged) {
+      payload.accountId = bulkAccountId === NO_ACCOUNT_SENTINEL ? null : bulkAccountId;
+    }
+
+    const nextCategoryId = payload.categoryId;
+    const nextAccountId = payload.accountId;
+    const category = nextCategoryId
+      ? categories.find((item) => item.id === nextCategoryId) ?? null
+      : null;
+    const account = nextAccountId
+      ? accounts.find((item) => item.id === nextAccountId) ?? null
+      : null;
+
+    setBulkApplying(true);
+    try {
+      await api.transactions.updateMany(ids, payload);
+      setTransactions((prev) =>
+        prev.map((tx) => {
+          if (!selectedIds.has(tx.id)) return tx;
+          return {
+            ...tx,
+            ...(nextCategoryId !== undefined
+              ? {
+                  categoryId: nextCategoryId,
+                  category: category
+                    ? { id: category.id, name: category.name, type: category.type }
+                    : undefined,
+                }
+              : {}),
+            ...(nextAccountId !== undefined
+              ? {
+                  accountId: nextAccountId,
+                  account: account
+                    ? { id: account.id, name: account.name, type: account.type }
+                    : undefined,
+                }
+              : {}),
+          };
+        })
+      );
+      setSelectedIds(new Set());
+      setBulkCategoryId("");
+      setBulkAccountId("");
+      toast({
+        title: `${ids.length} ${ids.length === 1 ? "transaccion actualizada" : "transacciones actualizadas"}`,
+        actionLabel: "Deshacer",
+        onAction: async () => {
+          try {
+            const restored = await Promise.all(
+              ids.map((id) => {
+                const before = previous.get(id);
+                return api.transactions.update(id, {
+                  ...(nextCategoryId !== undefined
+                    ? { categoryId: before?.categoryId ?? null }
+                    : {}),
+                  ...(nextAccountId !== undefined
+                    ? { accountId: before?.accountId ?? null }
+                    : {}),
+                });
+              })
+            );
+            const restoredById = new Map(restored.map((tx) => [tx.id, tx]));
+            setTransactions((prev) => prev.map((tx) => restoredById.get(tx.id) ?? tx));
+            toast({ title: "Cambios deshechos" });
+          } catch (err) {
+            console.error(err);
+            toast({ title: "No se pudo deshacer", variant: "destructive" });
+          }
+        },
+      });
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Error al actualizar", variant: "destructive" });
+    } finally {
+      setBulkApplying(false);
+    }
+  }
+
+  async function handleBulkDelete() {
+    if (selectedIds.size === 0) return;
+
+    const ids = [...selectedIds];
+    setBulkDeleting(true);
+    try {
+      const result = await api.transactions.deleteMany(ids);
+      setTransactions((prev) => prev.filter((tx) => !selectedIds.has(tx.id)));
+      setTotal((prev) => Math.max(0, prev - (result.deleted ?? ids.length)));
+      setSelectedIds(new Set());
+      setBulkDeleteOpen(false);
+      toast({ title: `${result.deleted} ${result.deleted === 1 ? "transaccion eliminada" : "transacciones eliminadas"}` });
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Error al eliminar", variant: "destructive" });
+    } finally {
+      setBulkDeleting(false);
     }
   }
 
@@ -590,6 +746,7 @@ function TransactionsPageContent() {
 
   const from = total === 0 ? 0 : (page - 1) * limit + 1;
   const to = Math.min(page * limit, total);
+  const selectedTransactions = transactions.filter((tx) => selectedIds.has(tx.id));
 
   if (loading && transactions.length === 0) {
     return <LoadingSkeleton />;
@@ -685,6 +842,24 @@ function TransactionsPageContent() {
             onClearFilters={clearFilters}
           />
 
+          <BulkActionsBar
+            selectedCount={selectedIds.size}
+            categories={categories}
+            accounts={accounts}
+            categoryId={bulkCategoryId}
+            accountId={bulkAccountId}
+            applying={bulkApplying}
+            onCategoryChange={setBulkCategoryId}
+            onAccountChange={setBulkAccountId}
+            onApply={handleBulkApply}
+            onDelete={() => setBulkDeleteOpen(true)}
+            onClear={() => {
+              setSelectedIds(new Set());
+              setBulkCategoryId("");
+              setBulkAccountId("");
+            }}
+          />
+
           <TransactionsTable
             transactions={transactions}
             categories={categories}
@@ -697,6 +872,7 @@ function TransactionsPageContent() {
             editValue={editValue}
             savingField={savingField}
             hasActiveFilters={!!hasActiveFilters()}
+            selectedIds={selectedIds}
             onSort={handleSort}
             onStartEdit={startEdit}
             onEditValueChange={setEditValue}
@@ -704,6 +880,8 @@ function TransactionsPageContent() {
             onInlineEdit={handleInlineEdit}
             onOpenEdit={handleOpenEdit}
             onDeleteClick={(id) => setDeleteConfirmId(id)}
+            onToggleSelect={toggleSelect}
+            onToggleSelectAll={toggleSelectAll}
           />
 
           <TransactionsPagination
@@ -725,6 +903,32 @@ function TransactionsPageContent() {
           loading={deleting}
           onConfirm={() => deleteConfirmId ? handleDelete(deleteConfirmId) : undefined}
           onCancel={() => setDeleteConfirmId(null)}
+        />
+
+        <ConfirmDeleteDialog
+          open={bulkDeleteOpen}
+          title="Eliminar transacciones"
+          description={
+            <span>
+              Se eliminarán <strong>{selectedIds.size}</strong>{" "}
+              {selectedIds.size === 1 ? "transaccion seleccionada" : "transacciones seleccionadas"}.
+              Esta accion no se puede deshacer.
+              {selectedTransactions.length > 0 && (
+                <span className="mt-2 block text-xs text-text-muted">
+                  {selectedTransactions
+                    .slice(0, 3)
+                    .map((tx) => tx.description)
+                    .join(", ")}
+                  {selectedTransactions.length > 3
+                    ? ` y ${selectedTransactions.length - 3} mas`
+                    : ""}
+                </span>
+              )}
+            </span>
+          }
+          loading={bulkDeleting}
+          onConfirm={handleBulkDelete}
+          onCancel={() => setBulkDeleteOpen(false)}
         />
       </main>
   );

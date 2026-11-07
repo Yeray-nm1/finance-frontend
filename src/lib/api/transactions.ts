@@ -47,5 +47,17 @@ export const transactions = {
     }),
   update: (id: string, data: UpdateTransactionDTO) =>
     request<Transaction>(`/transactions/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  updateMany: (
+    ids: string[],
+    data: { categoryId?: string | null; accountId?: string | null }
+  ) =>
+    request<{ updated: number }>('/transactions/batch', {
+      method: 'PATCH',
+      body: JSON.stringify({ ids, ...data }),
+    }),
+  deleteMany: (ids: string[]) =>
+    request<{ deleted: number }>(`/transactions/batch?ids=${ids.map(encodeURIComponent).join(',')}`, {
+      method: 'DELETE',
+    }),
   delete: (id: string) => request<void>(`/transactions/${id}`, { method: 'DELETE' }),
 };

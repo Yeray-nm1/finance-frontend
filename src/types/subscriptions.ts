@@ -6,6 +6,7 @@ export interface Subscription {
   frequency: 'weekly' | 'biweekly' | 'monthly' | 'bimonthly' | 'quarterly' | 'yearly';
   matchDescriptions: string[];
   amountTolerance: number;
+  active: boolean;
   createdAt: string;
   lastTransaction?: {
     id: string;
@@ -13,6 +14,12 @@ export interface Subscription {
     date: string;
     description: string;
   };
+  recentTransactions?: Array<{
+    id: string;
+    amount: number;
+    date: string;
+    description: string;
+  }>;
   priceChanges?: PriceChange[];
 }
 
