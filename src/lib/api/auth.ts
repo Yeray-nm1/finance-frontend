@@ -1,17 +1,26 @@
 import { request } from './client';
 import type { User } from '@/types/auth';
 
+interface AuthResponse {
+  user: User;
+}
+
 export const auth = {
   register: (email: string, password: string) =>
-    request<{ user: User }>('/auth/register', {
+    request<AuthResponse>('/auth/register', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
   login: (email: string, password: string) =>
-    request<{ user: User }>('/auth/login', {
+    request<AuthResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
-  me: (signal?: AbortSignal) => request<{ user: User }>('/auth/me', { signal }),
+  me: (signal?: AbortSignal) => request<AuthResponse>('/auth/me', { signal }),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<void>('/auth/password', {
+      method: 'PUT',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
 };
