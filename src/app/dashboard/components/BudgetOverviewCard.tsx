@@ -43,7 +43,7 @@ function transactionsHref(
   categoryName: string,
   monthValue: string,
 ): string {
-  const params = new URLSearchParams();
+  const params = new URLSearchParams({ flow: "expense" });
   if (categoryId) params.set("category", categoryName);
   else params.set("uncategorized", "true");
   params.set("month", monthValue);

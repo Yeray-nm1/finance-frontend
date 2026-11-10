@@ -80,12 +80,12 @@ describe('BudgetOverviewCard', () => {
     expect(screen.getByText(/0,00.*250,00/)).toBeInTheDocument();
   });
 
-  it('links budgeted categories to transactions filtered by category and month', () => {
+  it('links budgeted categories to expense transactions filtered by category and month', () => {
     render(<BudgetOverviewCard budgets={budgets} spending={spending} monthValue="2026-05" />);
     expand('Necesidades');
     expect(screen.getByRole('link', { name: 'Ver transacciones de Comida' })).toHaveAttribute(
       'href',
-      '/transactions?category=Comida&month=2026-05'
+      '/transactions?flow=expense&category=Comida&month=2026-05'
     );
   });
 
@@ -94,16 +94,16 @@ describe('BudgetOverviewCard', () => {
     expand('Ocio');
     expect(screen.getByRole('link', { name: 'Ver transacciones de Cine' })).toHaveAttribute(
       'href',
-      '/transactions?category=Cine&month=2026-05'
+      '/transactions?flow=expense&category=Cine&month=2026-05'
     );
   });
 
-  it('links uncategorized spending with the uncategorized filter', () => {
+  it('links uncategorized spending with the uncategorized and expense filters', () => {
     render(<BudgetOverviewCard budgets={budgets} spending={spending} monthValue="2026-05" />);
     expand('Sin categoría');
     expect(screen.getByRole('link', { name: 'Ver transacciones de Sin categoría' })).toHaveAttribute(
       'href',
-      '/transactions?uncategorized=true&month=2026-05'
+      '/transactions?flow=expense&uncategorized=true&month=2026-05'
     );
   });
 
