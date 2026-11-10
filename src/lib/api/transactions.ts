@@ -16,6 +16,7 @@ export const transactions = {
     if (params?.page) qs.set('page', String(params.page))
     if (params?.limit) qs.set('limit', String(params.limit))
     if (params?.type) qs.set('type', params.type)
+    if (params?.flow) qs.set('flow', params.flow)
     if (params?.categoryId) qs.set('categoryId', params.categoryId)
     if (params?.uncategorized) qs.set('uncategorized', 'true')
     if (params?.accountId) qs.set('accountId', params.accountId)

@@ -6,8 +6,8 @@ import { getBalanceColor } from "@/components/ui/variants/dashboard.variants";
 import { BalanceDonut } from "./BalanceDonut";
 import type { BalanceCardProps } from "./types/BalanceCard.types";
 
-function transactionsHref(type: string, monthValue?: string): string {
-  const params = new URLSearchParams({ type });
+function transactionsHref(flow: "income" | "expense" | "savings", monthValue?: string): string {
+  const params = new URLSearchParams({ flow });
   if (monthValue) params.set("month", monthValue);
   return `/transactions?${params.toString()}`;
 }
@@ -54,7 +54,7 @@ export function BalanceCard({
             <span className="font-medium text-text-primary">{formatCurrency(expenses)}</span>
           </Link>
           <Link
-            href={transactionsHref("transfer", monthValue)}
+            href={transactionsHref("savings", monthValue)}
             className="flex justify-between items-center text-sm rounded-md -mx-2 px-2 py-1 hover:bg-bg-elevated transition-colors group"
           >
             <span className="text-savings font-medium group-hover:underline">Ahorro</span>

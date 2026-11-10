@@ -64,19 +64,19 @@ describe('BalanceCard', () => {
     expect(screen.getByText('Disponible')).toBeInTheDocument();
   });
 
-  it('links income, expenses and savings to transactions filtered by type and month', () => {
+  it('links income, expenses and savings to transactions filtered by flow and month', () => {
     render(<BalanceCard {...defaultProps} monthValue="2026-05" />);
     expect(screen.getByRole('link', { name: /Ingresos/ })).toHaveAttribute(
       'href',
-      '/transactions?type=income&month=2026-05'
+      '/transactions?flow=income&month=2026-05'
     );
     expect(screen.getByRole('link', { name: /Gastos/ })).toHaveAttribute(
       'href',
-      '/transactions?type=expense&month=2026-05'
+      '/transactions?flow=expense&month=2026-05'
     );
     expect(screen.getByRole('link', { name: /Ahorro/ })).toHaveAttribute(
       'href',
-      '/transactions?type=transfer&month=2026-05'
+      '/transactions?flow=savings&month=2026-05'
     );
   });
 
@@ -84,7 +84,7 @@ describe('BalanceCard', () => {
     render(<BalanceCard {...defaultProps} />);
     expect(screen.getByRole('link', { name: /Ingresos/ })).toHaveAttribute(
       'href',
-      '/transactions?type=income'
+      '/transactions?flow=income'
     );
   });
 });

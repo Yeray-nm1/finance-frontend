@@ -2,6 +2,7 @@ import type { Account } from "@/types/accounts";
 import type { Category } from "@/types/categories";
 import type { Subscription } from "@/types/subscriptions";
 import type { TransactionType } from "@/types/transactions";
+import type { TransactionFlow } from "@/types/filter";
 
 export interface SortableHeaderProps {
   field: string;
@@ -41,6 +42,7 @@ export interface SubscriptionFilterProps {
 
 export interface TransactionsFiltersProps {
   filterType: "" | TransactionType;
+  filterFlow: "" | TransactionFlow;
   filterCategoryId: string;
   filterAccountId: string;
   filterSearch: string;
@@ -52,6 +54,7 @@ export interface TransactionsFiltersProps {
   hasActiveFilters: boolean;
   isDefaultSort: boolean;
   onFilterTypeChange: (value: "" | TransactionType) => void;
+  onClearFlow: () => void;
   onFilterCategoryIdChange: (value: string) => void;
   onFilterAccountIdChange: (value: string) => void;
   onFilterSearchChange: (value: string) => void;

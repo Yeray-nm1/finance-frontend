@@ -11,6 +11,7 @@ import type { SelectFilterOption, TransactionsFiltersProps } from "./types/filte
 
 export function TransactionsFilters({
   filterType,
+  filterFlow,
   filterCategoryId,
   filterAccountId,
   filterSearch,
@@ -22,6 +23,7 @@ export function TransactionsFilters({
   hasActiveFilters,
   isDefaultSort,
   onFilterTypeChange,
+  onClearFlow,
   onFilterCategoryIdChange,
   onFilterAccountIdChange,
   onFilterSearchChange,
@@ -30,6 +32,15 @@ export function TransactionsFilters({
   onResetSort,
   onClearFilters,
 }: Readonly<TransactionsFiltersProps>) {
+  const flowLabel =
+    filterFlow === "expense"
+      ? "Gastos"
+      : filterFlow === "income"
+        ? "Ingresos"
+        : filterFlow === "savings"
+          ? "Ahorro"
+          : null;
+
   const selectFilters: Array<{
     key: string;
     value: string;
@@ -129,6 +140,17 @@ export function TransactionsFilters({
                 subscriptions={subscriptions}
                 onChange={onFilterSubscriptionIdsChange}
               />
+            )}
+            {flowLabel && (
+              <button
+                type="button"
+                onClick={onClearFlow}
+                className="text-xs text-primary bg-primary-light hover:bg-primary/10 px-2 py-1 rounded transition-colors flex items-center gap-1"
+                title={`Quitar vista de ${flowLabel.toLowerCase()}`}
+              >
+                Vista: {flowLabel}
+                <X className="size-3" />
+              </button>
             )}
             {!isDefaultSort && (
               <button

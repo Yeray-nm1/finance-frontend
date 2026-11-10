@@ -19,6 +19,7 @@ import { BulkActionsBar } from "@/app/transactions/components/BulkActionsBar";
 import { NO_ACCOUNT_SENTINEL, NO_CATEGORY_SENTINEL } from "@/lib/transactions-utils";
 import { api } from "@/lib/api";
 import type { Transaction, TransactionType, TransferKind, TransferDirection, UpdateTransactionDTO } from "@/types/transactions";
+import type { TransactionFlow } from "@/types/filter";
 import type { Account } from "@/types/accounts";
 import type { Category } from "@/types/categories";
 import {
@@ -45,6 +46,10 @@ function getFullMonthValue(dates: { from?: Date; to?: Date }): string | null {
   return formatMonthValue(from.getFullYear(), from.getMonth() + 1);
 }
 
+function parseFlowParam(value: string | null): "" | TransactionFlow {
+  return value === "expense" || value === "income" || value === "savings" ? value : "";
+}
+
 export default function TransactionsPage() {
   return (
     <Suspense fallback={<LoadingSkeleton />}>
@@ -61,6 +66,7 @@ function TransactionsPageContent() {
   const urlCategoryId = searchParams.get("categoryId");
   const urlUncategorized = searchParams.get("uncategorized") === "true";
   const urlMonth = searchParams.get("month");
+  const urlFlow = searchParams.get("flow");
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [total, setTotal] = useState(0);
@@ -77,6 +83,7 @@ function TransactionsPageContent() {
       ? urlType
       : ""
   );
+  const [filterFlow, setFilterFlow] = useState<"" | TransactionFlow>(parseFlowParam(urlFlow));
   const [filterCategoryId, setFilterCategoryId] = useState(
     urlUncategorized ? NO_CATEGORY_SENTINEL : urlCategoryId ?? ""
   );
@@ -133,7 +140,8 @@ function TransactionsPageContent() {
         api.transactions.list({
           page,
           limit,
-          type: filterType || undefined,
+          type: filterFlow ? undefined : filterType || undefined,
+          flow: filterFlow || undefined,
           categoryId: filterCategoryId === NO_CATEGORY_SENTINEL ? undefined : filterCategoryId || undefined,
           uncategorized: filterCategoryId === NO_CATEGORY_SENTINEL || undefined,
           accountId: filterAccountId || undefined,
@@ -160,7 +168,7 @@ function TransactionsPageContent() {
     } finally {
       setLoading(false);
     }
-  }, [page, limit, filterType, filterCategoryId, filterAccountId, searchQuery, filterSubscriptionIds, filterDates, sortBy, sortOrder]);
+  }, [page, limit, filterType, filterFlow, filterCategoryId, filterAccountId, searchQuery, filterSubscriptionIds, filterDates, sortBy, sortOrder]);
 
   useEffect(() => {
     if (lastAppliedSearchRef.current === searchString) return;
@@ -168,6 +176,7 @@ function TransactionsPageContent() {
 
     const params = new URLSearchParams(searchString);
     const type = params.get("type");
+    const flow = parseFlowParam(params.get("flow"));
     const category = params.get("category");
     const categoryId = params.get("categoryId");
     const uncategorized = params.get("uncategorized") === "true";
@@ -180,8 +189,13 @@ function TransactionsPageContent() {
     const search = params.get("search") ?? "";
 
     setFilterType(
-      type === "income" || type === "expense" || type === "transfer" ? type : ""
+      flow
+        ? ""
+        : type === "income" || type === "expense" || type === "transfer"
+          ? type
+          : ""
     );
+    setFilterFlow(flow);
     if (category) {
       setPendingCategoryName(category);
       setFilterCategoryId("");
@@ -307,7 +321,8 @@ function TransactionsPageContent() {
     }
 
     const params = new URLSearchParams();
-    if (filterType) params.set("type", filterType);
+    if (filterFlow) params.set("flow", filterFlow);
+    else if (filterType) params.set("type", filterType);
     if (filterCategoryId === NO_CATEGORY_SENTINEL) {
       params.set("uncategorized", "true");
     } else if (filterCategoryId) {
@@ -355,6 +370,7 @@ function TransactionsPageContent() {
     pendingAccountName,
     pendingSubscriptionNames,
     filterType,
+    filterFlow,
     filterCategoryId,
     filterAccountId,
     filterSearch,
@@ -383,6 +399,7 @@ function TransactionsPageContent() {
     page,
     limit,
     filterType,
+    filterFlow,
     filterCategoryId,
     filterAccountId,
     searchQuery,
@@ -421,6 +438,7 @@ function TransactionsPageContent() {
 
   function clearFilters() {
     setFilterType("");
+    setFilterFlow("");
     setFilterCategoryId("");
     setFilterAccountId("");
     setFilterSearch("");
@@ -441,6 +459,7 @@ function TransactionsPageContent() {
   function hasActiveFilters() {
     return (
       filterType ||
+      filterFlow ||
       filterCategoryId ||
       filterAccountId ||
       filterSearch ||
@@ -822,6 +841,7 @@ function TransactionsPageContent() {
 
           <TransactionsFilters
             filterType={filterType}
+            filterFlow={filterFlow}
             filterCategoryId={filterCategoryId}
             filterAccountId={filterAccountId}
             filterSearch={filterSearch}
@@ -832,7 +852,15 @@ function TransactionsPageContent() {
             subscriptions={subscriptions}
             hasActiveFilters={!!hasActiveFilters()}
             isDefaultSort={sortBy === "date" && sortOrder === "desc"}
-            onFilterTypeChange={(v) => { setFilterType(v); setPage(1); }}
+            onFilterTypeChange={(v) => {
+              setFilterType(v);
+              if (v) setFilterFlow("");
+              setPage(1);
+            }}
+            onClearFlow={() => {
+              setFilterFlow("");
+              setPage(1);
+            }}
             onFilterCategoryIdChange={(v) => { setFilterCategoryId(v); setPage(1); }}
             onFilterAccountIdChange={(v) => { setFilterAccountId(v); setPage(1); }}
             onFilterSearchChange={setFilterSearch}
