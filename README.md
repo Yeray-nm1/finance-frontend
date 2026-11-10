@@ -30,7 +30,7 @@ pnpm install
 
 ### Configuración de la API
 
-El frontend llama a `/api/v1/*` y Next.js lo redirige al backend en `http://localhost:3000` mediante un rewrite configurado en `next.config.ts`. Para apuntar a otro backend, cambia ese destino.
+El frontend llama a `/api/v1/*` y Next.js lo redirige al backend mediante un rewrite configurado en `next.config.ts`. El destino se toma de `BACKEND_URL` (por defecto `http://localhost:3000`); copia `.env.example` a `.env.local` y ajusta el valor para apuntar a otro backend.
 
 ### Desarrollo
 
