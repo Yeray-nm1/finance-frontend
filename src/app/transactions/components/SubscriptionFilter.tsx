@@ -33,7 +33,7 @@ export function SubscriptionFilter({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={`h-9 justify-between text-left font-normal ${subscriptionIds.length > 0 ? "text-text-primary" : "text-text-muted"}`}
+          className={`h-9 w-[170px] shrink-0 justify-between text-left font-normal ${subscriptionIds.length > 0 ? "text-text-primary" : "text-text-muted"}`}
         >
           {label}
           <ChevronDown className="ml-2 size-4 shrink-0" />

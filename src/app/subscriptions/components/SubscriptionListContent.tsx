@@ -1,12 +1,17 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { TriangleAlert } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
+import { getAnnualCost } from "@/lib/subscriptions";
+import { cn } from "@/lib/utils";
 import { ErrorState } from "@/components/ErrorState";
 import type { SubscriptionListContentProps } from "./types/SubscriptionListContent.types";
-import { SubscriptionCard } from "./SubscriptionCard";
+import { SubscriptionRow } from "./SubscriptionRow";
+
+type Tab = "active" | "cancelled";
 
 export function SubscriptionListContent({
   loading,
@@ -16,9 +21,22 @@ export function SubscriptionListContent({
   onDismissError,
   onEdit,
   onDelete,
+  onToggleActive,
+  onHistory,
   onUpdateAmount,
   onDismissPriceChange,
 }: Readonly<SubscriptionListContentProps>) {
+  const [tab, setTab] = useState<Tab>("active");
+
+  const activeSubs = subscriptions.filter((s) => s.active !== false);
+  const cancelledSubs = subscriptions.filter((s) => s.active === false);
+
+  useEffect(() => {
+    if (activeSubs.length === 0 && cancelledSubs.length > 0) {
+      setTab("cancelled");
+    }
+  }, [activeSubs.length, cancelledSubs.length]);
+
   if (loading) {
     return <Spinner className="pt-12" />;
   }
@@ -35,7 +53,9 @@ export function SubscriptionListContent({
     );
   }
 
-  const priceChangeSubs = subscriptions.filter((s) => (s.priceChanges ?? []).length > 0);
+  const annualTotal = activeSubs.reduce((total, sub) => total + getAnnualCost(sub), 0);
+  const priceChangeSubs = activeSubs.filter((s) => (s.priceChanges ?? []).length > 0);
+  const visibleSubs = tab === "active" ? activeSubs : cancelledSubs;
 
   return (
     <>
@@ -87,16 +107,53 @@ export function SubscriptionListContent({
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {subscriptions.map((sub) => (
-          <SubscriptionCard
-            key={sub.id}
-            subscription={sub}
-            onEdit={() => onEdit(sub)}
-            onDelete={() => onDelete(sub)}
-          />
-        ))}
+      <div className="flex flex-wrap items-end justify-between gap-3 mb-3">
+        <div role="tablist" className="flex gap-4 border-b border-border">
+          {([
+            { id: "active" as const, label: "Activas", count: activeSubs.length },
+            { id: "cancelled" as const, label: "Canceladas", count: cancelledSubs.length },
+          ]).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              role="tab"
+              data-subscription-tab={item.id}
+              aria-selected={tab === item.id}
+              onClick={() => setTab(item.id)}
+              className={cn(
+                "-mb-px border-b-2 px-1 pb-2 text-sm transition-colors",
+                tab === item.id
+                  ? "border-primary font-medium text-primary"
+                  : "border-transparent text-text-muted hover:text-text-primary"
+              )}
+            >
+              {item.label} ({item.count})
+            </button>
+          ))}
+        </div>
+        <p className="text-sm text-text-muted">
+          Coste anual <span className="font-semibold text-text-primary">{formatCurrency(annualTotal)}</span>
+        </p>
       </div>
+
+      {visibleSubs.length === 0 ? (
+        <p className="text-sm text-text-muted text-center py-8">
+          {tab === "active" ? "No hay suscripciones activas." : "No hay suscripciones canceladas."}
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {visibleSubs.map((sub) => (
+            <SubscriptionRow
+              key={sub.id}
+              subscription={sub}
+              onEdit={() => onEdit(sub)}
+              onDelete={() => onDelete(sub)}
+              onToggleActive={() => onToggleActive(sub)}
+              onHistory={() => onHistory(sub)}
+            />
+          ))}
+        </div>
+      )}
     </>
   );
 }

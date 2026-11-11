@@ -14,13 +14,15 @@ export function useBudget(month: number, year: number) {
 
   async function saveBudget(
     totalIncome: number,
-    typeAllocations: Array<{ type: string; percentage: number }>
+    typeAllocations: Array<{ type: string; percentage: number }>,
+    categoryAllocations: Array<{ categoryId: string; amount: number }>
   ): Promise<MonthlyBudget | null> {
     setSaving(true);
     try {
       const saved = await api.budgets.monthly.upsert(month, year, {
         totalIncome,
         typeAllocations,
+        categoryAllocations,
       });
       setBudget(saved);
       return saved;

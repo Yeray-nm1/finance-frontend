@@ -10,6 +10,8 @@ type ToasterToast = {
   title?: string
   description?: string
   variant?: "default" | "destructive"
+  actionLabel?: string
+  onAction?: () => void
 }
 
 
@@ -65,9 +67,9 @@ function dispatch(action: Action) {
   listeners.forEach((listener) => listener(memoryState))
 }
 
-function toast({ title, description, variant }: Omit<ToasterToast, "id">) {
+function toast({ title, description, variant, actionLabel, onAction }: Omit<ToasterToast, "id">) {
   const id = genId()
-  dispatch({ type: "ADD_TOAST", toast: { id, title, description, variant } })
+  dispatch({ type: "ADD_TOAST", toast: { id, title, description, variant, actionLabel, onAction } })
   dispatch({ type: "DISMISS_TOAST", toastId: id })
 }
 

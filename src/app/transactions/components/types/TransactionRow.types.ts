@@ -10,10 +10,12 @@ export interface TransactionRowProps {
   editingField: string | null;
   editValue: string;
   savingField: boolean;
+  selected: boolean;
   onStartEdit: (txId: string, field: string, value: string) => void;
   onEditValueChange: (value: string) => void;
   onCancelEdit: () => void;
   onInlineEdit: (tx: Transaction, field: string, value: string) => void;
   onOpenEdit: (tx: Transaction) => void;
   onDeleteClick: (id: string) => void;
+  onToggleSelect: (id: string) => void;
 }

@@ -1,9 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { formatCurrency } from "@/lib/format";
 import { getBalanceColor } from "@/components/ui/variants/dashboard.variants";
 import { BalanceDonut } from "./BalanceDonut";
 import type { BalanceCardProps } from "./types/BalanceCard.types";
+
+function transactionsHref(flow: "income" | "expense" | "savings", monthValue?: string): string {
+  const params = new URLSearchParams({ flow });
+  if (monthValue) params.set("month", monthValue);
+  return `/transactions?${params.toString()}`;
+}
 
 export function BalanceCard({
   income,
@@ -12,6 +19,7 @@ export function BalanceCard({
   available,
   balance,
   vsPreviousMonth,
+  monthValue,
 }: Readonly<BalanceCardProps>) {
   return (
     <section className="bg-white border border-border rounded-lg p-5">
@@ -31,19 +39,28 @@ export function BalanceCard({
         </div>
 
         <div className="flex-1 min-w-0 space-y-2">
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-income font-medium">Ingresos</span>
+          <Link
+            href={transactionsHref("income", monthValue)}
+            className="flex justify-between items-center text-sm rounded-md -mx-2 px-2 py-1 hover:bg-bg-elevated transition-colors group"
+          >
+            <span className="text-income font-medium group-hover:underline">Ingresos</span>
             <span className="font-medium text-text-primary">{formatCurrency(income)}</span>
-          </div>
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-expense font-medium">Gastos</span>
+          </Link>
+          <Link
+            href={transactionsHref("expense", monthValue)}
+            className="flex justify-between items-center text-sm rounded-md -mx-2 px-2 py-1 hover:bg-bg-elevated transition-colors group"
+          >
+            <span className="text-expense font-medium group-hover:underline">Gastos</span>
             <span className="font-medium text-text-primary">{formatCurrency(expenses)}</span>
-          </div>
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-savings font-medium">Ahorro</span>
+          </Link>
+          <Link
+            href={transactionsHref("savings", monthValue)}
+            className="flex justify-between items-center text-sm rounded-md -mx-2 px-2 py-1 hover:bg-bg-elevated transition-colors group"
+          >
+            <span className="text-savings font-medium group-hover:underline">Ahorro</span>
             <span className="font-medium text-text-primary">{formatCurrency(savings)}</span>
-          </div>
-          <div className="flex justify-between items-center text-sm">
+          </Link>
+          <div className="flex justify-between items-center text-sm -mx-2 px-2 py-1">
             <span className="text-available font-medium">Disponible</span>
             <span className="font-medium text-text-primary">{formatCurrency(available)}</span>
           </div>

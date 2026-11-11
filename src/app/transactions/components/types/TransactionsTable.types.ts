@@ -14,6 +14,7 @@ export interface TransactionsTableProps {
   editValue: string;
   savingField: boolean;
   hasActiveFilters: boolean;
+  selectedIds: Set<string>;
   onSort: (field: "date" | "amount" | "description") => void;
   onStartEdit: (txId: string, field: string, value: string) => void;
   onEditValueChange: (value: string) => void;
@@ -21,4 +22,6 @@ export interface TransactionsTableProps {
   onInlineEdit: (tx: Transaction, field: string, value: string) => void;
   onOpenEdit: (tx: Transaction) => void;
   onDeleteClick: (id: string) => void;
+  onToggleSelect: (id: string) => void;
+  onToggleSelectAll: () => void;
 }

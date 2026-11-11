@@ -9,7 +9,10 @@ import { SubscriptionListContent } from "./components/SubscriptionListContent";
 import { DetectCandidatesModal } from "./components/DetectCandidatesModal";
 import { EditSubscriptionDialog } from "./components/EditSubscriptionDialog";
 import { CreateSubscriptionDialog } from "./components/CreateSubscriptionDialog";
+import { SubscriptionHistoryDialog } from "./components/SubscriptionHistoryDialog";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
+import { toast } from "@/hooks/use-toast";
+import { animateRowToTab } from "@/lib/animate-to-tab";
 
 export default function SubscriptionsPage() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -19,6 +22,7 @@ export default function SubscriptionsPage() {
   const [detectOpen, setDetectOpen] = useState(false);
   const [editSub, setEditSub] = useState<Subscription | null>(null);
   const [deleteSub, setDeleteSub] = useState<Subscription | null>(null);
+  const [historySub, setHistorySub] = useState<Subscription | null>(null);
 
   function loadData() {
     setLoading(true);
@@ -44,6 +48,54 @@ export default function SubscriptionsPage() {
       console.error(err);
       setError("Error al eliminar suscripción");
       setDeleteSub(null);
+    }
+  }
+
+  function setSubscriptionActive(subId: string, active: boolean) {
+    setSubscriptions((prev) =>
+      prev.map((sub) => (sub.id === subId ? { ...sub, active } : sub))
+    );
+  }
+
+  function animateSubscriptionToTab(subId: string, active: boolean) {
+    const source = document.querySelector<HTMLElement>(
+      `[data-subscription-row="${subId}"]`
+    );
+    const target = document.querySelector<HTMLElement>(
+      `[data-subscription-tab="${active ? "active" : "cancelled"}"]`
+    );
+    animateRowToTab(source, target);
+  }
+
+  async function handleToggleActive(sub: Subscription) {
+    const nextActive = sub.active === false;
+
+    animateSubscriptionToTab(sub.id, nextActive);
+    setSubscriptionActive(sub.id, nextActive);
+
+    try {
+      await api.subscriptions.update(sub.id, { active: nextActive });
+      toast({
+        title: nextActive ? "Suscripción reactivada" : "Suscripción cancelada",
+        actionLabel: "Deshacer",
+        onAction: async () => {
+          const previousActive = !nextActive;
+          animateSubscriptionToTab(sub.id, previousActive);
+          setSubscriptionActive(sub.id, previousActive);
+          try {
+            await api.subscriptions.update(sub.id, { active: previousActive });
+            toast({ title: "Cambios deshechos" });
+          } catch (err) {
+            console.error(err);
+            setSubscriptionActive(sub.id, nextActive);
+            toast({ title: "No se pudo deshacer", variant: "destructive" });
+          }
+        },
+      });
+    } catch (err) {
+      console.error(err);
+      setSubscriptionActive(sub.id, !nextActive);
+      setError("Error al cambiar el estado de la suscripción");
     }
   }
 
@@ -106,6 +158,8 @@ export default function SubscriptionsPage() {
           onDismissError={() => setError(null)}
           onEdit={setEditSub}
           onDelete={setDeleteSub}
+          onToggleActive={handleToggleActive}
+          onHistory={setHistorySub}
           onUpdateAmount={handleUpdateAmount}
           onDismissPriceChange={handleDismissPriceChange}
         />
@@ -132,6 +186,12 @@ export default function SubscriptionsPage() {
           description={<>Se eliminará &quot;{deleteSub?.name}&quot; y se desvincularán sus transacciones. Esta acción no se puede deshacer.</>}
           onConfirm={handleDelete}
           onCancel={() => setDeleteSub(null)}
+        />
+
+        <SubscriptionHistoryDialog
+          subscription={historySub}
+          open={historySub !== null}
+          onOpenChange={(open) => { if (!open) setHistorySub(null); }}
         />
       </div>
     </main>

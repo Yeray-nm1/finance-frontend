@@ -15,6 +15,8 @@ export const budgets = {
   update: (id: string, data: Partial<{ categoryId: string; percentage: number }>) =>
     request<BudgetWithCategory>(`/budgets/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string) => request<void>(`/budgets/${id}`, { method: 'DELETE' }),
+  months: (signal?: AbortSignal) =>
+    request<Array<{ year: number; month: number }>>('/budgets/months', { signal }),
   calculateIncome: (month: number, year: number) => {
     const params = new URLSearchParams();
     params.set('month', String(month));
@@ -28,7 +30,11 @@ export const budgets = {
       params.set('year', String(year));
       return requestNullable<MonthlyBudget>(`/budgets/monthly?${params.toString()}`);
     },
-    upsert: (month: number, year: number, data: { totalIncome: number; typeAllocations: Array<{ type: string; percentage: number }> }) => {
+    upsert: (month: number, year: number, data: {
+      totalIncome: number;
+      typeAllocations: Array<{ type: string; percentage: number }>;
+      categoryAllocations: Array<{ categoryId: string; amount: number }>;
+    }) => {
       const params = new URLSearchParams();
       params.set('month', String(month));
       params.set('year', String(year));

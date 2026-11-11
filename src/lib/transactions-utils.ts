@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import type { TransactionType } from "@/types/transactions";
 
 export const NO_CATEGORY_SENTINEL = "__none__";
+export const NO_ACCOUNT_SENTINEL = "__no_account__";
 
 export function getSubmitLabel(saving: boolean, isEditing: boolean): string {
   if (saving && isEditing) return "Guardando...";

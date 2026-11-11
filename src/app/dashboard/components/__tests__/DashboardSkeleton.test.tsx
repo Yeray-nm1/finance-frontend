@@ -10,10 +10,10 @@ describe('DashboardSkeleton', () => {
     expect(grid.className).toContain('lg:grid-cols-2');
   });
 
-  it('renders exactly 4 skeleton cards with pulse animation', () => {
+  it('renders exactly 5 skeleton cards with pulse animation', () => {
     const { container } = render(<DashboardSkeleton />);
     const pulseElements = container.querySelectorAll('.animate-pulse');
-    expect(pulseElements.length).toBeGreaterThanOrEqual(4);
+    expect(pulseElements.length).toBe(5);
   });
 
   it('renders without crashing', () => {

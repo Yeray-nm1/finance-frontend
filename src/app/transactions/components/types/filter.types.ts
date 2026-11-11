@@ -2,6 +2,7 @@ import type { Account } from "@/types/accounts";
 import type { Category } from "@/types/categories";
 import type { Subscription } from "@/types/subscriptions";
 import type { TransactionType } from "@/types/transactions";
+import type { TransactionFlow } from "@/types/filter";
 
 export interface SortableHeaderProps {
   field: string;
@@ -24,6 +25,7 @@ export interface SelectFilterProps {
   onChange: (value: string) => void;
   width?: string;
   clearLabel?: string;
+  disabled?: boolean;
 }
 
 export interface CalendarFilterProps {
@@ -40,6 +42,7 @@ export interface SubscriptionFilterProps {
 
 export interface TransactionsFiltersProps {
   filterType: "" | TransactionType;
+  filterFlow: "" | TransactionFlow;
   filterCategoryId: string;
   filterAccountId: string;
   filterSearch: string;
@@ -49,11 +52,14 @@ export interface TransactionsFiltersProps {
   categories: Category[];
   subscriptions: Subscription[];
   hasActiveFilters: boolean;
+  isDefaultSort: boolean;
   onFilterTypeChange: (value: "" | TransactionType) => void;
+  onClearFlow: () => void;
   onFilterCategoryIdChange: (value: string) => void;
   onFilterAccountIdChange: (value: string) => void;
   onFilterSearchChange: (value: string) => void;
   onFilterSubscriptionIdsChange: (value: string[]) => void;
   onFilterDatesChange: (dates: { from?: Date; to?: Date }) => void;
+  onResetSort: () => void;
   onClearFilters: () => void;
 }

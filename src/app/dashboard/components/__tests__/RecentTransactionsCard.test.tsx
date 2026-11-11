@@ -27,6 +27,13 @@ describe('RecentTransactionsCard', () => {
     expect(link.closest('a')?.getAttribute('href')).toBe('/transactions');
   });
 
+  it('links Ver más to the selected month', () => {
+    render(<RecentTransactionsCard transactions={transactions} monthValue="2026-05" />);
+    expect(screen.getByText('Ver más').closest('a')?.getAttribute('href')).toBe(
+      '/transactions?month=2026-05'
+    );
+  });
+
   it('has scrollable container', () => {
     const { container } = render(<RecentTransactionsCard transactions={transactions} />);
     const scrollable = container.querySelector('[class*="overflow-y-auto"]');

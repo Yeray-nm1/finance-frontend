@@ -1,10 +1,10 @@
 import { cva } from "class-variance-authority";
 
-export const toastVariants = cva("", {
+export const toastVariants = cva("border-transparent", {
   variants: {
     variant: {
-      default: "",
-      destructive: "border-expense/30 bg-expense/5",
+      default: "bg-income text-white",
+      destructive: "bg-expense text-white",
     },
   },
   defaultVariants: {

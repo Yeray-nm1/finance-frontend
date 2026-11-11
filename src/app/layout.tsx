@@ -3,7 +3,6 @@ import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import RootLayoutInner from "@/components/layout/RootLayoutInner";
-import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
   title: "Finance Dashboard - Personal Finance",
@@ -21,7 +20,6 @@ export default function RootLayout({
         <AuthProvider>
           <SidebarProvider>
             <RootLayoutInner>{children}</RootLayoutInner>
-            <Toaster />
           </SidebarProvider>
         </AuthProvider>
       </body>

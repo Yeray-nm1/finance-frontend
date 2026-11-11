@@ -5,4 +5,5 @@ export interface BalanceCardProps {
   available: number;
   balance: number;
   vsPreviousMonth?: { percentage: number; amountDiff: number };
+  monthValue?: string;
 }

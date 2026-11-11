@@ -26,4 +26,6 @@ jobs:
 
       - run: ESLINT_NO_PATCH=1 pnpm lint
 
+      - run: pnpm test
+
       - run: pnpm build
