@@ -8,8 +8,10 @@ export interface TransactionFilters {
   type?: TransactionType;
   flow?: TransactionFlow;
   categoryId?: string;
+  categoryIds?: string;
   uncategorized?: boolean;
   accountId?: string;
+  accountIds?: string;
   dateFrom?: string;
   dateTo?: string;
   search?: string;

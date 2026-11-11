@@ -84,15 +84,22 @@ function TransactionsPageContent() {
       : ""
   );
   const [filterFlow, setFilterFlow] = useState<"" | TransactionFlow>(parseFlowParam(urlFlow));
-  const [filterCategoryId, setFilterCategoryId] = useState(
-    urlUncategorized ? NO_CATEGORY_SENTINEL : urlCategoryId ?? ""
+  const [filterCategoryIds, setFilterCategoryIds] = useState<string[]>(
+    urlUncategorized
+      ? [NO_CATEGORY_SENTINEL]
+      : urlCategoryId
+        ? [urlCategoryId]
+        : []
   );
-  const [filterAccountId, setFilterAccountId] = useState("");
+  const [filterAccountIds, setFilterAccountIds] = useState<string[]>([]);
   const [filterSearch, setFilterSearch] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterSubscriptionIds, setFilterSubscriptionIds] = useState<string[]>([]);
-  const [pendingCategoryName, setPendingCategoryName] = useState<string | null>(null);
-  const [pendingAccountName, setPendingAccountName] = useState<string | null>(null);
+  const [pendingCategoryNames, setPendingCategoryNames] = useState<{
+    names: string[];
+    uncategorized: boolean;
+  } | null>(null);
+  const [pendingAccountNames, setPendingAccountNames] = useState<string[] | null>(null);
   const [pendingSubscriptionNames, setPendingSubscriptionNames] = useState<string[] | null>(null);
   const [listsReady, setListsReady] = useState(false);
   const [filterDates, setFilterDates] = useState<{ from?: Date; to?: Date }>(
@@ -137,15 +144,19 @@ function TransactionsPageContent() {
     setLoading(true);
     setError(null);
     try {
+      const resolvedCategoryIds = filterCategoryIds.filter(
+        (id) => id !== NO_CATEGORY_SENTINEL
+      );
       const [txResult, accs, cats, subs] = await Promise.all([
         api.transactions.list({
           page,
           limit,
           type: filterFlow ? undefined : filterType || undefined,
           flow: filterFlow || undefined,
-          categoryId: filterCategoryId === NO_CATEGORY_SENTINEL ? undefined : filterCategoryId || undefined,
-          uncategorized: filterCategoryId === NO_CATEGORY_SENTINEL || undefined,
-          accountId: filterAccountId || undefined,
+          categoryIds:
+            resolvedCategoryIds.length > 0 ? resolvedCategoryIds.join(",") : undefined,
+          uncategorized: filterCategoryIds.includes(NO_CATEGORY_SENTINEL) || undefined,
+          accountIds: filterAccountIds.length > 0 ? filterAccountIds.join(",") : undefined,
           search: searchQuery || undefined,
           subscriptionIds: filterSubscriptionIds.length > 0 ? filterSubscriptionIds.join(',') : undefined,
           dateFrom: filterDates.from ? format(filterDates.from, "yyyy-MM-dd") : undefined,
@@ -169,7 +180,7 @@ function TransactionsPageContent() {
     } finally {
       setLoading(false);
     }
-  }, [page, limit, filterType, filterFlow, filterCategoryId, filterAccountId, searchQuery, filterSubscriptionIds, filterDates, sortBy, sortOrder]);
+  }, [page, limit, filterType, filterFlow, filterCategoryIds, filterAccountIds, searchQuery, filterSubscriptionIds, filterDates, sortBy, sortOrder]);
 
   useEffect(() => {
     if (lastAppliedSearchRef.current === searchString) return;
@@ -178,11 +189,11 @@ function TransactionsPageContent() {
     const params = new URLSearchParams(searchString);
     const type = params.get("type");
     const flow = parseFlowParam(params.get("flow"));
-    const category = params.get("category");
-    const categoryId = params.get("categoryId");
+    const categoryNames = params.getAll("category");
+    const categoryIdsParam = params.get("categoryId");
     const uncategorized = params.get("uncategorized") === "true";
-    const account = params.get("account");
-    const accountId = params.get("accountId");
+    const accountNames = params.getAll("account");
+    const accountIdsParam = params.get("accountId");
     const subscriptionNames = params.getAll("subscriptions");
     const month = params.get("month");
     const from = parseDateParam(params.get("dateFrom"));
@@ -197,19 +208,28 @@ function TransactionsPageContent() {
           : ""
     );
     setFilterFlow(flow);
-    if (category) {
-      setPendingCategoryName(category);
-      setFilterCategoryId("");
+    if (categoryNames.length > 0) {
+      setPendingCategoryNames({ names: categoryNames, uncategorized });
+      setFilterCategoryIds(uncategorized ? [NO_CATEGORY_SENTINEL] : []);
+    } else if (categoryIdsParam) {
+      setPendingCategoryNames(null);
+      setFilterCategoryIds([
+        ...categoryIdsParam.split(",").filter(Boolean),
+        ...(uncategorized ? [NO_CATEGORY_SENTINEL] : []),
+      ]);
     } else {
-      setPendingCategoryName(null);
-      setFilterCategoryId(uncategorized ? NO_CATEGORY_SENTINEL : categoryId ?? "");
+      setPendingCategoryNames(null);
+      setFilterCategoryIds(uncategorized ? [NO_CATEGORY_SENTINEL] : []);
     }
-    if (account) {
-      setPendingAccountName(account);
-      setFilterAccountId("");
+    if (accountNames.length > 0) {
+      setPendingAccountNames(accountNames);
+      setFilterAccountIds([]);
+    } else if (accountIdsParam) {
+      setPendingAccountNames(null);
+      setFilterAccountIds(accountIdsParam.split(",").filter(Boolean));
     } else {
-      setPendingAccountName(null);
-      setFilterAccountId(accountId ?? "");
+      setPendingAccountNames(null);
+      setFilterAccountIds([]);
     }
     if (subscriptionNames.length > 0) {
       setPendingSubscriptionNames(subscriptionNames);
@@ -249,16 +269,23 @@ function TransactionsPageContent() {
   useEffect(() => {
     if (!listsReady) return;
 
-    if (pendingCategoryName !== null) {
-      const match = categories.find((category) => category.name === pendingCategoryName);
-      setFilterCategoryId(match?.id ?? "");
-      setPendingCategoryName(null);
+    if (pendingCategoryNames !== null) {
+      const ids = pendingCategoryNames.names
+        .map((name) => categories.find((category) => category.name === name)?.id)
+        .filter((id): id is string => Boolean(id));
+      setFilterCategoryIds([
+        ...(pendingCategoryNames.uncategorized ? [NO_CATEGORY_SENTINEL] : []),
+        ...ids,
+      ]);
+      setPendingCategoryNames(null);
     }
 
-    if (pendingAccountName !== null) {
-      const match = accounts.find((account) => account.name === pendingAccountName);
-      setFilterAccountId(match?.id ?? "");
-      setPendingAccountName(null);
+    if (pendingAccountNames !== null) {
+      const ids = pendingAccountNames
+        .map((name) => accounts.find((account) => account.name === name)?.id)
+        .filter((id): id is string => Boolean(id));
+      setFilterAccountIds(ids);
+      setPendingAccountNames(null);
     }
 
     if (pendingSubscriptionNames !== null) {
@@ -270,8 +297,8 @@ function TransactionsPageContent() {
     }
   }, [
     listsReady,
-    pendingCategoryName,
-    pendingAccountName,
+    pendingCategoryNames,
+    pendingAccountNames,
     pendingSubscriptionNames,
     categories,
     accounts,
@@ -281,16 +308,24 @@ function TransactionsPageContent() {
   useEffect(() => {
     if (!listsReady) return;
 
-    if (
-      filterCategoryId &&
-      filterCategoryId !== NO_CATEGORY_SENTINEL &&
-      !categories.some((category) => category.id === filterCategoryId)
-    ) {
-      setFilterCategoryId("");
+    if (filterCategoryIds.length > 0) {
+      const resolved = filterCategoryIds.filter(
+        (id) =>
+          id === NO_CATEGORY_SENTINEL ||
+          categories.some((category) => category.id === id)
+      );
+      if (resolved.length !== filterCategoryIds.length) {
+        setFilterCategoryIds(resolved);
+      }
     }
 
-    if (filterAccountId && !accounts.some((account) => account.id === filterAccountId)) {
-      setFilterAccountId("");
+    if (filterAccountIds.length > 0) {
+      const resolved = filterAccountIds.filter((id) =>
+        accounts.some((account) => account.id === id)
+      );
+      if (resolved.length !== filterAccountIds.length) {
+        setFilterAccountIds(resolved);
+      }
     }
 
     if (filterSubscriptionIds.length > 0) {
@@ -303,8 +338,8 @@ function TransactionsPageContent() {
     }
   }, [
     listsReady,
-    filterCategoryId,
-    filterAccountId,
+    filterCategoryIds,
+    filterAccountIds,
     filterSubscriptionIds,
     categories,
     accounts,
@@ -314,8 +349,8 @@ function TransactionsPageContent() {
   useEffect(() => {
     if (!monthReady || !listsReady) return;
     if (
-      pendingCategoryName !== null ||
-      pendingAccountName !== null ||
+      pendingCategoryNames !== null ||
+      pendingAccountNames !== null ||
       pendingSubscriptionNames !== null
     ) {
       return;
@@ -324,15 +359,17 @@ function TransactionsPageContent() {
     const params = new URLSearchParams();
     if (filterFlow) params.set("flow", filterFlow);
     else if (filterType) params.set("type", filterType);
-    if (filterCategoryId === NO_CATEGORY_SENTINEL) {
+    if (filterCategoryIds.includes(NO_CATEGORY_SENTINEL)) {
       params.set("uncategorized", "true");
-    } else if (filterCategoryId) {
-      const category = categories.find((item) => item.id === filterCategoryId);
-      if (category) params.set("category", category.name);
     }
-    if (filterAccountId) {
-      const account = accounts.find((item) => item.id === filterAccountId);
-      if (account) params.set("account", account.name);
+    for (const id of filterCategoryIds) {
+      if (id === NO_CATEGORY_SENTINEL) continue;
+      const category = categories.find((item) => item.id === id);
+      if (category) params.append("category", category.name);
+    }
+    for (const id of filterAccountIds) {
+      const account = accounts.find((item) => item.id === id);
+      if (account) params.append("account", account.name);
     }
     if (filterSearch.trim()) params.set("search", filterSearch.trim());
     if (filterSubscriptionIds.length > 0) {
@@ -367,13 +404,13 @@ function TransactionsPageContent() {
   }, [
     monthReady,
     listsReady,
-    pendingCategoryName,
-    pendingAccountName,
+    pendingCategoryNames,
+    pendingAccountNames,
     pendingSubscriptionNames,
     filterType,
     filterFlow,
-    filterCategoryId,
-    filterAccountId,
+    filterCategoryIds,
+    filterAccountIds,
     filterSearch,
     filterSubscriptionIds,
     filterDates,
@@ -401,8 +438,8 @@ function TransactionsPageContent() {
     limit,
     filterType,
     filterFlow,
-    filterCategoryId,
-    filterAccountId,
+    filterCategoryIds,
+    filterAccountIds,
     searchQuery,
     filterSubscriptionIds,
     filterDates,
@@ -440,13 +477,13 @@ function TransactionsPageContent() {
   function clearFilters() {
     setFilterType("");
     setFilterFlow("");
-    setFilterCategoryId("");
-    setFilterAccountId("");
+    setFilterCategoryIds([]);
+    setFilterAccountIds([]);
     setFilterSearch("");
     setFilterSubscriptionIds([]);
     setFilterDates({});
-    setPendingCategoryName(null);
-    setPendingAccountName(null);
+    setPendingCategoryNames(null);
+    setPendingAccountNames(null);
     setPendingSubscriptionNames(null);
     setPage(1);
   }
@@ -461,14 +498,14 @@ function TransactionsPageContent() {
     return (
       filterType ||
       filterFlow ||
-      filterCategoryId ||
-      filterAccountId ||
+      filterCategoryIds.length > 0 ||
+      filterAccountIds.length > 0 ||
       filterSearch ||
       filterSubscriptionIds.length > 0 ||
       filterDates.from ||
       filterDates.to ||
-      pendingCategoryName ||
-      pendingAccountName ||
+      pendingCategoryNames ||
+      pendingAccountNames ||
       (pendingSubscriptionNames?.length ?? 0) > 0
     );
   }
@@ -880,8 +917,8 @@ function TransactionsPageContent() {
           <TransactionsFilters
             filterType={filterType}
             filterFlow={filterFlow}
-            filterCategoryId={filterCategoryId}
-            filterAccountId={filterAccountId}
+            filterCategoryIds={filterCategoryIds}
+            filterAccountIds={filterAccountIds}
             filterSearch={filterSearch}
             filterSubscriptionIds={filterSubscriptionIds}
             filterDates={filterDates}
@@ -891,16 +928,12 @@ function TransactionsPageContent() {
             hasActiveFilters={!!hasActiveFilters()}
             isDefaultSort={sortBy === "date" && sortOrder === "desc"}
             onFilterTypeChange={(v) => {
-              setFilterType(v);
-              if (v) setFilterFlow("");
-              setPage(1);
-            }}
-            onClearFlow={() => {
               setFilterFlow("");
+              setFilterType(v);
               setPage(1);
             }}
-            onFilterCategoryIdChange={(v) => { setFilterCategoryId(v); setPage(1); }}
-            onFilterAccountIdChange={(v) => { setFilterAccountId(v); setPage(1); }}
+            onFilterCategoryIdsChange={(v) => { setFilterCategoryIds(v); setPage(1); }}
+            onFilterAccountIdsChange={(v) => { setFilterAccountIds(v); setPage(1); }}
             onFilterSearchChange={setFilterSearch}
             onFilterSubscriptionIdsChange={(v) => { setFilterSubscriptionIds(v); setPage(1); }}
             onFilterDatesChange={(dates) => { setFilterDates(dates); setPage(1); }}

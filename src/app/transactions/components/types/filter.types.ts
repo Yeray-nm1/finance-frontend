@@ -34,17 +34,27 @@ export interface CalendarFilterProps {
   onChange: (dates: { from?: Date; to?: Date }) => void;
 }
 
-export interface SubscriptionFilterProps {
-  subscriptionIds: string[];
-  subscriptions: Subscription[];
-  onChange: (ids: string[]) => void;
+export interface MultiSelectFilterProps {
+  values: string[];
+  placeholder: string;
+  options: SelectFilterOption[];
+  onChange: (values: string[]) => void;
+  width?: string;
+  disabled?: boolean;
+  emptyLabel?: string;
+}
+
+export interface MultiSelectTagsProps {
+  values: string[];
+  options: SelectFilterOption[];
+  onChange: (values: string[]) => void;
 }
 
 export interface TransactionsFiltersProps {
   filterType: "" | TransactionType;
   filterFlow: "" | TransactionFlow;
-  filterCategoryId: string;
-  filterAccountId: string;
+  filterCategoryIds: string[];
+  filterAccountIds: string[];
   filterSearch: string;
   filterSubscriptionIds: string[];
   filterDates: { from?: Date; to?: Date };
@@ -54,9 +64,8 @@ export interface TransactionsFiltersProps {
   hasActiveFilters: boolean;
   isDefaultSort: boolean;
   onFilterTypeChange: (value: "" | TransactionType) => void;
-  onClearFlow: () => void;
-  onFilterCategoryIdChange: (value: string) => void;
-  onFilterAccountIdChange: (value: string) => void;
+  onFilterCategoryIdsChange: (values: string[]) => void;
+  onFilterAccountIdsChange: (values: string[]) => void;
   onFilterSearchChange: (value: string) => void;
   onFilterSubscriptionIdsChange: (value: string[]) => void;
   onFilterDatesChange: (dates: { from?: Date; to?: Date }) => void;

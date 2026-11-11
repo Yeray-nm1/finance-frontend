@@ -17,7 +17,7 @@ export function CalendarFilter({ dateFrom, dateTo, onChange }: Readonly<Calendar
         <Button
           variant="outline"
           aria-label="Abrir calendario"
-          className={`h-9 w-[220px] shrink-0 justify-start whitespace-nowrap text-left font-normal ${!dateFrom && !dateTo ? "text-text-muted" : "text-text-primary"}`}
+          className={`h-10 w-[220px] shrink-0 justify-start whitespace-nowrap text-left font-normal ${!dateFrom && !dateTo ? "text-text-muted" : "text-text-primary"}`}
         >
           {formatDateRange(dateFrom, dateTo)}
           <CalendarIcon className="ml-2 size-4" />

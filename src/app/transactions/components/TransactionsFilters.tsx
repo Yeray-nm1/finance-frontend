@@ -4,16 +4,16 @@ import { Input } from "@/components/ui/input";
 import { ArrowDownWideNarrow, Search, X } from "lucide-react";
 import { NO_CATEGORY_SENTINEL } from "@/lib/transactions-utils";
 import { SelectFilter } from "@/app/transactions/components/SelectFilter";
+import { MultiSelectFilter } from "@/app/transactions/components/MultiSelectFilter";
+import { MultiSelectTags } from "@/app/transactions/components/MultiSelectTags";
 import { CalendarFilter } from "@/app/transactions/components/CalendarFilter";
-import { SubscriptionFilter } from "@/app/transactions/components/SubscriptionFilter";
-import { SubscriptionTags } from "@/app/transactions/components/SubscriptionTags";
 import type { SelectFilterOption, TransactionsFiltersProps } from "./types/filter.types";
 
 export function TransactionsFilters({
   filterType,
   filterFlow,
-  filterCategoryId,
-  filterAccountId,
+  filterCategoryIds,
+  filterAccountIds,
   filterSearch,
   filterSubscriptionIds,
   filterDates,
@@ -23,70 +23,44 @@ export function TransactionsFilters({
   hasActiveFilters,
   isDefaultSort,
   onFilterTypeChange,
-  onClearFlow,
-  onFilterCategoryIdChange,
-  onFilterAccountIdChange,
+  onFilterCategoryIdsChange,
+  onFilterAccountIdsChange,
   onFilterSearchChange,
   onFilterSubscriptionIdsChange,
   onFilterDatesChange,
   onResetSort,
   onClearFilters,
 }: Readonly<TransactionsFiltersProps>) {
-  const flowLabel =
-    filterFlow === "expense"
-      ? "Gastos"
-      : filterFlow === "income"
-        ? "Ingresos"
-        : filterFlow === "savings"
-          ? "Ahorro"
-          : null;
+  const typeValue: string = filterFlow
+    ? filterFlow === "savings"
+      ? "transfer"
+      : filterFlow
+    : filterType;
+  const typeChipLabel = typeValue
+    ? typeValue === "income"
+      ? "Ingreso"
+      : typeValue === "expense"
+        ? "Gasto"
+        : "Transferencia"
+    : null;
+  const hasMultiChips =
+    filterCategoryIds.length > 0 ||
+    filterAccountIds.length > 0 ||
+    filterSubscriptionIds.length > 0;
+  const hasChips = hasMultiChips || typeChipLabel !== null;
 
-  const selectFilters: Array<{
-    key: string;
-    value: string;
-    placeholder: string;
-    width: string;
-    options: SelectFilterOption[];
-    onChange: (value: string) => void;
-    clearLabel: string;
-    disabled?: boolean;
-  }> = [
-    {
-      key: "type",
-      value: filterType,
-      placeholder: "Tipo",
-      width: "130px",
-      options: [
-        { value: "income", label: "Ingreso" },
-        { value: "expense", label: "Gasto" },
-        { value: "transfer", label: "Transferencia" },
-      ],
-      onChange: onFilterTypeChange as (v: string) => void,
-      clearLabel: "Limpiar filtro de tipo",
-    },
-    {
-      key: "category",
-      value: filterCategoryId,
-      placeholder: "Categoria",
-      width: "150px",
-      options: [
-        { value: NO_CATEGORY_SENTINEL, label: "Sin categoría" },
-        ...categories.map((c) => ({ value: c.id, label: c.name })),
-      ],
-      onChange: onFilterCategoryIdChange,
-      clearLabel: "Limpiar filtro de categoria",
-    },
-    {
-      key: "account",
-      value: filterAccountId,
-      placeholder: "Cuenta",
-      width: "150px",
-      options: accounts.map((a) => ({ value: a.id, label: a.name })),
-      onChange: onFilterAccountIdChange,
-      clearLabel: "Limpiar filtro de cuenta",
-      disabled: accounts.length === 0,
-    },
+  const categoryOptions: SelectFilterOption[] = [
+    { value: NO_CATEGORY_SENTINEL, label: "Sin categoría" },
+    ...categories.map((category) => ({ value: category.id, label: category.name })),
   ];
+  const accountOptions: SelectFilterOption[] = accounts.map((account) => ({
+    value: account.id,
+    label: account.name,
+  }));
+  const subscriptionOptions: SelectFilterOption[] = subscriptions.map((subscription) => ({
+    value: subscription.id,
+    label: subscription.name,
+  }));
 
   return (
     <div className="bg-white border border-border rounded-lg mb-4 p-4">
@@ -94,7 +68,7 @@ export function TransactionsFilters({
         <div className="relative flex-1 min-w-[160px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-text-muted" />
           <Input
-            placeholder="Buscar por descripcion..."
+            placeholder="Buscar por descripción..."
             className="pl-9"
             value={filterSearch}
             onChange={(e) => onFilterSearchChange(e.target.value)}
@@ -103,28 +77,47 @@ export function TransactionsFilters({
             <button
               onClick={() => onFilterSearchChange("")}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-expense"
-              aria-label="Limpiar filtro de busqueda"
+              aria-label="Limpiar filtro de búsqueda"
             >
               <X className="size-4" />
             </button>
           )}
         </div>
-        {selectFilters.map((f) => (
-          <SelectFilter
-            key={f.key}
-            value={f.value}
-            placeholder={f.placeholder}
-            width={f.width}
-            options={f.options}
-            onChange={f.onChange}
-            clearLabel={f.clearLabel}
-            disabled={f.disabled}
-          />
-        ))}
-        <SubscriptionFilter
-          subscriptionIds={filterSubscriptionIds}
-          subscriptions={subscriptions}
+        <SelectFilter
+          value={typeValue}
+          placeholder="Tipo"
+          width="130px"
+          options={[
+            { value: "income", label: "Ingreso" },
+            { value: "expense", label: "Gasto" },
+            { value: "transfer", label: "Transferencia" },
+          ]}
+          onChange={onFilterTypeChange as (value: string) => void}
+          clearLabel="Limpiar filtro de tipo"
+        />
+        <MultiSelectFilter
+          values={filterCategoryIds}
+          placeholder="Categoría"
+          width="150px"
+          options={categoryOptions}
+          onChange={onFilterCategoryIdsChange}
+        />
+        <MultiSelectFilter
+          values={filterAccountIds}
+          placeholder="Cuenta"
+          width="150px"
+          options={accountOptions}
+          onChange={onFilterAccountIdsChange}
+          disabled={accounts.length === 0}
+          emptyLabel="Sin cuentas"
+        />
+        <MultiSelectFilter
+          values={filterSubscriptionIds}
+          placeholder="Suscripciones"
+          width="170px"
+          options={subscriptionOptions}
           onChange={onFilterSubscriptionIdsChange}
+          emptyLabel="Sin suscripciones"
         />
         <div className="w-px h-8 bg-border self-center" />
         <CalendarFilter
@@ -132,25 +125,52 @@ export function TransactionsFilters({
           dateTo={filterDates.to}
           onChange={onFilterDatesChange}
         />
-        {(hasActiveFilters || !isDefaultSort) && (
-          <div className="w-full flex flex-wrap items-center gap-2">
-            {hasActiveFilters && (
-              <SubscriptionTags
-                subscriptionIds={filterSubscriptionIds}
-                subscriptions={subscriptions}
-                onChange={onFilterSubscriptionIdsChange}
-              />
+        {(hasChips || !isDefaultSort) && (
+          <div className="w-full flex flex-wrap items-center gap-x-3 gap-y-2">
+            {typeChipLabel && (
+              <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filtro de tipo">
+                <span className="text-xs text-text-muted whitespace-nowrap">Tipo:</span>
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs text-primary bg-primary-light transition-colors animate-chip-in motion-reduce:animate-none">
+                  {typeChipLabel}
+                  <button
+                    onClick={() => onFilterTypeChange("")}
+                    className="text-primary/70 hover:text-expense transition-colors"
+                    aria-label={`Quitar filtro ${typeChipLabel}`}
+                  >
+                    <X className="size-3" />
+                  </button>
+                </span>
+              </div>
             )}
-            {flowLabel && (
-              <button
-                type="button"
-                onClick={onClearFlow}
-                className="text-xs text-primary bg-primary-light hover:bg-primary/10 px-2 py-1 rounded transition-colors flex items-center gap-1"
-                title={`Quitar vista de ${flowLabel.toLowerCase()}`}
-              >
-                Vista: {flowLabel}
-                <X className="size-3" />
-              </button>
+            {filterCategoryIds.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filtro de categoría">
+                <span className="text-xs text-text-muted whitespace-nowrap">Categoría:</span>
+                <MultiSelectTags
+                  values={filterCategoryIds}
+                  options={categoryOptions}
+                  onChange={onFilterCategoryIdsChange}
+                />
+              </div>
+            )}
+            {filterAccountIds.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filtro de cuenta">
+                <span className="text-xs text-text-muted whitespace-nowrap">Cuenta:</span>
+                <MultiSelectTags
+                  values={filterAccountIds}
+                  options={accountOptions}
+                  onChange={onFilterAccountIdsChange}
+                />
+              </div>
+            )}
+            {filterSubscriptionIds.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filtro de suscripciones">
+                <span className="text-xs text-text-muted whitespace-nowrap">Suscripciones:</span>
+                <MultiSelectTags
+                  values={filterSubscriptionIds}
+                  options={subscriptionOptions}
+                  onChange={onFilterSubscriptionIdsChange}
+                />
+              </div>
             )}
             {!isDefaultSort && (
               <button
