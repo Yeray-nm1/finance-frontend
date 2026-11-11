@@ -6,6 +6,7 @@ export interface Transaction {
   id: string;
   userId: string;
   accountId: string | null;
+  transferAccountId: string | null;
   categoryId: string | null;
   date: string;
   amount: number;
@@ -16,6 +17,7 @@ export interface Transaction {
   subscriptionId?: string | null;
   createdAt: string;
   account?: { id: string; name: string; type: string };
+  transferAccount?: { id: string; name: string; type: string };
   category?: { id: string; name: string; type: string };
 }
 
@@ -26,6 +28,7 @@ export interface CreateTransactionDTO {
   type: TransactionType;
   transferKind?: TransferKind;
   accountId?: string;
+  transferAccountId?: string;
   categoryId?: string;
   isSubscription?: boolean;
 }
@@ -38,6 +41,7 @@ export interface UpdateTransactionDTO {
   date?: string;
   categoryId?: string | null;
   accountId?: string | null;
+  transferAccountId?: string | null;
   isSubscription?: boolean;
 }
 

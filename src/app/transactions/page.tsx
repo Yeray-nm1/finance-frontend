@@ -125,6 +125,7 @@ function TransactionsPageContent() {
   const [newAmount, setNewAmount] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newAccountId, setNewAccountId] = useState("");
+  const [newTransferAccountId, setNewTransferAccountId] = useState(NO_ACCOUNT_SENTINEL);
   const [newCategoryId, setNewCategoryId] = useState(NO_CATEGORY_SENTINEL);
   const [newIsSubscription, setNewIsSubscription] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -649,6 +650,11 @@ function TransactionsPageContent() {
     e.preventDefault();
     setSaving(true);
     try {
+      const resolvedTransferAccount =
+        newTransferAccountId === NO_ACCOUNT_SENTINEL || !newTransferAccountId
+          ? null
+          : newTransferAccountId;
+
       if (editTxId) {
         const resolvedCategory = newCategoryId === NO_CATEGORY_SENTINEL ? null : newCategoryId;
         const resolvedAccount =
@@ -656,6 +662,7 @@ function TransactionsPageContent() {
         const signedTransferAmount = newTransferDirection === "out"
           ? -Math.abs(Number(newAmount))
           : Math.abs(Number(newAmount));
+        const resolvedTransferAccountId = newType === "transfer" ? resolvedTransferAccount : null;
         await api.transactions.update(editTxId, {
           description: newDescription.trim(),
           categoryId: resolvedCategory,
@@ -664,8 +671,12 @@ function TransactionsPageContent() {
           ...(newType === "transfer"
             ? { transferKind: newTransferKind, amount: signedTransferAmount }
             : {}),
+          transferAccountId: resolvedTransferAccountId,
         });
         const selectedAccount = accounts.find((acc) => acc.id === resolvedAccount);
+        const selectedTransferAccount = accounts.find(
+          (acc) => acc.id === resolvedTransferAccountId
+        );
         setTransactions((prev) =>
           prev.map((t) =>
             t.id === editTxId
@@ -676,6 +687,14 @@ function TransactionsPageContent() {
                   accountId: resolvedAccount,
                   account: selectedAccount
                     ? { id: selectedAccount.id, name: selectedAccount.name, type: selectedAccount.type }
+                    : undefined,
+                  transferAccountId: resolvedTransferAccountId,
+                  transferAccount: selectedTransferAccount
+                    ? {
+                        id: selectedTransferAccount.id,
+                        name: selectedTransferAccount.name,
+                        type: selectedTransferAccount.type,
+                      }
                     : undefined,
                   isSubscription: newIsSubscription,
                   transferKind: newType === "transfer" ? newTransferKind : null,
@@ -708,6 +727,9 @@ function TransactionsPageContent() {
           description: newDescription.trim(),
           type: newType,
           ...(newType === "transfer" ? { transferKind: newTransferKind } : {}),
+          ...(newType === "transfer" && newTransferKind === "internal" && resolvedTransferAccount
+            ? { transferAccountId: resolvedTransferAccount }
+            : {}),
           accountId: newAccountId === NO_ACCOUNT_SENTINEL ? undefined : newAccountId || undefined,
           categoryId: newCategoryId === NO_CATEGORY_SENTINEL ? undefined : newCategoryId || undefined,
           isSubscription: newIsSubscription,
@@ -716,6 +738,7 @@ function TransactionsPageContent() {
         setNewAmount("");
         setNewDate(new Date().toISOString().split("T")[0]);
         setNewAccountId("");
+        setNewTransferAccountId(NO_ACCOUNT_SENTINEL);
         setNewType("expense");
         setNewTransferKind("internal");
         setNewTransferDirection("out");
@@ -752,6 +775,7 @@ function TransactionsPageContent() {
     setNewAmount(String(tx.amount));
     setNewDescription(tx.description);
     setNewAccountId(tx.accountId ?? NO_ACCOUNT_SENTINEL);
+    setNewTransferAccountId(tx.transferAccountId ?? NO_ACCOUNT_SENTINEL);
     setNewCategoryId(tx.categoryId ?? NO_CATEGORY_SENTINEL);
     setNewIsSubscription(tx.isSubscription);
     setEditTxId(tx.id);
@@ -804,6 +828,7 @@ function TransactionsPageContent() {
                 newAmount={newAmount}
                 newDescription={newDescription}
                 newAccountId={newAccountId}
+                newTransferAccountId={newTransferAccountId}
                 newCategoryId={newCategoryId}
                 newIsSubscription={newIsSubscription}
                 accounts={accounts}
@@ -820,17 +845,30 @@ function TransactionsPageContent() {
                     setNewAmount("");
                     setNewDescription("");
                     setNewAccountId("");
+                    setNewTransferAccountId(NO_ACCOUNT_SENTINEL);
                     setNewCategoryId(NO_CATEGORY_SENTINEL);
                     setNewIsSubscription(false);
                   }
                 }}
                 onDateChange={setNewDate}
-                onTypeChange={setNewType}
-                onTransferKindChange={setNewTransferKind}
+                onTypeChange={(type) => {
+                  setNewType(type);
+                  if (type !== "transfer") setNewTransferAccountId(NO_ACCOUNT_SENTINEL);
+                }}
+                onTransferKindChange={(kind) => {
+                  setNewTransferKind(kind);
+                  if (kind === "external") setNewTransferAccountId(NO_ACCOUNT_SENTINEL);
+                }}
                 onTransferDirectionChange={setNewTransferDirection}
                 onAmountChange={setNewAmount}
                 onDescriptionChange={setNewDescription}
-                onAccountIdChange={setNewAccountId}
+                onAccountIdChange={(accountId) => {
+                  setNewAccountId(accountId);
+                  if (accountId === newTransferAccountId) {
+                    setNewTransferAccountId(NO_ACCOUNT_SENTINEL);
+                  }
+                }}
+                onTransferAccountIdChange={setNewTransferAccountId}
                 onAccountCreated={handleAccountCreated}
                 onCategoryIdChange={setNewCategoryId}
                 onIsSubscriptionChange={setNewIsSubscription}

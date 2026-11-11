@@ -25,6 +25,7 @@ function buildProps(overrides: Partial<TransactionFormProps> = {}): TransactionF
     newAmount: "100",
     newDescription: "Prueba",
     newAccountId: "__no_account__",
+    newTransferAccountId: "__no_account__",
     newCategoryId: "__none__",
     newIsSubscription: false,
     editTxId: null,
@@ -38,6 +39,7 @@ function buildProps(overrides: Partial<TransactionFormProps> = {}): TransactionF
     onAmountChange: vi.fn(),
     onDescriptionChange: vi.fn(),
     onAccountIdChange: vi.fn(),
+    onTransferAccountIdChange: vi.fn(),
     onAccountCreated: vi.fn(),
     onCategoryIdChange: vi.fn(),
     onIsSubscriptionChange: vi.fn(),
@@ -105,6 +107,41 @@ describe("TransactionForm transfer kind", () => {
     await user.click(screen.getByRole("option", { name: "Entrada" }));
 
     expect(onTransferDirectionChange).toHaveBeenCalledWith("in");
+  });
+
+  it("muestra la cuenta destino solo en transferencias internas", () => {
+    const { rerender } = render(<TransactionForm {...buildProps({ newType: "transfer" })} />);
+    expect(screen.getByLabelText("Cuenta destino")).toBeInTheDocument();
+
+    rerender(
+      <TransactionForm {...buildProps({ newType: "transfer", newTransferKind: "external" })} />
+    );
+    expect(screen.queryByLabelText("Cuenta destino")).not.toBeInTheDocument();
+
+    rerender(<TransactionForm {...buildProps({ newType: "expense" })} />);
+    expect(screen.queryByLabelText("Cuenta destino")).not.toBeInTheDocument();
+  });
+
+  it("oculta la cuenta origen entre las opciones de cuenta destino", async () => {
+    const user = userEvent.setup();
+    const accounts = [
+      { id: "acc-1", userId: "user-1", name: "Corriente", type: "checking" as const, createdAt: "" },
+      { id: "acc-2", userId: "user-1", name: "Ahorro", type: "savings" as const, createdAt: "" },
+    ];
+    render(
+      <TransactionForm
+        {...buildProps({
+          newType: "transfer",
+          newAccountId: "acc-1",
+          accounts,
+        })}
+      />
+    );
+
+    await user.click(screen.getByRole("combobox", { name: "Cuenta destino" }));
+
+    expect(screen.queryByRole("option", { name: "Corriente" })).not.toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Ahorro" })).toBeInTheDocument();
   });
 
   it("mantiene los selectores visibles al editar una transferencia", () => {

@@ -27,6 +27,7 @@ export function TransactionForm({
   newAmount,
   newDescription,
   newAccountId,
+  newTransferAccountId,
   newCategoryId,
   newIsSubscription,
   editTxId,
@@ -40,6 +41,7 @@ export function TransactionForm({
   onAmountChange,
   onDescriptionChange,
   onAccountIdChange,
+  onTransferAccountIdChange,
   onAccountCreated,
   onCategoryIdChange,
   onIsSubscriptionChange,
@@ -100,6 +102,28 @@ export function TransactionForm({
               </SelectContent>
             </Select>
           </div>
+        </div>
+      )}
+      {newType === "transfer" && newTransferKind === "internal" && (
+        <div className="space-y-2">
+          <Label htmlFor="tx-transfer-account">Cuenta destino</Label>
+          <Select
+            value={newTransferAccountId}
+            onValueChange={onTransferAccountIdChange}
+            disabled={accounts.length === 0}
+          >
+            <SelectTrigger id="tx-transfer-account">
+              <SelectValue placeholder={accounts.length === 0 ? "Sin cuentas" : "Sin cuenta"} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NO_ACCOUNT_SENTINEL}>Sin cuenta</SelectItem>
+              {accounts
+                .filter((account) => account.id !== newAccountId)
+                .map((account) => (
+                  <SelectItem key={account.id} value={account.id}>{account.name}</SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
         </div>
       )}
       <div className="space-y-2">

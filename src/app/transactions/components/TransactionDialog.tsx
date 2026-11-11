@@ -25,6 +25,7 @@ interface TransactionDialogProps {
   newAmount: string;
   newDescription: string;
   newAccountId: string;
+  newTransferAccountId: string;
   newCategoryId: string;
   newIsSubscription: boolean;
   accounts: Account[];
@@ -38,6 +39,7 @@ interface TransactionDialogProps {
   onAmountChange: (v: string) => void;
   onDescriptionChange: (v: string) => void;
   onAccountIdChange: (v: string) => void;
+  onTransferAccountIdChange: (v: string) => void;
   onAccountCreated: (account: Account) => void;
   onCategoryIdChange: (v: string) => void;
   onIsSubscriptionChange: (v: boolean) => void;
@@ -54,6 +56,7 @@ export function TransactionDialog({
   newAmount,
   newDescription,
   newAccountId,
+  newTransferAccountId,
   newCategoryId,
   newIsSubscription,
   accounts,
@@ -67,6 +70,7 @@ export function TransactionDialog({
   onAmountChange,
   onDescriptionChange,
   onAccountIdChange,
+  onTransferAccountIdChange,
   onAccountCreated,
   onCategoryIdChange,
   onIsSubscriptionChange,
@@ -94,6 +98,7 @@ export function TransactionDialog({
             newAmount={newAmount}
             newDescription={newDescription}
             newAccountId={newAccountId}
+            newTransferAccountId={newTransferAccountId}
             newCategoryId={newCategoryId}
             newIsSubscription={newIsSubscription}
             editTxId={editTxId}
@@ -107,6 +112,7 @@ export function TransactionDialog({
             onAmountChange={onAmountChange}
             onDescriptionChange={onDescriptionChange}
             onAccountIdChange={onAccountIdChange}
+            onTransferAccountIdChange={onTransferAccountIdChange}
             onAccountCreated={onAccountCreated}
             onCategoryIdChange={onCategoryIdChange}
             onIsSubscriptionChange={onIsSubscriptionChange}

@@ -30,6 +30,12 @@ export function TransactionRow({
 }: Readonly<TransactionRowProps>) {
   const isEditing = editingId === tx.id;
   const isSub = tx.isSubscription || !!tx.subscriptionId;
+  const accountName =
+    tx.account?.name ?? accounts.find((a) => a.id === tx.accountId)?.name ?? "-";
+  const transferAccountName =
+    tx.transferAccount?.name ??
+    accounts.find((a) => a.id === tx.transferAccountId)?.name ??
+    null;
 
   return (
     <TableRow className={`${savingField && isEditing ? "opacity-60" : ""} ${selected ? "bg-primary/5" : ""} border-border/50`}>
@@ -74,7 +80,8 @@ export function TransactionRow({
       />
 
       <TableCell className="py-1.5 px-4 text-text-muted">
-        {tx.account?.name ?? accounts.find((a) => a.id === tx.accountId)?.name ?? "-"}
+        {accountName}
+        {transferAccountName ? ` → ${transferAccountName}` : ""}
       </TableCell>
 
       <EditableSelectCell
