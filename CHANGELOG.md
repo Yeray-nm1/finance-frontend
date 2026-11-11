@@ -1,3 +1,22 @@
+## [0.4.0] - 2026-11-11
+
+- 4a3c67e Merge pull request #24 from Yeray-nm1/feat/mvp-budgets-csv-accounts-categories
+- 9247a25 feat(transfers): seleccionar la cuenta destino en transferencias internas
+- f86091d ci: ejecutar los tests en el pipeline
+- b83eddb chore(config): leer la URL del backend de BACKEND_URL
+- 15e3b50 fix(dashboard): filtrar enlaces de presupuesto por gasto
+- 30ea0de feat(transactions): enlazar el balance por flujo
+- 1bc24f4 feat(auth): cambiar contraseña desde la cuenta
+- 79e794e feat: redesign subscriptions and add bulk transaction actions
+- c180e59 feat(dashboard): merge budget cards and sync filters by name
+- 8d54854 feat(transfers): add internal/external and direction selectors
+- 4e009d0 feat(categories): add management page and uncategorized filter
+- 9c66c58 feat(accounts): add accounts page, onboarding and quick account creation
+- 042e5f2 feat(transactions): add CSV import wizard with mapping preview
+- cfe6788 feat(budgets): edit category allocations in euros
+- 2b76f67 feat(budgets): navigate months with budget cards
+- 90290d1 fix(ui): polish transaction filters, inline edit and toasts
+
 ## [0.3.6] - 2026-10-29
 
 - 989f1e7 Merge pull request #23 from Yeray-nm1/fix/csv-import-feedback
