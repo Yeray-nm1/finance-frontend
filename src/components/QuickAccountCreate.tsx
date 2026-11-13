@@ -9,9 +9,19 @@ import type { Account } from "@/types/accounts";
 
 interface QuickAccountCreateProps {
   readonly onCreated: (account: Account) => void;
+  readonly type?: Account["type"];
+  readonly label?: string;
+  readonly nameLabel?: string;
+  readonly placeholder?: string;
 }
 
-export function QuickAccountCreate({ onCreated }: QuickAccountCreateProps) {
+export function QuickAccountCreate({
+  onCreated,
+  type = "checking",
+  label = "+ Nueva cuenta",
+  nameLabel = "Nombre de la nueva cuenta",
+  placeholder = "Ej: Cuenta principal",
+}: QuickAccountCreateProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
@@ -33,7 +43,7 @@ export function QuickAccountCreate({ onCreated }: QuickAccountCreateProps) {
     setSaving(true);
     setError(null);
     try {
-      const account = await api.accounts.create({ name: trimmed, type: "checking" });
+      const account = await api.accounts.create({ name: trimmed, type });
       onCreated(account);
       toast({ title: "Cuenta creada" });
       reset();
@@ -51,7 +61,7 @@ export function QuickAccountCreate({ onCreated }: QuickAccountCreateProps) {
         onClick={() => setOpen(true)}
         className="text-xs font-medium text-primary hover:underline"
       >
-        + Nueva cuenta
+        {label}
       </button>
     );
   }
@@ -60,8 +70,8 @@ export function QuickAccountCreate({ onCreated }: QuickAccountCreateProps) {
     <div className="space-y-2">
       <div className="flex gap-2">
         <Input
-          aria-label="Nombre de la nueva cuenta"
-          placeholder="Ej: Cuenta principal"
+          aria-label={nameLabel}
+          placeholder={placeholder}
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => {

@@ -16,6 +16,7 @@ export function animateRowToTab(source: HTMLElement | null, target: HTMLElement 
   const clone = source.cloneNode(true) as HTMLElement;
   clone.classList.add("finance-flying-row");
   clone.removeAttribute("data-subscription-row");
+  clone.removeAttribute("data-goal-card");
   clone.setAttribute("aria-hidden", "true");
   clone.style.position = "fixed";
   clone.style.left = `${sourceRect.left}px`;

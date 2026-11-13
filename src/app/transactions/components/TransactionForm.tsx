@@ -15,7 +15,7 @@ import { format } from "date-fns";
 import { NO_ACCOUNT_SENTINEL, NO_CATEGORY_SENTINEL, getSubmitLabel, getAmountSign, typeLabel } from "@/lib/transactions-utils";
 import { formatCurrency } from "@/lib/format";
 import { getAmountColor } from "@/components/ui/variants/transactions.variants";
-import { QuickAccountCreate } from "./QuickAccountCreate";
+import { QuickAccountCreate } from "@/components/QuickAccountCreate";
 import type { TransactionFormProps } from "./types/TransactionForm.types";
 import type { TransactionType, TransferKind, TransferDirection } from "@/types/transactions";
 
