@@ -1,3 +1,9 @@
+## [0.5.0] - 2026-11-13
+
+- a70edf6 Merge pull request #25 from Yeray-nm1/feature/ynm-savings-goals
+- 580a3c4 feat(goals): add savings goal tracking and dashboard integration
+- 4c1c335 feat(transactions): filtros multi-valor y chips agrupados
+
 ## [0.4.0] - 2026-11-11
 
 - 4a3c67e Merge pull request #24 from Yeray-nm1/feat/mvp-budgets-csv-accounts-categories
