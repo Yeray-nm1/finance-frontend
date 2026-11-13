@@ -214,6 +214,9 @@ export default function DashboardPage() {
           <div className="bg-white border border-border rounded-lg p-8 text-center">
             <p className="text-sm text-text-muted">No hay datos disponibles para {selectedMonthLabel}</p>
           </div>
+          <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <BudgetOverviewCard budgets={[]} spending={[]} monthValue={viewValue} fillRow={false} />
+          </div>
         </div>
       </main>
     );

@@ -1,7 +1,34 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { api } from '@/lib/api';
 import { BudgetOverviewCard } from '../BudgetOverviewCard';
 import type { BudgetItem, CategorySpendingItem } from '@/types/dashboard';
+import type { SavingsGoal } from '@/types/goals';
+
+vi.mock('@/lib/api', () => ({
+  api: {
+    goals: {
+      list: vi.fn(),
+    },
+  },
+}));
+
+const goal: SavingsGoal = {
+  id: 'goal-1',
+  name: 'Viaje a Japón',
+  targetAmount: 1000,
+  targetDate: null,
+  accountId: 'account-1',
+  account: { id: 'account-1', name: 'Ahorro viaje', type: 'savings' },
+  isArchived: false,
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-01T00:00:00.000Z',
+  saved: 500,
+  progress: 50,
+  remaining: 500,
+  monthlyNeeded: null,
+  contributionsCount: 2,
+};
 
 const budgets: BudgetItem[] = [
   {
@@ -27,13 +54,48 @@ function expand(label: string) {
 }
 
 describe('BudgetOverviewCard', () => {
-  it('renders a card titled Presupuesto with a link to manage budgets', () => {
+  beforeEach(() => {
+    vi.mocked(api.goals.list).mockResolvedValue([]);
+  });
+
+  it('renders Presupuesto and Metas tabs with a link to manage budgets', () => {
     render(<BudgetOverviewCard budgets={budgets} spending={spending} monthValue="2026-05" />);
-    expect(screen.getByRole('heading', { name: 'Presupuesto' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Presupuesto' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Metas' })).toHaveAttribute('aria-selected', 'false');
     expect(screen.getByRole('link', { name: 'Gestionar presupuesto' })).toHaveAttribute(
       'href',
       '/budgets'
     );
+  });
+
+  it('reserves the scrollbar in the budget list', () => {
+    render(<BudgetOverviewCard budgets={budgets} spending={spending} monthValue="2026-05" />);
+
+    const scroll = screen.getByTestId('budget-scroll');
+    expect(scroll).toHaveClass('overflow-y-scroll');
+    expect(scroll).toHaveClass('[scrollbar-gutter:stable]');
+  });
+
+  it('shows active goals when switching to the Metas tab', async () => {
+    vi.mocked(api.goals.list).mockResolvedValue([goal]);
+    render(<BudgetOverviewCard budgets={budgets} spending={spending} monthValue="2026-05" />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Metas' }));
+
+    expect(await screen.findByText('Viaje a Japón')).toBeInTheDocument();
+    expect(screen.getByText('50%')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ver metas' })).toHaveAttribute('href', '/goals');
+    expect(screen.getByRole('tab', { name: 'Metas' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByText('Necesidades')).not.toBeInTheDocument();
+  });
+
+  it('shows the goals empty state inside the Metas tab', async () => {
+    render(<BudgetOverviewCard budgets={budgets} spending={spending} monthValue="2026-05" />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Metas' }));
+
+    expect(await screen.findByText('Aún no tienes metas de ahorro')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ver metas' })).toBeInTheDocument();
   });
 
   it('starts with every type collapsed', () => {

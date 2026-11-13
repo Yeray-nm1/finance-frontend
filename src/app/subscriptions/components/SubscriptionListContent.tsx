@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { TriangleAlert } from "lucide-react";
@@ -30,12 +30,6 @@ export function SubscriptionListContent({
 
   const activeSubs = subscriptions.filter((s) => s.active !== false);
   const cancelledSubs = subscriptions.filter((s) => s.active === false);
-
-  useEffect(() => {
-    if (activeSubs.length === 0 && cancelledSubs.length > 0) {
-      setTab("cancelled");
-    }
-  }, [activeSubs.length, cancelledSubs.length]);
 
   if (loading) {
     return <Spinner className="pt-12" />;

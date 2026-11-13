@@ -76,6 +76,29 @@ describe("CategoriesPage", () => {
     expect(screen.getByRole("heading", { name: /Ocio/ })).toBeInTheDocument();
   });
 
+  it("filtra las categorías con las pestañas de tipo", async () => {
+    vi.mocked(api.categories.list).mockResolvedValue([
+      category,
+      { ...category, id: "category-2", name: "Cine", type: "leisure" },
+    ]);
+    const user = userEvent.setup();
+    render(<CategoriesPage />);
+
+    expect(await screen.findByText("Supermercado")).toBeInTheDocument();
+    const allTab = screen.getByRole("tab", { name: "Todas (2)" });
+    const needsTab = screen.getByRole("tab", { name: "Necesidades (1)" });
+    expect(allTab).toHaveAttribute("aria-selected", "true");
+
+    await user.click(needsTab);
+
+    expect(needsTab).toHaveAttribute("aria-selected", "true");
+    expect(allTab).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByText("Supermercado")).toBeInTheDocument();
+    expect(screen.queryByText("Cine")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Necesidades/ })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /Ocio/ })).not.toBeInTheDocument();
+  });
+
   it("permite editar el nombre de una categoría", async () => {
     vi.mocked(api.categories.list).mockResolvedValue([category]);
     const user = userEvent.setup();

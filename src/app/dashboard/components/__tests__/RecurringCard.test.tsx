@@ -21,9 +21,9 @@ describe('RecurringCard', () => {
     { name: 'Spotify', amount: 9.99, frequency: 'monthly', status: 'pending', lastChargeDate: '2026-04-10T00:00:00.000Z', nextChargeDate: '2026-05-10T00:00:00.000Z' },
   ];
 
-  it('renders a card titled Recurrentes', () => {
+  it('renders a card titled Suscripciones', () => {
     render(<RecurringCard subscriptions={paidSubscriptions} />);
-    expect(screen.getByText('Recurrentes')).toBeInTheDocument();
+    expect(screen.getByText('Suscripciones')).toBeInTheDocument();
   });
 
   it('shows subscription names and amounts', () => {

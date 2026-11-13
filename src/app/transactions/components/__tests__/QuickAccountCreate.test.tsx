@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { api } from "@/lib/api";
-import { QuickAccountCreate } from "../QuickAccountCreate";
+import { QuickAccountCreate } from "@/components/QuickAccountCreate";
 
 vi.mock("@/lib/api", () => ({
   api: {

@@ -7,7 +7,7 @@ import type { RecurringCardProps } from "./types/RecurringCard.types";
 export function RecurringCard({ subscriptions }: Readonly<RecurringCardProps>) {
   return (
     <DashboardCard
-      title="Recurrentes"
+      title="Suscripciones"
       emptyText="No hay suscripciones registradas"
       href="/subscriptions"
       linkText="Gestionar suscripciones"

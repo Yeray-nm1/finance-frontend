@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { describe, it, expect, vi, beforeAll } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -52,6 +53,23 @@ function buildProps(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function Harness({ initial }: Readonly<{ initial: Subscription[] }>) {
+  const [subscriptions, setSubscriptions] = useState(initial);
+
+  return (
+    <SubscriptionListContent
+      {...buildProps({ subscriptions })}
+      onToggleActive={(sub) =>
+        setSubscriptions((prev) =>
+          prev.map((item) =>
+            item.id === sub.id ? { ...item, active: !item.active } : item
+          )
+        )
+      }
+    />
+  );
+}
+
 describe('SubscriptionListContent', () => {
   it('separates active and cancelled subscriptions in tabs', async () => {
     const user = userEvent.setup();
@@ -87,5 +105,40 @@ describe('SubscriptionListContent', () => {
     await user.click(screen.getByRole('button', { name: /historial/i }));
 
     expect(props.onHistory).toHaveBeenCalledWith(activeSub);
+  });
+
+  it('keeps the Activas tab when cancelling the only active subscription', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={[activeSub, cancelledSub]} />);
+
+    const activeTab = screen.getByRole('tab', { name: 'Activas (1)' });
+    expect(activeTab).toHaveAttribute('aria-selected', 'true');
+
+    await user.click(screen.getByRole('switch', { name: 'Desactivar Netflix' }));
+
+    expect(activeTab).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('No hay suscripciones activas.')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Canceladas (2)' })).toHaveAttribute(
+      'aria-selected',
+      'false'
+    );
+  });
+
+  it('keeps the Canceladas tab when reactivating the only cancelled subscription', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={[activeSub, cancelledSub]} />);
+
+    await user.click(screen.getByRole('tab', { name: 'Canceladas (1)' }));
+    const cancelledTab = screen.getByRole('tab', { name: 'Canceladas (1)' });
+    expect(cancelledTab).toHaveAttribute('aria-selected', 'true');
+
+    await user.click(screen.getByRole('switch', { name: 'Activar Spotify' }));
+
+    expect(cancelledTab).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('No hay suscripciones canceladas.')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Activas (2)' })).toHaveAttribute(
+      'aria-selected',
+      'false'
+    );
   });
 });

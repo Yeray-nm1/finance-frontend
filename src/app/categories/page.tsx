@@ -13,6 +13,8 @@ import { typeIcons } from "@/components/ui/variants/budget.variants";
 import type { Category, CategoryType } from "@/types/categories";
 import { CategoryDialog } from "./components/CategoryDialog";
 
+type CategoryTab = CategoryType | "all";
+
 function CategoriesSkeleton() {
   return (
     <main className="min-h-screen bg-bg-page p-4 md:p-8">
@@ -40,6 +42,7 @@ export default function CategoriesPage() {
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [activeType, setActiveType] = useState<CategoryTab>("all");
 
   const loadCategories = useCallback(async () => {
     setLoading(true);
@@ -66,6 +69,33 @@ export default function CategoriesPage() {
         .sort((a, b) => a.name.localeCompare(b.name, "es")),
     })).filter((group) => group.items.length > 0);
   }, [categories]);
+
+  const visibleGroups =
+    activeType === "all"
+      ? grouped
+      : grouped.filter((group) => group.type === activeType);
+
+  const tabs: Array<{ key: CategoryTab; label: string; count: number }> = [
+    { key: "all", label: "Todas", count: categories.length },
+    ...grouped.map((group) => ({
+      key: group.type,
+      label: typeLabels[group.type] ?? group.type,
+      count: group.items.length,
+    })),
+  ];
+
+  useEffect(() => {
+    if (activeType !== "all" && !grouped.some((group) => group.type === activeType)) {
+      setActiveType("all");
+    }
+  }, [activeType, grouped]);
+
+  const tabClass = (isActive: boolean) =>
+    `-mb-px border-b-2 pb-2 text-xs uppercase tracking-widest transition-colors ${
+      isActive
+        ? "border-primary text-text-primary"
+        : "border-transparent text-text-muted hover:text-text-secondary"
+    }`;
 
   function openCreate() {
     setEditingCategory(null);
@@ -154,59 +184,87 @@ export default function CategoriesPage() {
             </Button>
           </section>
         ) : (
-          <div className="space-y-6">
-            {grouped.map((group) => {
-              const meta = typeIcons[group.type];
-              return (
-                <section key={group.type}>
-                  <header className="mb-2 flex items-center gap-2">
-                    <span
-                      className={`flex size-7 items-center justify-center rounded-full ${meta?.bg ?? "bg-bg-elevated"} ${meta?.color ?? "text-text-muted"}`}
-                    >
-                      {meta?.icon}
-                    </span>
-                    <h2 className="text-sm font-semibold text-text-primary">
-                      {typeLabels[group.type] ?? group.type}
-                    </h2>
-                    <span className="text-xs text-text-muted">
-                      {group.items.length}
-                    </span>
-                  </header>
+          <>
+            <div
+              role="tablist"
+              aria-label="Tipos de categoría"
+              className="mb-6 flex flex-wrap items-center gap-4 border-b border-border"
+            >
+              {tabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  role="tab"
+                  id={`category-tab-${tab.key}`}
+                  aria-selected={activeType === tab.key}
+                  aria-controls="category-panel"
+                  onClick={() => setActiveType(tab.key)}
+                  className={tabClass(activeType === tab.key)}
+                >
+                  {tab.label} ({tab.count})
+                </button>
+              ))}
+            </div>
 
-                  <div className="divide-y divide-border rounded-lg border border-border bg-white">
-                    {group.items.map((category) => (
-                      <div
-                        key={category.id}
-                        className="flex items-center justify-between gap-3 px-4 py-3"
+            <div
+              id="category-panel"
+              role="tabpanel"
+              aria-labelledby={`category-tab-${activeType}`}
+              className="space-y-6"
+            >
+              {visibleGroups.map((group) => {
+                const meta = typeIcons[group.type];
+                return (
+                  <section key={group.type}>
+                    <header className="mb-2 flex items-center gap-2">
+                      <span
+                        className={`flex size-7 items-center justify-center rounded-full ${meta?.bg ?? "bg-bg-elevated"} ${meta?.color ?? "text-text-muted"}`}
                       >
-                        <span className="truncate text-sm text-text-primary">
-                          {category.name}
-                        </span>
-                        <div className="flex shrink-0 items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label={`Editar ${category.name}`}
-                            onClick={() => openEdit(category)}
-                          >
-                            <Pencil className="size-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label={`Eliminar ${category.name}`}
-                            onClick={() => setDeleteTarget(category)}
-                          >
-                            <Trash2 className="size-4 text-expense" />
-                          </Button>
+                        {meta?.icon}
+                      </span>
+                      <h2 className="text-sm font-semibold text-text-primary">
+                        {typeLabels[group.type] ?? group.type}
+                      </h2>
+                      <span className="text-xs text-text-muted">
+                        {group.items.length}
+                      </span>
+                    </header>
+
+                    <div className="divide-y divide-border rounded-lg border border-border bg-white">
+                      {group.items.map((category) => (
+                        <div
+                          key={category.id}
+                          className="flex items-center justify-between gap-3 px-4 py-3"
+                        >
+                          <span className="truncate text-sm text-text-primary">
+                            {category.name}
+                          </span>
+                          <div className="flex shrink-0 items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={`Editar ${category.name}`}
+                              onClick={() => openEdit(category)}
+                            >
+                              <Pencil className="size-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={`Eliminar ${category.name}`}
+                              onClick={() => setDeleteTarget(category)}
+                            >
+                              <Trash2 className="size-4 text-expense" />
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              );
-            })}
-          </div>
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
 
