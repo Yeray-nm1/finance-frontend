@@ -91,7 +91,7 @@ export default function CategoriesPage() {
   }, [activeType, grouped]);
 
   const tabClass = (isActive: boolean) =>
-    `-mb-px border-b-2 pb-2 text-xs uppercase tracking-widest transition-colors ${
+    `-mb-px shrink-0 whitespace-nowrap border-b-2 pb-2 text-xs uppercase tracking-widest transition-colors ${
       isActive
         ? "border-primary text-text-primary"
         : "border-transparent text-text-muted hover:text-text-secondary"
@@ -188,7 +188,7 @@ export default function CategoriesPage() {
             <div
               role="tablist"
               aria-label="Tipos de categoría"
-              className="mb-6 flex flex-wrap items-center gap-4 border-b border-border"
+              className="mb-6 flex items-center gap-4 overflow-x-auto border-b border-border scrollbar-thin sm:flex-wrap sm:overflow-visible"
             >
               {tabs.map((tab) => (
                 <button

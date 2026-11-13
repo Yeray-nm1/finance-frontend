@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -59,12 +59,12 @@ export function MultiSelectFilter({
           aria-expanded={open}
           aria-label={placeholder}
           disabled={disabled}
-          className={`h-10 shrink-0 justify-between text-left font-normal ${
+          className={`h-10 min-w-0 w-full justify-between text-left font-normal sm:w-[var(--filter-width)] sm:shrink-0 ${
             active
               ? "border-primary/40 bg-primary-light text-primary hover:bg-primary/15"
               : "text-text-muted"
           }`}
-          style={{ width }}
+          style={{ "--filter-width": width } as CSSProperties}
         >
           <span className="truncate">{disabled ? emptyLabel : label}</span>
           <ChevronDown className="ml-2 size-4 shrink-0" />

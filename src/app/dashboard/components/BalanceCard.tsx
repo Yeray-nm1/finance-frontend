@@ -27,8 +27,8 @@ export function BalanceCard({
         <h2 className="text-xs uppercase tracking-widest text-text-muted">Balance</h2>
       </div>
 
-      <div className="flex items-center gap-6">
-        <div className="shrink-0">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
+        <div className="flex shrink-0 justify-center sm:block">
           <BalanceDonut
             income={income}
             expenses={expenses}

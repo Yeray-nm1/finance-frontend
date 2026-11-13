@@ -29,13 +29,13 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "bg-white fixed top-1/2 left-1/2 z-[60] grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border border-border p-6 shadow-lg duration-200 sm:max-w-lg",
+          "bg-white fixed top-1/2 left-1/2 z-[60] grid max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-lg border border-border p-5 shadow-lg duration-200 sm:max-w-lg sm:p-6",
           className
         )}
         {...props}
       >
         {children}
-        <DialogPrimitive.Close className="absolute top-4 right-4 rounded-md opacity-70 transition-opacity hover:opacity-100 focus:outline-none disabled:pointer-events-none">
+        <DialogPrimitive.Close className="absolute top-4 right-4 rounded-md opacity-70 transition-opacity hover:opacity-100 disabled:pointer-events-none">
           <XIcon className="size-5" />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>

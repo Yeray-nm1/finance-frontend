@@ -43,6 +43,35 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+.app-shell {
+  display: block;
+  min-height: 100vh;
+}
+
+.app-main {
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .app-shell {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .app-shell[data-sidebar="expanded"] {
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+
+  .app-shell[data-sidebar="none"] {
+    display: block;
+  }
+}
+
+:where(a, button, [role="button"], input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 ::selection {
   background: var(--color-primary-light);
   color: var(--color-primary);

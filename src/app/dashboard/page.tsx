@@ -178,9 +178,9 @@ export default function DashboardPage() {
 
   const headerContent = (
     <header className="mb-8 animate-fade-in">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-semibold text-text-primary">Dashboard</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <select
             aria-label="Mes y año"
             value={viewValue}
@@ -235,7 +235,7 @@ export default function DashboardPage() {
       <div className="max-w-6xl mx-auto">
         {headerContent}
         <OnboardingChecklist />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 [&>*]:min-w-0">
           <BalanceCard
             income={balance.income}
             expenses={balance.expenses}
