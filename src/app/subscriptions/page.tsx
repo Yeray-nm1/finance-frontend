@@ -127,14 +127,14 @@ export default function SubscriptionsPage() {
   return (
     <main className="min-h-screen bg-bg-page p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
+        <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-xl font-semibold text-text-primary">
               Suscripciones
             </h1>
             <p className="text-sm text-text-muted mt-1">Gestiona tus pagos recurrentes</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => setDetectOpen(true)}>
               <Sparkles className="size-4" /> Detectar
             </Button>

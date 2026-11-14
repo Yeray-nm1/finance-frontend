@@ -3,6 +3,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { MobileTopBar } from "@/components/layout/MobileTopBar";
 import { Toaster } from "@/components/ui/toaster";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useSidebar } from "@/contexts/SidebarContext";
@@ -16,20 +17,16 @@ export default function RootLayoutInner({ children }: Readonly<RootLayoutInnerPr
   const { isCollapsed } = useSidebar();
   const pathname = usePathname();
   const showSidebar = isAuthenticated && !isLoading && !["/login", "/register"].includes(pathname);
-  const sidebarCollapsed = isCollapsed ? "64px" : "240px";
-  const sidebarWidth = showSidebar ? sidebarCollapsed : "0px";
 
   return (
     <>
       <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: `${sidebarWidth} 1fr`,
-          minHeight: "100vh",
-        }}
+        className="app-shell"
+        data-sidebar={showSidebar ? (isCollapsed ? "collapsed" : "expanded") : "none"}
       >
         {showSidebar && <Sidebar />}
-        <main style={{ gridColumn: 2, minWidth: 0 }}>
+        <main className="app-main">
+          {showSidebar && <MobileTopBar />}
           <ErrorBoundary>{children}</ErrorBoundary>
         </main>
       </div>

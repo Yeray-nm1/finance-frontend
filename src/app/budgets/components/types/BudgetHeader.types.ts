@@ -1,5 +1,5 @@
 export interface BudgetHeaderProps {
-  monthOptions: Array<{ value: string; label: string; hasBudget: boolean; isCurrent: boolean }>;
+  monthOptions: Array<{ value: string; label: string; shortLabel?: string; hasBudget: boolean; isCurrent: boolean }>;
   selectedMonthValue: string;
   badge: { text: string; className: string };
   canGoBack: boolean;

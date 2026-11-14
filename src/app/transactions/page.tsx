@@ -14,6 +14,7 @@ import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 import { toast } from "@/hooks/use-toast";
 import { TransactionsFilters } from "@/app/transactions/components/TransactionsFilters";
 import { TransactionsTable } from "@/app/transactions/components/TransactionsTable";
+import { TransactionsMobileList } from "@/app/transactions/components/TransactionsMobileList";
 import { TransactionsPagination } from "@/app/transactions/components/TransactionsPagination";
 import { BulkActionsBar } from "@/app/transactions/components/BulkActionsBar";
 import { NO_ACCOUNT_SENTINEL, NO_CATEGORY_SENTINEL } from "@/lib/transactions-utils";
@@ -839,12 +840,12 @@ function TransactionsPageContent() {
   return (
       <main className="min-h-screen bg-bg-page p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
-          <div className="flex justify-between items-center mb-6">
+          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-xl font-semibold text-text-primary">Transacciones</h1>
               <p className="text-sm text-text-muted mt-1">Gestiona tus movimientos</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={() => setCsvDialogOpen(true)}>
                 <Upload className="size-4" /> Importar CSV
               </Button>
@@ -959,29 +960,49 @@ function TransactionsPageContent() {
             }}
           />
 
-          <TransactionsTable
-            transactions={transactions}
-            categories={categories}
-            accounts={accounts}
-            loading={loading}
-            sortBy={sortBy}
-            sortOrder={sortOrder}
-            editingId={editingId}
-            editingField={editingField}
-            editValue={editValue}
-            savingField={savingField}
-            hasActiveFilters={!!hasActiveFilters()}
-            selectedIds={selectedIds}
-            onSort={handleSort}
-            onStartEdit={startEdit}
-            onEditValueChange={setEditValue}
-            onCancelEdit={cancelEdit}
-            onInlineEdit={handleInlineEdit}
-            onOpenEdit={handleOpenEdit}
-            onDeleteClick={(id) => setDeleteConfirmId(id)}
-            onToggleSelect={toggleSelect}
-            onToggleSelectAll={toggleSelectAll}
-          />
+          <div className="md:hidden">
+            <TransactionsMobileList
+              transactions={transactions}
+              categories={categories}
+              accounts={accounts}
+              loading={loading}
+              hasActiveFilters={!!hasActiveFilters()}
+              selectedIds={selectedIds}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              onSort={handleSort}
+              onOpenEdit={handleOpenEdit}
+              onDeleteClick={(id) => setDeleteConfirmId(id)}
+              onToggleSelect={toggleSelect}
+              onToggleSelectAll={toggleSelectAll}
+            />
+          </div>
+
+          <div className="hidden md:block">
+            <TransactionsTable
+              transactions={transactions}
+              categories={categories}
+              accounts={accounts}
+              loading={loading}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              editingId={editingId}
+              editingField={editingField}
+              editValue={editValue}
+              savingField={savingField}
+              hasActiveFilters={!!hasActiveFilters()}
+              selectedIds={selectedIds}
+              onSort={handleSort}
+              onStartEdit={startEdit}
+              onEditValueChange={setEditValue}
+              onCancelEdit={cancelEdit}
+              onInlineEdit={handleInlineEdit}
+              onOpenEdit={handleOpenEdit}
+              onDeleteClick={(id) => setDeleteConfirmId(id)}
+              onToggleSelect={toggleSelect}
+              onToggleSelectAll={toggleSelectAll}
+            />
+          </div>
 
           <TransactionsPagination
             page={page}

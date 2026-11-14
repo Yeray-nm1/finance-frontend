@@ -152,7 +152,7 @@ export default function AccountsPage() {
             {accounts.map((account) => (
               <section
                 key={account.id}
-                className="flex items-start justify-between gap-3 rounded-lg border border-border bg-white p-5"
+                className="flex min-w-0 items-start justify-between gap-3 rounded-lg border border-border bg-white p-5"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">

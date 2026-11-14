@@ -73,7 +73,7 @@ export default function BudgetsPage() {
 
   const monthOptions = useMemo(() => {
     const seen = new Set<string>();
-    const options: Array<{ value: string; label: string; hasBudget: boolean; isCurrent: boolean }> = [];
+    const options: Array<{ value: string; label: string; shortLabel: string; hasBudget: boolean; isCurrent: boolean }> = [];
     const hasBudget = (year: number, month: number) =>
       budgetMonths.some((m) => m.year === year && m.month === month);
     const add = (year: number, month: number) => {
@@ -83,6 +83,7 @@ export default function BudgetsPage() {
       options.push({
         value,
         label: `${MONTH_NAMES[month - 1]} ${year}`,
+        shortLabel: `${MONTH_NAMES[month - 1].slice(0, 3)} ${year}`,
         hasBudget: hasBudget(year, month),
         isCurrent: year === currentYear && month === currentMonth,
       });
