@@ -18,19 +18,19 @@ export function BudgetHeader({
 }: Readonly<BudgetHeaderProps>) {
   return (
     <header className="mb-6">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[auto_1fr_auto] sm:items-center">
         <h1 className="row-start-1 font-serif text-2xl font-semibold text-text-primary sm:col-start-1 sm:row-start-1 sm:text-3xl">
           Presupuestos
         </h1>
         {showEditButton && (
           <Button
-            className="row-start-4 w-full sm:col-start-2 sm:row-start-1 sm:w-auto sm:justify-self-end"
+            className="row-start-4 w-full sm:col-start-3 sm:row-start-3 sm:w-auto sm:justify-self-end"
             onClick={onStartEdit}
           >
             {editButtonLabel}
           </Button>
         )}
-        <div className="row-start-3 flex items-center gap-2 sm:col-start-1 sm:row-start-2">
+        <div className="row-start-3 flex items-center gap-2 sm:col-span-2 sm:col-start-1 sm:row-start-3">
           <button
             onClick={onPrevMonth}
             disabled={!canGoBack}
@@ -97,10 +97,12 @@ export function BudgetHeader({
           >
             <ChevronRight className="size-5 text-text-muted" />
           </button>
+
+          <div aria-hidden="true" className="hidden h-8 w-px shrink-0 bg-border sm:block" />
         </div>
 
         <span
-          className={`row-start-2 w-fit justify-self-start rounded-full px-2 py-0.5 text-xs font-medium sm:col-start-2 sm:row-start-2 sm:justify-self-end ${badge.className}`}
+          className={`row-start-2 w-fit justify-self-start rounded-full px-2 py-0.5 text-xs font-medium sm:col-start-1 sm:row-start-2 sm:justify-self-start ${badge.className}`}
         >
           {badge.text}
         </span>
