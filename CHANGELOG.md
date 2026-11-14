@@ -1,3 +1,9 @@
+## [0.6.0] - 2026-11-14
+
+- 8cfbd6a Merge pull request #26 from Yeray-nm1/feature/ynm-mobile-accessibility
+- a9d1eb2 fix(budgets): refine desktop header layout
+- ab70495 feat(ui): add responsive mobile layout and accessibility improvements
+
 ## [0.5.0] - 2026-11-13
 
 - a70edf6 Merge pull request #25 from Yeray-nm1/feature/ynm-savings-goals
