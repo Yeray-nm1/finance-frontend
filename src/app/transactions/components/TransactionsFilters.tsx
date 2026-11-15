@@ -76,7 +76,7 @@ export function TransactionsFilters({
           {filterSearch && (
             <button
               onClick={() => onFilterSearchChange("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-expense"
+              className="absolute right-1 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded text-text-muted hover:bg-bg-elevated hover:text-expense"
               aria-label="Limpiar filtro de búsqueda"
             >
               <X className="size-4" />
@@ -137,7 +137,7 @@ export function TransactionsFilters({
                 {typeChipLabel}
                 <button
                   onClick={() => onFilterTypeChange("")}
-                  className="text-primary/70 hover:text-expense transition-colors"
+                  className="-my-1 -mr-1 flex size-6 items-center justify-center rounded text-primary/70 transition-colors hover:bg-primary/10 hover:text-expense"
                   aria-label={`Quitar filtro ${typeChipLabel}`}
                 >
                   <X className="size-3" />
@@ -179,7 +179,7 @@ export function TransactionsFilters({
             <button
               type="button"
               onClick={onResetSort}
-              className="text-xs text-text-muted hover:text-primary hover:bg-primary-light px-2 py-1 rounded transition-colors flex items-center gap-1"
+              className="flex items-center gap-1 rounded px-3 py-2 text-xs text-text-muted transition-colors hover:bg-primary-light hover:text-primary"
               title="Volver al orden por fecha, más reciente primero"
             >
               <ArrowDownWideNarrow className="size-3.5" />
@@ -187,7 +187,7 @@ export function TransactionsFilters({
             </button>
           )}
           {hasActiveFilters && (
-            <button onClick={onClearFilters} className="text-xs text-text-muted hover:text-expense hover:bg-expense/5 px-2 py-1 rounded transition-colors flex items-center gap-1 sm:ml-auto">
+            <button onClick={onClearFilters} className="flex items-center gap-1 rounded px-3 py-2 text-xs text-text-muted transition-colors hover:bg-expense/5 hover:text-expense sm:ml-auto">
               Limpiar <X className="size-3 text-expense/70" />
             </button>
           )}

@@ -50,7 +50,7 @@ const spending: CategorySpendingItem[] = [
 ];
 
 function expand(label: string) {
-  fireEvent.click(screen.getByRole('button', { name: `Expandir ${label}` }));
+  fireEvent.click(screen.getByRole('button', { name: new RegExp(`^Expandir ${label}`) }));
 }
 
 describe('BudgetOverviewCard', () => {
@@ -101,7 +101,7 @@ describe('BudgetOverviewCard', () => {
   it('starts with every type collapsed', () => {
     render(<BudgetOverviewCard budgets={budgets} spending={spending} monthValue="2026-05" />);
     expect(screen.queryByRole('link', { name: 'Ver transacciones de Comida' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Expandir Necesidades' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /^Expandir Necesidades/ })).toHaveAttribute(
       'aria-expanded',
       'false'
     );
@@ -118,6 +118,37 @@ describe('BudgetOverviewCard', () => {
     render(<BudgetOverviewCard budgets={budgets} spending={spending} monthValue="2026-05" />);
     expand('Necesidades');
     expect(screen.getByText(/100,00.*200,00/)).toBeInTheDocument();
+  });
+
+  it('adds explicit text for budget states instead of relying on color', () => {
+    render(
+      <BudgetOverviewCard
+        budgets={[{ ...budgets[0], spent: 250, budgeted: 200, progress: 125, status: 'over' }]}
+        spending={[]}
+        monthValue="2026-05"
+      />
+    );
+
+    expect(screen.getByText('Excedido')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: 'Expandir Necesidades, 125% del presupuesto, excedido',
+      })
+    ).toBeInTheDocument();
+  });
+
+  it('labels rows that are close to their limit after expanding the group', () => {
+    render(
+      <BudgetOverviewCard
+        budgets={[{ ...budgets[0], spent: 180, budgeted: 200, progress: 90, status: 'warning' }]}
+        spending={[]}
+        monthValue="2026-05"
+      />
+    );
+
+    expand('Necesidades');
+
+    expect(screen.getByText('Cerca del límite')).toBeInTheDocument();
   });
 
   it('shows the type budget in the header when it has no categories', () => {
@@ -173,7 +204,7 @@ describe('BudgetOverviewCard', () => {
     render(<BudgetOverviewCard budgets={budgets} spending={spending} monthValue="2026-05" />);
     expand('Necesidades');
     expect(screen.getByRole('link', { name: 'Ver transacciones de Comida' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Contraer Necesidades' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Contraer Necesidades/ }));
     expect(screen.queryByRole('link', { name: 'Ver transacciones de Comida' })).not.toBeInTheDocument();
   });
 

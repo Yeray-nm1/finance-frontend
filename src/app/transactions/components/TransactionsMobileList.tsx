@@ -43,7 +43,7 @@ export function TransactionsMobileList({
             aria-label="Ordenar transacciones"
             value={sortBy}
             onChange={(event) => onSort(event.target.value as "date" | "amount" | "description")}
-            className="rounded-md border border-border bg-white px-2 py-1 text-xs text-text-primary"
+            className="h-10 rounded-md border border-border bg-white px-2 text-xs text-text-primary"
           >
             <option value="date">Fecha</option>
             <option value="amount">Importe</option>
@@ -54,7 +54,7 @@ export function TransactionsMobileList({
             onClick={() => onSort(sortBy as "date" | "amount" | "description")}
             aria-label={sortOrder === "asc" ? "Orden ascendente" : "Orden descendente"}
             title={sortOrder === "asc" ? "Orden ascendente" : "Orden descendente"}
-            className="flex size-7 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-bg-elevated hover:text-text-primary"
+            className="flex size-10 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-bg-elevated hover:text-text-primary"
           >
             {sortOrder === "asc" ? <ArrowUpAZ size={15} /> : <ArrowDownAZ size={15} />}
           </button>

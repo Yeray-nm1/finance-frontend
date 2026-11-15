@@ -72,7 +72,7 @@ export function BulkActionsBar({
             <button
               type="button"
               onClick={() => onCategoryChange("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-expense z-10"
+              className="absolute right-1 top-1/2 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded text-text-muted hover:bg-bg-elevated hover:text-expense"
               aria-label="Limpiar categoria"
             >
               <X className="size-3.5" />
@@ -101,7 +101,7 @@ export function BulkActionsBar({
             <button
               type="button"
               onClick={() => onAccountChange("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-expense z-10"
+              className="absolute right-1 top-1/2 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded text-text-muted hover:bg-bg-elevated hover:text-expense"
               aria-label="Limpiar cuenta"
             >
               <X className="size-3.5" />

@@ -13,6 +13,7 @@ import { RecentTransactionsCard } from "./components/RecentTransactionsCard";
 import { DashboardSkeleton } from "./components/DashboardSkeleton";
 import { DashboardError } from "./components/DashboardError";
 import { OnboardingChecklist } from "./components/OnboardingChecklist";
+import { QuickExpenseButton } from "@/app/transactions/components/QuickExpenseButton";
 import {
   getCurrentMonthValue,
   isValidMonthValue,
@@ -207,7 +208,7 @@ export default function DashboardPage() {
 
   if (!hasBalanceData(data)) {
     return (
-      <main className="min-h-screen bg-bg-page p-4 md:p-8">
+      <main className="min-h-screen bg-bg-page p-4 pb-24 md:p-8">
         <div className="max-w-6xl mx-auto">
           {headerContent}
           <OnboardingChecklist />
@@ -217,6 +218,7 @@ export default function DashboardPage() {
           <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
             <BudgetOverviewCard budgets={[]} spending={[]} monthValue={viewValue} fillRow={false} />
           </div>
+          <QuickExpenseButton onCreated={loadDashboard} />
         </div>
       </main>
     );
@@ -231,7 +233,7 @@ export default function DashboardPage() {
   const monthlyEvolution = Array.isArray(data.monthlyEvolution) ? data.monthlyEvolution : [];
 
   return (
-    <main className="min-h-screen bg-bg-page p-4 md:p-8">
+    <main className="min-h-screen bg-bg-page p-4 pb-24 md:p-8">
       <div className="max-w-6xl mx-auto">
         {headerContent}
         <OnboardingChecklist />
@@ -255,6 +257,7 @@ export default function DashboardPage() {
           <RecentTransactionsCard transactions={transactions} monthValue={viewValue} />
         </div>
       </div>
+      <QuickExpenseButton onCreated={loadDashboard} />
     </main>
   );
 }

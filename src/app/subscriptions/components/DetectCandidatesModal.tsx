@@ -157,9 +157,10 @@ export function DetectCandidatesModal({ open, onOpenChange, onConfirm }: Readonl
                               variant="ghost"
                               size="icon"
                               onClick={() => toggleCandidate(c.name)}
-                              className={`size-8 rounded-full ${
+                              className={`size-9 rounded-full ${
                                 isSelected ? "bg-income text-white hover:bg-income/90" : ""
                               }`}
+                              aria-label={isSelected ? `Quitar ${c.name}` : `Seleccionar ${c.name}`}
                               title={isSelected ? "Quitar seleccion" : "Seleccionar para guardar"}
                             >
                               {isSelected ? <Check className="size-4" /> : <Plus className="size-4" />}

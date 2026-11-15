@@ -85,4 +85,14 @@ describe('BalanceDonut', () => {
     const balanceEl = screen.getByText(/-1000/);
     expect(balanceEl.className).toContain('text-expense');
   });
+
+  it('expone una descripción accesible con los importes del balance', () => {
+    render(<BalanceDonut {...defaultProps} />);
+    const chart = screen.getByRole('img');
+
+    expect(chart).toHaveAccessibleName(/ingresos 5000,00/);
+    expect(chart).toHaveAccessibleName(/gastos 3000,00/);
+    expect(chart).toHaveAccessibleName(/ahorro 1000,00/);
+    expect(chart).toHaveAccessibleName(/Balance \+2000,00/);
+  });
 });

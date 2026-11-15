@@ -41,6 +41,24 @@ function rowDot(row: OverviewRow): string {
   return DOT_COLORS.ok;
 }
 
+function rowStatus(row: OverviewRow): string | null {
+  if (row.budgeted === null || row.budgeted === 0) return null;
+  const progress = (row.spent / row.budgeted) * 100;
+  if (progress > 100) return "Excedido";
+  if (progress >= 80) return "Cerca del límite";
+  return null;
+}
+
+function progressStatus(progress: number): { short: string; full: string; className: string } {
+  if (progress > 100) {
+    return { short: "Excedido", full: "excedido", className: "text-expense" };
+  }
+  if (progress >= 80) {
+    return { short: "Cerca", full: "cerca del límite", className: "text-warning" };
+  }
+  return { short: "Dentro", full: "dentro del presupuesto", className: "text-income" };
+}
+
 function transactionsHref(
   categoryId: string | null,
   categoryName: string,
@@ -227,9 +245,20 @@ export function BudgetOverviewCard({
                         </span>
                         {progress !== null && (
                           <>
-                            <ProgressBar value={progress} color={progressAccent} />
-                            <span className="text-[11px] text-text-muted font-medium w-9 text-right">
-                              {Math.round(progress)}%
+                            <ProgressBar
+                              value={progress}
+                              color={progressAccent}
+                              label={`${group.label}: ${Math.round(progress)}% del presupuesto, ${progressStatus(progress).full}`}
+                            />
+                            <span className="flex w-14 flex-col items-end leading-tight">
+                              <span className="text-[11px] font-medium text-text-muted">
+                                {Math.round(progress)}%
+                              </span>
+                              <span
+                                className={`text-[10px] font-semibold ${progressStatus(progress).className}`}
+                              >
+                                {progressStatus(progress).short}
+                              </span>
                             </span>
                           </>
                         )}
@@ -245,7 +274,11 @@ export function BudgetOverviewCard({
                           type="button"
                           onClick={() => toggleType(group.key)}
                           aria-expanded={isExpanded}
-                          aria-label={`${isExpanded ? "Contraer" : "Expandir"} ${group.label}`}
+                          aria-label={`${isExpanded ? "Contraer" : "Expandir"} ${group.label}${
+                            progress !== null
+                              ? `, ${Math.round(progress)}% del presupuesto, ${progressStatus(progress).full}`
+                              : ""
+                          }`}
                           className="w-full text-left hover:bg-bg-elevated transition-colors"
                         >
                           {header}
@@ -269,9 +302,22 @@ export function BudgetOverviewCard({
                                   {row.category}
                                 </span>
                               </span>
-                              <span className="text-text-muted whitespace-nowrap shrink-0">
-                                {formatCurrency(row.spent)}
-                                {row.budgeted !== null && ` / ${formatCurrency(row.budgeted)}`}
+                              <span className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-text-muted">
+                                <span>
+                                  {formatCurrency(row.spent)}
+                                  {row.budgeted !== null && ` / ${formatCurrency(row.budgeted)}`}
+                                </span>
+                                {rowStatus(row) && (
+                                  <span
+                                    className={`text-[10px] font-semibold ${
+                                      row.budgeted !== null && row.spent > row.budgeted
+                                        ? "text-expense"
+                                        : "text-warning"
+                                    }`}
+                                  >
+                                    {rowStatus(row)}
+                                  </span>
+                                )}
                               </span>
                             </Link>
                           ))}

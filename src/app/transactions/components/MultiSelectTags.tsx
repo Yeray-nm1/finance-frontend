@@ -22,7 +22,7 @@ export function MultiSelectTags({
             {option.label}
             <button
               onClick={() => onChange(values.filter((value) => value !== option.value))}
-              className="text-primary/70 hover:text-expense transition-colors"
+              className="-my-1 -mr-1 flex size-6 items-center justify-center rounded text-primary/70 transition-colors hover:bg-primary/10 hover:text-expense"
               aria-label={`Quitar filtro ${option.label}`}
             >
               <X className="size-3" />

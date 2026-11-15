@@ -16,6 +16,7 @@ import { TransactionsFilters } from "@/app/transactions/components/TransactionsF
 import { TransactionsTable } from "@/app/transactions/components/TransactionsTable";
 import { TransactionsMobileList } from "@/app/transactions/components/TransactionsMobileList";
 import { TransactionsPagination } from "@/app/transactions/components/TransactionsPagination";
+import { QuickExpenseButton } from "@/app/transactions/components/QuickExpenseButton";
 import { BulkActionsBar } from "@/app/transactions/components/BulkActionsBar";
 import { NO_ACCOUNT_SENTINEL, NO_CATEGORY_SENTINEL } from "@/lib/transactions-utils";
 import { api } from "@/lib/api";
@@ -838,7 +839,7 @@ function TransactionsPageContent() {
   }
 
   return (
-      <main className="min-h-screen bg-bg-page p-4 md:p-8">
+      <main className="min-h-screen bg-bg-page p-4 pb-24 md:p-8">
         <div className="max-w-6xl mx-auto">
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -1050,6 +1051,8 @@ function TransactionsPageContent() {
           onConfirm={handleBulkDelete}
           onCancel={() => setBulkDeleteOpen(false)}
         />
+
+        <QuickExpenseButton onCreated={loadData} />
       </main>
   );
 }

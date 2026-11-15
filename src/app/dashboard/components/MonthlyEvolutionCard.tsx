@@ -10,6 +10,7 @@ import {
   YAxis,
 } from "recharts";
 import { MONTH_NAMES } from "@/lib/budget-constants";
+import { formatCurrency } from "@/lib/format";
 import { EvolutionTooltip } from "./EvolutionTooltip";
 import type { MonthlyEvolutionCardProps } from "./types/MonthlyEvolutionCard.types";
 
@@ -32,8 +33,17 @@ export function MonthlyEvolutionCard({ data }: Readonly<MonthlyEvolutionCardProp
       </h2>
 
       {hasData ? (
-        <>
-          <div className="h-56">
+        <figure className="m-0">
+          <figcaption className="sr-only">
+            Evolución mensual de ingresos y gastos en los últimos 6 meses.{" "}
+            {chartData
+              .map(
+                (item) =>
+                  `${item.label}: ingresos ${formatCurrency(item.income)}, gastos ${formatCurrency(item.expenses)}.`,
+              )
+              .join(" ")}
+          </figcaption>
+          <div className="h-56" aria-hidden="true">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
@@ -59,7 +69,7 @@ export function MonthlyEvolutionCard({ data }: Readonly<MonthlyEvolutionCardProp
               <span className="size-2 rounded-full bg-expense" /> Gastos
             </span>
           </div>
-        </>
+        </figure>
       ) : (
         <p className="text-xs text-text-muted flex items-center justify-center min-h-32">
           Sin datos en los últimos 6 meses

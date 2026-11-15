@@ -57,6 +57,16 @@ describe('MonthlyEvolutionCard', () => {
     expect(screen.getByText('Gastos')).toBeInTheDocument();
   });
 
+  it('incluye un resumen accesible con los datos de cada mes', () => {
+    render(<MonthlyEvolutionCard data={data} />);
+    expect(
+      screen.getByText(/Abr 26: ingresos 2\.500,00 €, gastos 90,00 €/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/May 26: ingresos 2\.500,00 €, gastos 127,00 €/),
+    ).toBeInTheDocument();
+  });
+
   it('shows an empty state when all months are empty', () => {
     render(
       <MonthlyEvolutionCard
