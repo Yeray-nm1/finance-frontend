@@ -15,6 +15,13 @@ import { DashboardError } from "./components/DashboardError";
 import { OnboardingChecklist } from "./components/OnboardingChecklist";
 import { QuickExpenseButton } from "@/app/transactions/components/QuickExpenseButton";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   getCurrentMonthValue,
   isValidMonthValue,
   readStoredMonth,
@@ -181,21 +188,24 @@ export default function DashboardPage() {
     <header className="mb-8 animate-fade-in">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-semibold text-text-primary">Dashboard</h1>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-          <select
-            aria-label="Mes y año"
-            value={viewValue}
-            onChange={(e) => handleMonthChange(e.target.value)}
-            className="h-11 w-full rounded-md border border-border bg-white px-3 text-base text-text-primary sm:h-9 sm:w-auto sm:px-2 sm:text-sm"
-          >
-            {monthOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={viewValue} onValueChange={handleMonthChange}>
+            <SelectTrigger
+              aria-label="Mes y año"
+              className="h-auto w-auto rounded-md px-2 py-1 text-sm"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {monthOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           {!isCurrentMonth && (
             <button
               onClick={goToCurrentMonth}
-              className="h-11 w-full shrink-0 rounded-md bg-primary px-3 text-sm font-bold text-white transition-colors hover:bg-primary/90 sm:h-9 sm:w-auto sm:px-2"
+              className="text-sm bg-primary text-white font-bold rounded-md px-2 py-1 hover:bg-primary/90 transition-colors"
             >
               Volver a día actual
             </button>

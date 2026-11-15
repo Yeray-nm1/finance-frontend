@@ -12,6 +12,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
 import { NO_ACCOUNT_SENTINEL, NO_CATEGORY_SENTINEL } from "@/lib/transactions-utils";
@@ -157,47 +164,61 @@ export function QuickExpenseDialog({
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="quick-expense-category">Categoría</Label>
-              <select
-                id="quick-expense-category"
+              <Select
                 value={categoryId}
-                onChange={(event) => setCategoryId(event.target.value)}
+                onValueChange={(value) => { if (value) setCategoryId(value); }}
                 disabled={loadingOptions}
-                className="h-11 w-full rounded-lg border border-border bg-white px-3 text-base text-text-primary disabled:cursor-not-allowed disabled:opacity-50 sm:h-10 sm:text-sm"
               >
-                <option value={NO_CATEGORY_SENTINEL}>Sin categoría</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger
+                  id="quick-expense-category"
+                  aria-label="Categoría"
+                  className="px-3"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_CATEGORY_SENTINEL}>Sin categoría</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="quick-expense-account">Cuenta</Label>
-              <select
-                id="quick-expense-account"
+              <Select
                 value={accountId}
-                onChange={(event) => setAccountId(event.target.value)}
+                onValueChange={(value) => { if (value) setAccountId(value); }}
                 disabled={loadingOptions || accounts.length === 0}
-                className="h-11 w-full rounded-lg border border-border bg-white px-3 text-base text-text-primary disabled:cursor-not-allowed disabled:opacity-50 sm:h-10 sm:text-sm"
               >
-                {accounts.length === 0 ? (
-                  <option value={NO_ACCOUNT_SENTINEL}>Sin cuentas</option>
-                ) : (
-                  <>
-                    <option value={NO_ACCOUNT_SENTINEL}>Sin cuenta</option>
-                    {accounts.map((account) => (
-                      <option key={account.id} value={account.id}>
-                        {account.name}
-                      </option>
-                    ))}
-                  </>
-                )}
-              </select>
+                <SelectTrigger
+                  id="quick-expense-account"
+                  aria-label="Cuenta"
+                  className="px-3"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts.length === 0 ? (
+                    <SelectItem value={NO_ACCOUNT_SENTINEL}>Sin cuentas</SelectItem>
+                  ) : (
+                    <>
+                      <SelectItem value={NO_ACCOUNT_SENTINEL}>Sin cuenta</SelectItem>
+                      {accounts.map((account) => (
+                        <SelectItem key={account.id} value={account.id}>
+                          {account.name}
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
