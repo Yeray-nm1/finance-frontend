@@ -157,7 +157,7 @@ export function QuickExpenseDialog({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="quick-expense-category">Categoría</Label>
               <select
@@ -165,7 +165,7 @@ export function QuickExpenseDialog({
                 value={categoryId}
                 onChange={(event) => setCategoryId(event.target.value)}
                 disabled={loadingOptions}
-                className="h-10 w-full rounded-lg border border-border bg-white px-3 text-sm text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                className="h-11 w-full rounded-lg border border-border bg-white px-3 text-base text-text-primary disabled:cursor-not-allowed disabled:opacity-50 sm:h-10 sm:text-sm"
               >
                 <option value={NO_CATEGORY_SENTINEL}>Sin categoría</option>
                 {categories.map((category) => (
@@ -183,7 +183,7 @@ export function QuickExpenseDialog({
                 value={accountId}
                 onChange={(event) => setAccountId(event.target.value)}
                 disabled={loadingOptions || accounts.length === 0}
-                className="h-10 w-full rounded-lg border border-border bg-white px-3 text-sm text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                className="h-11 w-full rounded-lg border border-border bg-white px-3 text-base text-text-primary disabled:cursor-not-allowed disabled:opacity-50 sm:h-10 sm:text-sm"
               >
                 {accounts.length === 0 ? (
                   <option value={NO_ACCOUNT_SENTINEL}>Sin cuentas</option>

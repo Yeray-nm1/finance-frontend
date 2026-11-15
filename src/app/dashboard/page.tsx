@@ -181,12 +181,12 @@ export default function DashboardPage() {
     <header className="mb-8 animate-fade-in">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-semibold text-text-primary">Dashboard</h1>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
           <select
             aria-label="Mes y año"
             value={viewValue}
             onChange={(e) => handleMonthChange(e.target.value)}
-            className="text-sm border border-border rounded-md px-2 py-1 bg-white text-text-primary"
+            className="h-11 w-full rounded-md border border-border bg-white px-3 text-base text-text-primary sm:h-9 sm:w-auto sm:px-2 sm:text-sm"
           >
             {monthOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -195,7 +195,7 @@ export default function DashboardPage() {
           {!isCurrentMonth && (
             <button
               onClick={goToCurrentMonth}
-              className="text-sm bg-primary text-white font-bold rounded-md px-2 py-1 hover:bg-primary/90 transition-colors"
+              className="h-11 w-full shrink-0 rounded-md bg-primary px-3 text-sm font-bold text-white transition-colors hover:bg-primary/90 sm:h-9 sm:w-auto sm:px-2"
             >
               Volver a día actual
             </button>

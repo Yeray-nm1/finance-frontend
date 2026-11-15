@@ -30,7 +30,7 @@ export function TransactionsMobileList({
   return (
     <section className="rounded-lg border border-border bg-white">
       <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2">
-        <label className="flex items-center gap-2 text-xs text-text-secondary">
+        <label className="flex shrink-0 items-center gap-2 text-xs text-text-secondary">
           <Checkbox
             checked={allSelected ? true : someSelected ? "indeterminate" : false}
             onCheckedChange={onToggleSelectAll}
@@ -38,12 +38,12 @@ export function TransactionsMobileList({
           />
           Todas
         </label>
-        <div className="flex items-center gap-1">
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-1">
           <select
             aria-label="Ordenar transacciones"
             value={sortBy}
             onChange={(event) => onSort(event.target.value as "date" | "amount" | "description")}
-            className="h-10 rounded-md border border-border bg-white px-2 text-xs text-text-primary"
+            className="h-11 min-w-0 flex-1 rounded-md border border-border bg-white px-3 text-base text-text-primary"
           >
             <option value="date">Fecha</option>
             <option value="amount">Importe</option>
@@ -54,7 +54,7 @@ export function TransactionsMobileList({
             onClick={() => onSort(sortBy as "date" | "amount" | "description")}
             aria-label={sortOrder === "asc" ? "Orden ascendente" : "Orden descendente"}
             title={sortOrder === "asc" ? "Orden ascendente" : "Orden descendente"}
-            className="flex size-10 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-bg-elevated hover:text-text-primary"
+            className="flex size-11 shrink-0 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-bg-elevated hover:text-text-primary"
           >
             {sortOrder === "asc" ? <ArrowUpAZ size={15} /> : <ArrowDownAZ size={15} />}
           </button>

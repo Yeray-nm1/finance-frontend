@@ -120,7 +120,7 @@ describe('BudgetOverviewCard', () => {
     expect(screen.getByText(/100,00.*200,00/)).toBeInTheDocument();
   });
 
-  it('adds explicit text for budget states instead of relying on color', () => {
+  it('keeps the budget state in the accessible label without a visible badge', () => {
     render(
       <BudgetOverviewCard
         budgets={[{ ...budgets[0], spent: 250, budgeted: 200, progress: 125, status: 'over' }]}
@@ -129,7 +129,8 @@ describe('BudgetOverviewCard', () => {
       />
     );
 
-    expect(screen.getByText('Excedido')).toBeInTheDocument();
+    expect(screen.queryByText('Excedido')).not.toBeInTheDocument();
+    expect(screen.getByText('125%')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
         name: 'Expandir Necesidades, 125% del presupuesto, excedido',
@@ -137,7 +138,7 @@ describe('BudgetOverviewCard', () => {
     ).toBeInTheDocument();
   });
 
-  it('labels rows that are close to their limit after expanding the group', () => {
+  it('does not add status badges to expanded rows', () => {
     render(
       <BudgetOverviewCard
         budgets={[{ ...budgets[0], spent: 180, budgeted: 200, progress: 90, status: 'warning' }]}
@@ -148,7 +149,8 @@ describe('BudgetOverviewCard', () => {
 
     expand('Necesidades');
 
-    expect(screen.getByText('Cerca del límite')).toBeInTheDocument();
+    expect(screen.queryByText('Cerca del límite')).not.toBeInTheDocument();
+    expect(screen.getByText(/180,00.*200,00/)).toBeInTheDocument();
   });
 
   it('shows the type budget in the header when it has no categories', () => {
