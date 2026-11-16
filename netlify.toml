@@ -1,0 +1,13 @@
+[build]
+  command = "pnpm build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NEXT_TELEMETRY_DISABLED = "1"
+
+# El runtime de Next resuelve las rewrites de /api/v1 hacia BACKEND_URL,
+# de modo que el navegador solo habla con el dominio de Netlify y la cookie
+# de sesión sigue siendo first-party.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
