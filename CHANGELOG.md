@@ -1,3 +1,8 @@
+## [0.7.1] - 2026-11-16
+
+- c795e85 Merge pull request #28 from Yeray-nm1/chore/ynm-deploy-config
+- 40dc4e8 chore(deploy): add Netlify configuration for Next runtime
+
 ## [0.7.0] - 2026-11-16
 
 - 8f86f9f Merge pull request #27 from Yeray-nm1/feature/ynm-mobile-a11y-polish
