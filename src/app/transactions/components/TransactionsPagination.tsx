@@ -23,12 +23,12 @@ export function TransactionsPagination({
   if (total <= 0) return null;
 
   return (
-    <div className="mt-4 flex flex-col gap-3 text-sm text-text-muted">
+    <div className="mt-4 flex flex-col gap-3 text-sm text-text-muted sm:flex-row sm:items-center sm:justify-between">
       <span className="text-center sm:text-left">
         Mostrando {from}-{to} de {total} transacciones
       </span>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
-        <div className="flex items-center justify-between gap-2 sm:justify-start">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+        <div className="flex items-center justify-start gap-2">
           <span className="text-xs">Por página:</span>
           <Select
             value={String(limit)}
