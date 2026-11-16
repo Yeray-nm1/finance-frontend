@@ -13,6 +13,14 @@ import { RecentTransactionsCard } from "./components/RecentTransactionsCard";
 import { DashboardSkeleton } from "./components/DashboardSkeleton";
 import { DashboardError } from "./components/DashboardError";
 import { OnboardingChecklist } from "./components/OnboardingChecklist";
+import { QuickExpenseButton } from "@/app/transactions/components/QuickExpenseButton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   getCurrentMonthValue,
   isValidMonthValue,
@@ -181,16 +189,19 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-semibold text-text-primary">Dashboard</h1>
         <div className="flex flex-wrap items-center gap-2">
-          <select
-            aria-label="Mes y año"
-            value={viewValue}
-            onChange={(e) => handleMonthChange(e.target.value)}
-            className="text-sm border border-border rounded-md px-2 py-1 bg-white text-text-primary"
-          >
-            {monthOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
+          <Select value={viewValue} onValueChange={handleMonthChange}>
+            <SelectTrigger
+              aria-label="Mes y año"
+              className="h-auto w-auto rounded-md px-2 py-1 text-sm"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {monthOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           {!isCurrentMonth && (
             <button
               onClick={goToCurrentMonth}
@@ -207,7 +218,7 @@ export default function DashboardPage() {
 
   if (!hasBalanceData(data)) {
     return (
-      <main className="min-h-screen bg-bg-page p-4 md:p-8">
+      <main className="min-h-screen bg-bg-page p-4 pb-24 md:p-8">
         <div className="max-w-6xl mx-auto">
           {headerContent}
           <OnboardingChecklist />
@@ -217,6 +228,7 @@ export default function DashboardPage() {
           <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
             <BudgetOverviewCard budgets={[]} spending={[]} monthValue={viewValue} fillRow={false} />
           </div>
+          <QuickExpenseButton onCreated={loadDashboard} />
         </div>
       </main>
     );
@@ -231,7 +243,7 @@ export default function DashboardPage() {
   const monthlyEvolution = Array.isArray(data.monthlyEvolution) ? data.monthlyEvolution : [];
 
   return (
-    <main className="min-h-screen bg-bg-page p-4 md:p-8">
+    <main className="min-h-screen bg-bg-page p-4 pb-24 md:p-8">
       <div className="max-w-6xl mx-auto">
         {headerContent}
         <OnboardingChecklist />
@@ -255,6 +267,7 @@ export default function DashboardPage() {
           <RecentTransactionsCard transactions={transactions} monthValue={viewValue} />
         </div>
       </div>
+      <QuickExpenseButton onCreated={loadDashboard} />
     </main>
   );
 }

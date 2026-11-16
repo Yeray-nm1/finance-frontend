@@ -3,6 +3,13 @@
 import { ArrowDownAZ, ArrowUpAZ, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatCurrency } from "@/lib/format";
 import { getAmountColor } from "@/components/ui/variants/transactions.variants";
 import { getAmountSign } from "@/lib/transactions-utils";
@@ -30,7 +37,7 @@ export function TransactionsMobileList({
   return (
     <section className="rounded-lg border border-border bg-white">
       <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2">
-        <label className="flex items-center gap-2 text-xs text-text-secondary">
+        <label className="flex shrink-0 items-center gap-2 text-xs text-text-secondary">
           <Checkbox
             checked={allSelected ? true : someSelected ? "indeterminate" : false}
             onCheckedChange={onToggleSelectAll}
@@ -38,23 +45,29 @@ export function TransactionsMobileList({
           />
           Todas
         </label>
-        <div className="flex items-center gap-1">
-          <select
-            aria-label="Ordenar transacciones"
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-1">
+          <Select
             value={sortBy}
-            onChange={(event) => onSort(event.target.value as "date" | "amount" | "description")}
-            className="rounded-md border border-border bg-white px-2 py-1 text-xs text-text-primary"
+            onValueChange={(value) => onSort(value as "date" | "amount" | "description")}
           >
-            <option value="date">Fecha</option>
-            <option value="amount">Importe</option>
-            <option value="description">Descripcion</option>
-          </select>
+            <SelectTrigger
+              aria-label="Ordenar transacciones"
+              className="h-11 min-w-0 flex-1 rounded-md px-3 text-base"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="date">Fecha</SelectItem>
+              <SelectItem value="amount">Importe</SelectItem>
+              <SelectItem value="description">Descripcion</SelectItem>
+            </SelectContent>
+          </Select>
           <button
             type="button"
             onClick={() => onSort(sortBy as "date" | "amount" | "description")}
             aria-label={sortOrder === "asc" ? "Orden ascendente" : "Orden descendente"}
             title={sortOrder === "asc" ? "Orden ascendente" : "Orden descendente"}
-            className="flex size-7 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-bg-elevated hover:text-text-primary"
+            className="flex size-11 shrink-0 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-bg-elevated hover:text-text-primary"
           >
             {sortOrder === "asc" ? <ArrowUpAZ size={15} /> : <ArrowDownAZ size={15} />}
           </button>

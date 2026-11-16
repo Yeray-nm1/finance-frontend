@@ -41,6 +41,12 @@ function rowDot(row: OverviewRow): string {
   return DOT_COLORS.ok;
 }
 
+function progressStatus(progress: number): string {
+  if (progress > 100) return "excedido";
+  if (progress >= 80) return "cerca del límite";
+  return "dentro del presupuesto";
+}
+
 function transactionsHref(
   categoryId: string | null,
   categoryName: string,
@@ -227,8 +233,12 @@ export function BudgetOverviewCard({
                         </span>
                         {progress !== null && (
                           <>
-                            <ProgressBar value={progress} color={progressAccent} />
-                            <span className="text-[11px] text-text-muted font-medium w-9 text-right">
+                            <ProgressBar
+                              value={progress}
+                              color={progressAccent}
+                              label={`${group.label}: ${Math.round(progress)}% del presupuesto, ${progressStatus(progress)}`}
+                            />
+                            <span className="text-[11px] font-medium text-text-muted">
                               {Math.round(progress)}%
                             </span>
                           </>
@@ -245,7 +255,11 @@ export function BudgetOverviewCard({
                           type="button"
                           onClick={() => toggleType(group.key)}
                           aria-expanded={isExpanded}
-                          aria-label={`${isExpanded ? "Contraer" : "Expandir"} ${group.label}`}
+                          aria-label={`${isExpanded ? "Contraer" : "Expandir"} ${group.label}${
+                            progress !== null
+                              ? `, ${Math.round(progress)}% del presupuesto, ${progressStatus(progress)}`
+                              : ""
+                          }`}
                           className="w-full text-left hover:bg-bg-elevated transition-colors"
                         >
                           {header}
@@ -269,7 +283,7 @@ export function BudgetOverviewCard({
                                   {row.category}
                                 </span>
                               </span>
-                              <span className="text-text-muted whitespace-nowrap shrink-0">
+                              <span className="shrink-0 whitespace-nowrap text-text-muted">
                                 {formatCurrency(row.spent)}
                                 {row.budgeted !== null && ` / ${formatCurrency(row.budgeted)}`}
                               </span>

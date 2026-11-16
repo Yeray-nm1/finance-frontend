@@ -40,7 +40,7 @@ export function GroupList({
               <button
                 type="button"
                 onClick={() => onToggleExpand(group.label)}
-                className="shrink-0 text-muted-foreground hover:text-foreground"
+                className="flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-bg-elevated hover:text-foreground"
                 aria-label={isExpanded ? "Colapsar grupo" : "Expandir grupo"}
               >
                 {isExpanded ? (
@@ -50,17 +50,18 @@ export function GroupList({
                 )}
               </button>
 
-              <input
-                type="checkbox"
-                checked={isChecked}
-                onChange={() => onToggleGroup(group.label)}
-                className="size-4 shrink-0 accent-primary"
-                aria-label={`Incluir ${group.label}`}
-              />
-
-              <span className="flex-1 text-sm font-medium truncate">
-                {group.label}
-              </span>
+              <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => onToggleGroup(group.label)}
+                  className="size-4 shrink-0 accent-primary"
+                  aria-label={`Incluir ${group.label}`}
+                />
+                <span className="truncate text-sm font-medium">
+                  {group.label}
+                </span>
+              </label>
 
               <span className="text-xs text-muted-foreground whitespace-nowrap">
                 {group.count} {group.count === 1 ? "transacción" : "transacciones"}

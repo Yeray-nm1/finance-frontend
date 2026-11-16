@@ -12,6 +12,10 @@ beforeAll(() => {
     unobserve() { /* noop */ }
     disconnect() { /* noop */ }
   };
+  Element.prototype.hasPointerCapture = vi.fn(() => false);
+  Element.prototype.setPointerCapture = vi.fn();
+  Element.prototype.releasePointerCapture = vi.fn();
+  Element.prototype.scrollIntoView = vi.fn();
 });
 
 const categories: Category[] = [
@@ -104,7 +108,8 @@ describe('TransactionsMobileList', () => {
     const props = buildProps();
     render(<TransactionsMobileList {...props} />);
 
-    await user.selectOptions(screen.getByRole('combobox', { name: /ordenar/i }), 'amount');
+    await user.click(screen.getByRole('combobox', { name: /ordenar/i }));
+    await user.click(screen.getByRole('option', { name: 'Importe' }));
     expect(props.onSort).toHaveBeenCalledWith('amount');
 
     await user.click(screen.getByRole('button', { name: /orden/i }));

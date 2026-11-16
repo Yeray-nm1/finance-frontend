@@ -36,7 +36,7 @@ export function BudgetHeader({
             disabled={!canGoBack}
             aria-label="Mes anterior con presupuesto"
             title={canGoBack ? "Mes anterior con presupuesto" : "No hay presupuestos anteriores"}
-            className="flex size-8 shrink-0 items-center justify-center rounded-full hover:bg-bg-elevated transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-bg-elevated transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <ChevronLeft className="size-5 text-text-muted" />
           </button>
@@ -93,7 +93,7 @@ export function BudgetHeader({
             disabled={!canGoForward}
             aria-label="Mes siguiente"
             title={canGoForward ? `Ir a ${nextMonthLabel}` : "Mes siguiente"}
-            className="flex size-8 shrink-0 items-center justify-center rounded-full hover:bg-bg-elevated transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-bg-elevated transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <ChevronRight className="size-5 text-text-muted" />
           </button>

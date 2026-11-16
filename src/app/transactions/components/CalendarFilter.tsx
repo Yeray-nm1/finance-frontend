@@ -38,8 +38,9 @@ export function CalendarFilter({ dateFrom, dateTo, onChange }: Readonly<Calendar
         {(dateFrom || dateTo) && (
           <div className="border-t border-border p-2 flex justify-center">
             <button
+              type="button"
               onClick={() => { onChange({}); }}
-              className="text-xs text-text-muted hover:text-expense transition-colors"
+              className="rounded-md px-3 py-2 text-xs text-text-muted transition-colors hover:bg-bg-elevated hover:text-expense"
             >
               Limpiar filtros
             </button>

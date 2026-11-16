@@ -27,26 +27,34 @@ export function BalanceDonut({ income, expenses, savings, available, balance }: 
   const balanceColor = getBalanceColor(balance);
   const prefix = balance >= 0 ? "+" : "-";
   const centerLabel = `${prefix}${formatCurrency(Math.abs(balance))}`;
+  const chartSummary = `Balance del mes: ingresos ${formatCurrency(income)}, gastos ${formatCurrency(expenses)}, ahorro ${formatCurrency(savings)}, disponible ${formatCurrency(available)}. Balance ${prefix}${formatCurrency(Math.abs(balance))}.`;
 
   return (
-    <div className="relative" style={{ width: 200, height: 200 }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie
-            data={data}
-            cx="50%"
-            cy="50%"
-            innerRadius={60}
-            outerRadius={90}
-            dataKey="value"
-            nameKey="name"
-          />
-          <Tooltip content={<CustomTooltip />} wrapperStyle={{ zIndex: 9999 }} />
-        </PieChart>
-      </ResponsiveContainer>
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" style={{ zIndex: 1 }}>
-        <span className={`text-lg font-bold ${balanceColor}`}>{centerLabel}</span>
-        <span className="text-[11px] text-text-muted">Balance</span>
+    <div
+      className="relative"
+      style={{ width: 200, height: 200 }}
+      role="img"
+      aria-label={chartSummary}
+    >
+      <div aria-hidden="true" className="h-full w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={data}
+              cx="50%"
+              cy="50%"
+              innerRadius={60}
+              outerRadius={90}
+              dataKey="value"
+              nameKey="name"
+            />
+            <Tooltip content={<CustomTooltip />} wrapperStyle={{ zIndex: 9999 }} />
+          </PieChart>
+        </ResponsiveContainer>
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" style={{ zIndex: 1 }}>
+          <span className={`text-lg font-bold ${balanceColor}`}>{centerLabel}</span>
+          <span className="text-[11px] text-text-muted">Balance</span>
+        </div>
       </div>
     </div>
   );
