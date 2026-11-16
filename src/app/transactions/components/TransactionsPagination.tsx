@@ -23,18 +23,18 @@ export function TransactionsPagination({
   if (total <= 0) return null;
 
   return (
-    <div className="mt-4 flex flex-col gap-2 text-sm text-text-muted">
+    <div className="mt-4 flex flex-col gap-3 text-sm text-text-muted">
       <span className="text-center sm:text-left">
         Mostrando {from}-{to} de {total} transacciones
       </span>
-      <div className="flex flex-nowrap items-center justify-between gap-2 sm:justify-end sm:gap-3">
-        <div className="flex shrink-0 items-center gap-1">
-          <span className="hidden text-xs sm:inline">Por pagina:</span>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+        <div className="flex items-center justify-between gap-2 sm:justify-start">
+          <span className="text-xs">Por página:</span>
           <Select
             value={String(limit)}
             onValueChange={(v) => { onLimitChange(Number(v)); }}
           >
-            <SelectTrigger className="h-8 w-[68px] sm:w-20" aria-label="Elementos por pagina">
+            <SelectTrigger className="h-10 w-24 sm:h-8 sm:w-20" aria-label="Elementos por pagina">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -44,23 +44,23 @@ export function TransactionsPagination({
             </SelectContent>
           </Select>
         </div>
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:flex sm:shrink-0 sm:items-center sm:gap-1">
           <Button
             variant="outline"
             size="sm"
-            className="px-2 sm:px-3"
+            className="h-10 w-full px-2 sm:h-8 sm:w-auto sm:px-3"
             disabled={page <= 1}
             onClick={() => onPageChange(Math.max(1, page - 1))}
           >
             Anterior
           </Button>
-          <span className="px-1 text-xs sm:px-2">
+          <span className="px-1 text-center text-xs sm:px-2">
             {page} / {totalPages}
           </span>
           <Button
             variant="outline"
             size="sm"
-            className="px-2 sm:px-3"
+            className="h-10 w-full px-2 sm:h-8 sm:w-auto sm:px-3"
             disabled={page >= totalPages}
             onClick={() => onPageChange(page + 1)}
           >
