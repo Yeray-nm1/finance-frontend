@@ -1,3 +1,12 @@
+## [0.7.0] - 2026-11-16
+
+- 8f86f9f Merge pull request #27 from Yeray-nm1/feature/ynm-mobile-a11y-polish
+- db73512 fix(ui): align pagination in one row on desktop
+- d4e6afd fix(mobile): tidy bulk actions and pagination, expand sort select
+- a9c9d9f fix(ui): style month, sort and quick-expense dropdowns
+- 2660ad3 fix(mobile): enlarge selectors and remove budget status badges
+- 40ba4e2 fix(a11y): improve touch targets, budget states and quick expense
+
 ## [0.6.0] - 2026-11-14
 
 - 8cfbd6a Merge pull request #26 from Yeray-nm1/feature/ynm-mobile-accessibility
