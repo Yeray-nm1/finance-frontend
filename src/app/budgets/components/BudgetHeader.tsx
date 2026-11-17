@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { BudgetHeaderProps } from "./types/BudgetHeader.types";
 
@@ -11,24 +11,42 @@ export function BudgetHeader({
   nextMonthLabel,
   showEditButton,
   editButtonLabel,
+  showCopyButton = false,
+  copyButtonLabel = "Copiar del mes anterior",
+  copying = false,
   onPrevMonth,
   onNextMonth,
   onMonthChange,
   onStartEdit,
+  onCopyPrevious,
 }: Readonly<BudgetHeaderProps>) {
+  const showActions = showEditButton || showCopyButton;
+
   return (
     <header className="mb-6">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-[auto_1fr_auto] sm:items-center">
         <h1 className="row-start-1 font-serif text-2xl font-semibold text-text-primary sm:col-start-1 sm:row-start-1 sm:text-3xl">
           Presupuestos
         </h1>
-        {showEditButton && (
-          <Button
-            className="row-start-4 w-full sm:col-start-3 sm:row-start-3 sm:w-auto sm:justify-self-end"
-            onClick={onStartEdit}
-          >
-            {editButtonLabel}
-          </Button>
+        {showActions && (
+          <div className="row-start-4 flex flex-col gap-2 sm:col-start-3 sm:row-start-3 sm:flex-row sm:justify-self-end">
+            {showCopyButton && onCopyPrevious && (
+              <Button
+                variant="outline"
+                className="w-full gap-2 sm:w-auto"
+                onClick={onCopyPrevious}
+                disabled={copying}
+              >
+                <Copy className="size-4" />
+                {copying ? "Copiando..." : copyButtonLabel}
+              </Button>
+            )}
+            {showEditButton && (
+              <Button className="w-full sm:w-auto" onClick={onStartEdit}>
+                {editButtonLabel}
+              </Button>
+            )}
+          </div>
         )}
         <div className="row-start-3 flex items-center gap-2 sm:col-span-2 sm:col-start-1 sm:row-start-3">
           <button

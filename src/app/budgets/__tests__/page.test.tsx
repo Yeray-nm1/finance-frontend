@@ -53,6 +53,7 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/app/budgets/components/BudgetDetails', () => ({
   BudgetDetails: ({
+    totalIncome,
     onCalculateIncome,
     onTotalIncomeChange,
     onSave,
@@ -60,6 +61,7 @@ vi.mock('@/app/budgets/components/BudgetDetails', () => ({
     canSave,
     saving,
   }: {
+    totalIncome?: number;
     onCalculateIncome?: () => void;
     onTotalIncomeChange?: (value: number) => void;
     onSave?: () => void;
@@ -68,6 +70,7 @@ vi.mock('@/app/budgets/components/BudgetDetails', () => ({
     saving?: boolean;
   }) =>
     <div data-testid="budget-details">
+      <span data-testid="total-income">{totalIncome}</span>
       <button onClick={onCalculateIncome}>Calcular ingresos</button>
       <button onClick={() => onTotalIncomeChange?.(1000)}>Definir ingresos 1000</button>
       <button onClick={onSave} disabled={!canSave || saving}>Guardar presupuesto</button>
@@ -515,6 +518,136 @@ describe('BudgetsPage - optimistic category updates', () => {
       expect(screen.getByTestId('budget-readonly')).toBeInTheDocument();
     });
     expect(screen.getByText('Cine')).toBeInTheDocument();
+  });
+
+  it('C18: copia el presupuesto anterior en el formulario en modo edición', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 10, 15));
+    (api.budgets.months as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { year: 2026, month: 10 },
+    ]);
+    (api.budgets.monthly.get as ReturnType<typeof vi.fn>).mockImplementation(
+      async (month: number, year: number) =>
+        month === 10 && year === 2026
+          ? {
+              id: 'budget-10',
+              userId: '1',
+              month: 10,
+              year: 2026,
+              totalIncome: 2000,
+              createdAt: '2026-10-01T00:00:00.000Z',
+              updatedAt: '2026-10-01T00:00:00.000Z',
+              typeAllocations: [
+                { type: 'needs', percentage: 50 },
+                { type: 'leisure', percentage: 20 },
+                { type: 'savings', percentage: 20 },
+                { type: 'other', percentage: 10 },
+              ],
+              categoryAllocations: [{ categoryId: 'cat-1', amount: 1000 }],
+            }
+          : null
+    );
+
+    try {
+      const user = userEvent.setup();
+      render(<BudgetsPage />);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
+      });
+
+      const copyButton = screen.getByRole('button', { name: 'Copiar de Octubre 2026' });
+      expect(copyButton).toBeVisible();
+
+      await user.click(copyButton);
+
+      await waitFor(() => {
+        expect(api.budgets.monthly.get).toHaveBeenCalledWith(10, 2026);
+        expect(screen.getByTestId('budget-details')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('total-income')).toHaveTextContent('2000');
+      expect(screen.getByTestId('amount-cat-1')).toHaveTextContent('1000');
+      expect(toast).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Presupuesto de Octubre 2026 copiado' })
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('C19: no muestra el botón de copiar si el mes ya tiene presupuesto', async () => {
+    budgetHookMocks.budget = {
+      id: 'budget-11',
+      userId: '1',
+      month: 11,
+      year: 2026,
+      totalIncome: 1800,
+      createdAt: '2026-11-01T00:00:00.000Z',
+      updatedAt: '2026-11-01T00:00:00.000Z',
+      typeAllocations: [
+        { type: 'needs', percentage: 50 },
+        { type: 'leisure', percentage: 20 },
+        { type: 'savings', percentage: 20 },
+        { type: 'other', percentage: 10 },
+      ],
+      categoryAllocations: [{ categoryId: 'cat-1', amount: 900 }],
+    };
+    (api.budgets.months as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { year: 2026, month: 10 },
+    ]);
+
+    render(<BudgetsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole('button', { name: /^Copiar de/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Editar' })).toBeInTheDocument();
+  });
+
+  it('C20: no muestra el botón de copiar al consultar un mes pasado', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 10, 15));
+    const monthly = {
+      id: 'budget-5',
+      userId: '1',
+      month: 5,
+      year: 2026,
+      totalIncome: 2500,
+      createdAt: '2026-05-01T00:00:00.000Z',
+      updatedAt: '2026-05-01T00:00:00.000Z',
+      typeAllocations: [
+        { type: 'needs', percentage: 50 },
+        { type: 'leisure', percentage: 20 },
+        { type: 'savings', percentage: 20 },
+        { type: 'other', percentage: 10 },
+      ],
+      categoryAllocations: [{ categoryId: 'cat-1', amount: 1250 }],
+    };
+    (api.budgets.months as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { year: 2026, month: 5 },
+    ]);
+    (api.budgets.monthly.get as ReturnType<typeof vi.fn>).mockResolvedValue(monthly);
+
+    try {
+      const user = userEvent.setup();
+      render(<BudgetsPage />);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Ir a Mayo 2026' }));
+      await waitFor(() => {
+        expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
+      });
+
+      expect(screen.getByTestId('budget-readonly')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^Copiar de/ })).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('C17: un mes pasado solo muestra las categorías guardadas en su presupuesto', async () => {

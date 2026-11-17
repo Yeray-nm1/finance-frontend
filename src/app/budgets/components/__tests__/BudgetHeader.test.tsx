@@ -88,6 +88,46 @@ describe('BudgetHeader', () => {
     expect(screen.getByRole('button', { name: 'Mes siguiente' })).toHaveAttribute('title', 'Ir a Mayo 2026');
   });
 
+  it('B12: copy button renders with its label and calls onCopyPrevious', async () => {
+    const user = userEvent.setup();
+    const onCopyPrevious = vi.fn();
+    render(
+      <BudgetHeader
+        {...defaultProps}
+        showEditButton={false}
+        showCopyButton={true}
+        copyButtonLabel="Copiar de Octubre 2026"
+        onCopyPrevious={onCopyPrevious}
+      />
+    );
+
+    const copyButton = screen.getByRole('button', { name: 'Copiar de Octubre 2026' });
+    expect(copyButton).toBeVisible();
+    expect(copyButton).toBeEnabled();
+
+    await user.click(copyButton);
+    expect(onCopyPrevious).toHaveBeenCalledOnce();
+  });
+
+  it('B13: copy button is hidden when disabled and shows progress while copying', () => {
+    const { rerender } = render(
+      <BudgetHeader {...defaultProps} showCopyButton={false} onCopyPrevious={vi.fn()} />
+    );
+    expect(screen.queryByRole('button', { name: 'Copiar del mes anterior' })).not.toBeInTheDocument();
+
+    rerender(
+      <BudgetHeader
+        {...defaultProps}
+        showCopyButton={true}
+        copying={true}
+        copyButtonLabel="Copiar de Octubre 2026"
+        onCopyPrevious={vi.fn()}
+      />
+    );
+    const copyButton = screen.getByRole('button', { name: 'Copiando...' });
+    expect(copyButton).toBeDisabled();
+  });
+
   it('B11: the current month card shows (Actual) inside and is clickable', async () => {
     const user = userEvent.setup();
     const onMonthChange = vi.fn();
