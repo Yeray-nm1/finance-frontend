@@ -158,3 +158,34 @@ describe('api.transactions.delete()', () => {
     );
   });
 });
+
+describe('api.me', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('sends DELETE to /me/data', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(null, { status: 204 })
+    );
+    await api.me.deleteData();
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/v1/me/data',
+      expect.objectContaining({ method: 'DELETE', credentials: 'include' })
+    );
+  });
+
+  it('sends the password to DELETE /me', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(null, { status: 204 })
+    );
+    await api.me.deleteAccount('MiPass123');
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/v1/me',
+      expect.objectContaining({
+        method: 'DELETE',
+        body: JSON.stringify({ password: 'MiPass123' }),
+      })
+    );
+  });
+});
