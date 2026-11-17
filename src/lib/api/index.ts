@@ -7,5 +7,6 @@ import { subscriptions } from './subscriptions'
 import { dashboard } from './dashboard'
 import { goals } from './goals'
 import { notifications } from './notifications'
+import { me } from './me'
 
-export const api = { auth, accounts, categories, transactions, budgets, subscriptions, dashboard, goals, notifications }
+export const api = { auth, accounts, categories, transactions, budgets, subscriptions, dashboard, goals, notifications, me }

@@ -2,16 +2,22 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/Card";
 import { toast } from "@/hooks/use-toast";
 import { ChangePasswordDialog } from "./components/ChangePasswordDialog";
+import { DeleteAccountDialog } from "./components/DeleteAccountDialog";
+import { DeleteDataDialog } from "./components/DeleteDataDialog";
 import { NotificationSettings } from "./components/NotificationSettings";
 
 export default function PreferencesPage() {
   const { user, logout } = useAuth();
+  const router = useRouter();
   const [passwordOpen, setPasswordOpen] = useState(false);
+  const [deleteDataOpen, setDeleteDataOpen] = useState(false);
+  const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
 
   return (
     <main className="min-h-screen bg-bg-page p-4 md:p-8">
@@ -67,17 +73,31 @@ export default function PreferencesPage() {
             <Button variant="outline" onClick={logout}>
               Cerrar sesión
             </Button>
-            <div className="pt-4 border-t border-border">
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  if (confirm("¿Estás seguro de que quieres borrar todos tus datos? Esta acción no se puede deshacer.")) {
-                    alert("Función no implementada aún");
-                  }
-                }}
-              >
-                Borrar todos mis datos
-              </Button>
+            <div className="space-y-3 border-t border-border pt-4">
+              <div>
+                <Button
+                  variant="destructive"
+                  onClick={() => setDeleteDataOpen(true)}
+                >
+                  Borrar todos mis datos
+                </Button>
+                <p className="mt-1.5 text-xs text-text-muted">
+                  Elimina tus movimientos, cuentas y el resto de tus datos, pero
+                  conserva tu cuenta y tu contraseña.
+                </p>
+              </div>
+              <div className="border-t border-border pt-3">
+                <Button
+                  variant="destructive"
+                  onClick={() => setDeleteAccountOpen(true)}
+                >
+                  Borrar mi cuenta
+                </Button>
+                <p className="mt-1.5 text-xs text-text-muted">
+                  Elimina tu cuenta y todos tus datos, y cierra la sesión.
+                  Requiere tu contraseña.
+                </p>
+              </div>
             </div>
           </div>
         </Card>
@@ -87,6 +107,21 @@ export default function PreferencesPage() {
         open={passwordOpen}
         onOpenChange={setPasswordOpen}
         onChanged={() => toast({ title: "Contraseña actualizada" })}
+      />
+
+      <DeleteDataDialog
+        open={deleteDataOpen}
+        onOpenChange={setDeleteDataOpen}
+        onDeleted={() => {
+          toast({ title: "Datos borrados correctamente" });
+          router.refresh();
+        }}
+      />
+
+      <DeleteAccountDialog
+        open={deleteAccountOpen}
+        onOpenChange={setDeleteAccountOpen}
+        onDeleted={() => void logout()}
       />
     </main>
   );

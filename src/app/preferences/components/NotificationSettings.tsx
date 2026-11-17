@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CalendarClock, ChartColumn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -10,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
 import type {
@@ -68,16 +70,31 @@ export function NotificationSettings() {
     }
   };
 
+  if (loading) {
+    return <p className="text-sm text-text-muted">Cargando preferencias...</p>;
+  }
+
   return (
-    <div className="space-y-4">
-      {loading ? (
-        <p className="text-sm text-text-muted">Cargando preferencias...</p>
-      ) : (
-        <>
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-border">
-            <div>
-              <p className="text-sm text-text-primary">Suscripción próxima</p>
-              <p className="text-xs text-text-muted mt-0.5">
+    <div className="space-y-3">
+      <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-white">
+        <section>
+          <div className="flex items-center gap-3 p-4">
+            <span
+              className={cn(
+                "flex size-9 shrink-0 items-center justify-center rounded-[10px] transition-colors",
+                rules.subscriptionDue.enabled
+                  ? "bg-primary-light text-primary"
+                  : "bg-bg-elevated text-text-muted"
+              )}
+              aria-hidden="true"
+            >
+              <CalendarClock size={18} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-medium text-text-primary">
+                Suscripción próxima
+              </h3>
+              <p className="mt-0.5 text-xs leading-snug text-text-muted">
                 Avisa antes de que se cobre una suscripción activa.
               </p>
             </div>
@@ -92,11 +109,11 @@ export function NotificationSettings() {
               }
             />
           </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3 border-t border-border bg-bg-elevated/60 px-4 py-2.5">
+            <span className="w-9 shrink-0" aria-hidden="true" />
             <label
               htmlFor="notification-days-before"
-              className="text-sm text-text-primary"
+              className="min-w-0 flex-1 cursor-pointer text-xs font-medium text-text-secondary"
             >
               Avisar con
             </label>
@@ -112,7 +129,10 @@ export function NotificationSettings() {
                 }))
               }
             >
-              <SelectTrigger id="notification-days-before" className="w-36">
+              <SelectTrigger
+                id="notification-days-before"
+                className="h-9 w-36 shrink-0 border-border/70 bg-white text-xs shadow-sm sm:text-sm"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -122,11 +142,26 @@ export function NotificationSettings() {
               </SelectContent>
             </Select>
           </div>
+        </section>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-border">
-            <div>
-              <p className="text-sm text-text-primary">Resumen de gastos</p>
-              <p className="text-xs text-text-muted mt-0.5">
+        <section>
+          <div className="flex items-center gap-3 p-4">
+            <span
+              className={cn(
+                "flex size-9 shrink-0 items-center justify-center rounded-[10px] transition-colors",
+                rules.spendingSummary.enabled
+                  ? "bg-primary-light text-primary"
+                  : "bg-bg-elevated text-text-muted"
+              )}
+              aria-hidden="true"
+            >
+              <ChartColumn size={18} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-medium text-text-primary">
+                Resumen de gastos
+              </h3>
+              <p className="mt-0.5 text-xs leading-snug text-text-muted">
                 Recibe un resumen periódico de tus gastos.
               </p>
             </div>
@@ -141,11 +176,11 @@ export function NotificationSettings() {
               }
             />
           </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3 border-t border-border bg-bg-elevated/60 px-4 py-2.5">
+            <span className="w-9 shrink-0" aria-hidden="true" />
             <label
               htmlFor="notification-summary-frequency"
-              className="text-sm text-text-primary"
+              className="min-w-0 flex-1 cursor-pointer text-xs font-medium text-text-secondary"
             >
               Frecuencia
             </label>
@@ -163,7 +198,7 @@ export function NotificationSettings() {
             >
               <SelectTrigger
                 id="notification-summary-frequency"
-                className="w-36"
+                className="h-9 w-36 shrink-0 border-border/70 bg-white text-xs shadow-sm sm:text-sm"
               >
                 <SelectValue />
               </SelectTrigger>
@@ -173,14 +208,18 @@ export function NotificationSettings() {
               </SelectContent>
             </Select>
           </div>
+        </section>
+      </div>
 
-          <div className="flex justify-end pt-3 border-t border-border">
-            <Button onClick={() => void handleSave()} disabled={!dirty || saving}>
-              {saving ? "Guardando..." : "Guardar preferencias"}
-            </Button>
-          </div>
-        </>
-      )}
+      <div className="flex justify-end pt-1">
+        <Button
+          onClick={() => void handleSave()}
+          disabled={!dirty || saving}
+          className="w-full sm:w-auto"
+        >
+          {saving ? "Guardando..." : "Guardar preferencias"}
+        </Button>
+      </div>
     </div>
   );
 }
