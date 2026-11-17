@@ -1,3 +1,10 @@
+## [0.8.0] - 2026-11-17
+
+- ab73454 Merge pull request #29 from Yeray-nm1/feature/ynm-e2e-copy-budget
+- 9f2865b fix(dashboard): hide cards when the month has no data
+- 594d249 feat(budgets): copy previous month budget
+- 16a9256 test(e2e): add Playwright full-stack suite and CI job
+
 ## [0.7.1] - 2026-11-16
 
 - c795e85 Merge pull request #28 from Yeray-nm1/chore/ynm-deploy-config
