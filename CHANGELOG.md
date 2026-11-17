@@ -1,3 +1,8 @@
+## [0.9.0] - 2026-11-17
+
+- a1b6859 Merge pull request #30 from Yeray-nm1/feature/ynm-in-app-notifications
+- 4ad4b87 feat(notifications): add in-app notification bell, panel and settings
+
 ## [0.8.0] - 2026-11-17
 
 - ab73454 Merge pull request #29 from Yeray-nm1/feature/ynm-e2e-copy-budget
