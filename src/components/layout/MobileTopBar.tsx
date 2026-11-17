@@ -2,6 +2,7 @@
 
 import { Menu } from "lucide-react";
 import { useSidebar } from "@/contexts/SidebarContext";
+import { NotificationBell } from "@/components/layout/NotificationBell";
 
 export function MobileTopBar() {
   const { openMobile } = useSidebar();
@@ -18,6 +19,9 @@ export function MobileTopBar() {
         <Menu size={18} />
       </button>
       <span className="text-sm font-bold tracking-wide text-text-primary">FINANCE</span>
+      <div className="ml-auto">
+        <NotificationBell />
+      </div>
     </header>
   );
 }

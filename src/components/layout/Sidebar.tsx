@@ -7,6 +7,7 @@ import { useSidebar } from "@/contexts/SidebarContext";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { ChevronLeft, ChevronRight, Upload, X } from "lucide-react";
 import { CsvUploadDialog } from "@/components/CsvUploadDialog";
+import { NotificationBell } from "@/components/layout/NotificationBell";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { navItems } from "@/lib/navigation";
@@ -165,6 +166,7 @@ export function Sidebar() {
         </nav>
 
         <div className="px-2 pt-4 border-t border-border">
+          <NotificationBell variant="sidebar" collapsed={collapsed} />
           <button
             onClick={() => setCsvDialogOpen(true)}
             className={cn(
