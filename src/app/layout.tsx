@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { NotificationsProvider } from "@/contexts/NotificationsContext";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import RootLayoutInner from "@/components/layout/RootLayoutInner";
 
@@ -18,9 +19,11 @@ export default function RootLayout({
     <html lang="es">
       <body className="antialiased bg-bg-page text-text-primary min-h-screen">
         <AuthProvider>
-          <SidebarProvider>
-            <RootLayoutInner>{children}</RootLayoutInner>
-          </SidebarProvider>
+          <NotificationsProvider>
+            <SidebarProvider>
+              <RootLayoutInner>{children}</RootLayoutInner>
+            </SidebarProvider>
+          </NotificationsProvider>
         </AuthProvider>
       </body>
     </html>

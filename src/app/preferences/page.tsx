@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/Card";
 import { toast } from "@/hooks/use-toast";
 import { ChangePasswordDialog } from "./components/ChangePasswordDialog";
+import { NotificationSettings } from "./components/NotificationSettings";
 
 export default function PreferencesPage() {
   const { user, logout } = useAuth();
@@ -57,9 +58,7 @@ export default function PreferencesPage() {
 
         <Card className="mb-4 animate-fade-in stagger-3">
           <CardTitle>Notificaciones</CardTitle>
-          <p className="text-sm text-text-muted">
-            Proximamente: configura alertas para presupuestos y suscripciones
-          </p>
+          <NotificationSettings />
         </Card>
 
         <Card className="animate-fade-in stagger-4">
