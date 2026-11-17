@@ -114,10 +114,14 @@ describe('BudgetOverviewCard', () => {
     expect(screen.getAllByText('Sin categoría').length).toBeGreaterThan(0);
   });
 
-  it('shows spent and budgeted amounts for budgeted categories', () => {
+  it('shows spent and budgeted amounts in the group header and in the rows', () => {
     render(<BudgetOverviewCard budgets={budgets} spending={spending} monthValue="2026-05" />);
-    expand('Necesidades');
+
+    // El grupo plegado ya muestra gastado / presupuestado, sin tener que desplegarlo.
     expect(screen.getByText(/100,00.*200,00/)).toBeInTheDocument();
+
+    expand('Necesidades');
+    expect(screen.getAllByText(/100,00.*200,00/)).toHaveLength(2);
   });
 
   it('keeps the budget state in the accessible label without a visible badge', () => {
@@ -150,7 +154,7 @@ describe('BudgetOverviewCard', () => {
     expand('Necesidades');
 
     expect(screen.queryByText('Cerca del límite')).not.toBeInTheDocument();
-    expect(screen.getByText(/180,00.*200,00/)).toBeInTheDocument();
+    expect(screen.getAllByText(/180,00.*200,00/)).toHaveLength(2);
   });
 
   it('shows the type budget in the header when it has no categories', () => {

@@ -136,6 +136,11 @@ describe('DashboardPage month navigation', () => {
     await waitFor(() => expect(screen.queryByText('Cargando...')).not.toBeInTheDocument());
     expect(screen.getByText(/No hay datos disponibles/)).toBeInTheDocument();
     expect(screen.queryByText('BalanceCard mock')).not.toBeInTheDocument();
+    // Sin datos solo queda el aviso: ni presupuesto/metas ni el resto de tarjetas.
+    expect(screen.queryByText('BudgetOverviewCard mock')).not.toBeInTheDocument();
+    expect(screen.queryByText('MonthlyEvolutionCard mock')).not.toBeInTheDocument();
+    expect(screen.queryByText('RecurringCard mock')).not.toBeInTheDocument();
+    expect(screen.queryByText('RecentTransactionsCard mock')).not.toBeInTheDocument();
   });
 
   it('renders all cards when data exists', async () => {

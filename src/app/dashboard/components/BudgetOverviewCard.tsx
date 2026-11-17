@@ -229,7 +229,7 @@ export function BudgetOverviewCard({
                       <div className="flex items-center gap-2">
                         <span className="text-[11px] text-text-muted whitespace-nowrap">
                           {formatCurrency(group.spent)}
-                          {!hasRows && group.budgeted > 0 && ` / ${formatCurrency(group.budgeted)}`}
+                          {group.budgeted > 0 && ` / ${formatCurrency(group.budgeted)}`}
                         </span>
                         {progress !== null && (
                           <>
