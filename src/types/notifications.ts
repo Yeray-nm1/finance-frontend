@@ -20,10 +20,12 @@ export type SummaryFrequency = "weekly" | "monthly";
 export interface NotificationRules {
   subscriptionDue: {
     enabled: boolean;
+    emailEnabled: boolean;
     daysBefore: DaysBefore;
   };
   spendingSummary: {
     enabled: boolean;
+    emailEnabled: boolean;
     frequency: SummaryFrequency;
   };
 }

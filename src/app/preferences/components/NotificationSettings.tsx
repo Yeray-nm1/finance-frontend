@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CalendarClock, ChartColumn } from "lucide-react";
+import { CalendarClock, ChartColumn, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -21,15 +21,30 @@ import type {
 } from "@/types/notifications";
 
 const DEFAULT_RULES: NotificationRules = {
-  subscriptionDue: { enabled: false, daysBefore: 3 },
-  spendingSummary: { enabled: false, frequency: "weekly" },
+  subscriptionDue: { enabled: false, emailEnabled: false, daysBefore: 3 },
+  spendingSummary: { enabled: false, emailEnabled: false, frequency: "weekly" },
 };
 
-export function NotificationSettings() {
+interface NotificationSettingsProps {
+  /** Correo de la cuenta, en modo lectura: no se puede editar ni verificar aquí. */
+  email?: string;
+}
+
+export function NotificationSettings({ email }: NotificationSettingsProps) {
   const [rules, setRules] = useState<NotificationRules>(DEFAULT_RULES);
   const [savedRules, setSavedRules] = useState<NotificationRules>(DEFAULT_RULES);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    // El enlace de baja del correo redirige aquí con este marcador.
+    if (new URLSearchParams(window.location.search).get("unsubscribed") === "1") {
+      toast({
+        title: "Suscripción por email desactivada",
+        description: "Ya no recibirás avisos por correo. Puedes volver a activarlos aquí.",
+      });
+    }
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -76,6 +91,16 @@ export function NotificationSettings() {
 
   return (
     <div className="space-y-3">
+      <div className="flex items-start gap-2 rounded-lg border border-border bg-bg-elevated/60 px-3 py-2.5 text-xs leading-snug text-text-muted">
+        <Mail size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
+        <span>
+          Los avisos por correo se envían a{" "}
+          <span className="font-medium text-text-secondary">
+            {email ?? "tu correo de cuenta"}
+          </span>
+          .
+        </span>
+      </div>
       <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-white">
         <section>
           <div className="flex items-center gap-3 p-4">
@@ -142,6 +167,22 @@ export function NotificationSettings() {
               </SelectContent>
             </Select>
           </div>
+          <div className="flex items-center gap-3 border-t border-border bg-bg-elevated/60 px-4 py-2.5">
+            <span className="w-9 shrink-0" aria-hidden="true" />
+            <span className="min-w-0 flex-1 text-xs font-medium text-text-secondary">
+              Enviar por email
+            </span>
+            <Switch
+              aria-label="Enviar aviso de suscripción próxima por email"
+              checked={rules.subscriptionDue.emailEnabled}
+              onCheckedChange={(emailEnabled) =>
+                setRules((prev) => ({
+                  ...prev,
+                  subscriptionDue: { ...prev.subscriptionDue, emailEnabled },
+                }))
+              }
+            />
+          </div>
         </section>
 
         <section>
@@ -207,6 +248,22 @@ export function NotificationSettings() {
                 <SelectItem value="monthly">Mensual</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="flex items-center gap-3 border-t border-border bg-bg-elevated/60 px-4 py-2.5">
+            <span className="w-9 shrink-0" aria-hidden="true" />
+            <span className="min-w-0 flex-1 text-xs font-medium text-text-secondary">
+              Enviar por email
+            </span>
+            <Switch
+              aria-label="Enviar resumen de gastos por email"
+              checked={rules.spendingSummary.emailEnabled}
+              onCheckedChange={(emailEnabled) =>
+                setRules((prev) => ({
+                  ...prev,
+                  spendingSummary: { ...prev.spendingSummary, emailEnabled },
+                }))
+              }
+            />
           </div>
         </section>
       </div>
