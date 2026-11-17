@@ -54,7 +54,7 @@ test.describe('borrado de datos y de cuenta', () => {
     await page.getByRole('button', { name: 'Borrar datos' }).click();
 
     await expect(
-      page.getByText('Datos borrados correctamente')
+      page.getByText('Datos borrados correctamente', { exact: true })
     ).toBeVisible();
 
     const accounts = await context.request.get('/api/v1/accounts');
