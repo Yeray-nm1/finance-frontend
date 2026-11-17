@@ -28,6 +28,7 @@ export function SelectFilter({
       <Select value={value} onValueChange={onChange} disabled={disabled}>
         <SelectTrigger
           disabled={disabled}
+          aria-label={placeholder}
           className={`${value ? "pr-8" : ""} ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
         >
           <SelectValue placeholder={disabled ? "Sin cuentas" : placeholder} />

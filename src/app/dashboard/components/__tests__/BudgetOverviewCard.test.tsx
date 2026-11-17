@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { api } from '@/lib/api';
+import { formatCurrency } from '@/lib/format';
 import { BudgetOverviewCard } from '../BudgetOverviewCard';
 import type { BudgetItem, CategorySpendingItem } from '@/types/dashboard';
 import type { SavingsGoal } from '@/types/goals';
@@ -137,7 +138,7 @@ describe('BudgetOverviewCard', () => {
     expect(screen.getByText('125%')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
-        name: 'Expandir Necesidades, 125% del presupuesto, excedido',
+        name: `Expandir Necesidades ${formatCurrency(250)} / ${formatCurrency(200)} 125% del presupuesto, excedido`,
       })
     ).toBeInTheDocument();
   });

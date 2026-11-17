@@ -226,6 +226,7 @@ export function BudgetOverviewCard({
                       <span className="text-xs font-medium text-text-primary flex-1 truncate">
                         {group.label}
                       </span>
+                      {" "}
                       <div className="flex items-center gap-2">
                         <span className="text-[11px] text-text-muted whitespace-nowrap">
                           {formatCurrency(group.spent)}
@@ -233,6 +234,7 @@ export function BudgetOverviewCard({
                         </span>
                         {progress !== null && (
                           <>
+                            {" "}
                             <ProgressBar
                               value={progress}
                               color={progressAccent}
@@ -255,9 +257,11 @@ export function BudgetOverviewCard({
                           type="button"
                           onClick={() => toggleType(group.key)}
                           aria-expanded={isExpanded}
-                          aria-label={`${isExpanded ? "Contraer" : "Expandir"} ${group.label}${
+                          aria-label={`${isExpanded ? "Contraer" : "Expandir"} ${group.label} ${formatCurrency(group.spent)}${
+                            group.budgeted > 0 ? ` / ${formatCurrency(group.budgeted)}` : ""
+                          }${
                             progress !== null
-                              ? `, ${Math.round(progress)}% del presupuesto, ${progressStatus(progress)}`
+                              ? ` ${Math.round(progress)}% del presupuesto, ${progressStatus(progress)}`
                               : ""
                           }`}
                           className="w-full text-left hover:bg-bg-elevated transition-colors"

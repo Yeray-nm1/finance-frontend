@@ -25,10 +25,10 @@ export default function RootLayoutInner({ children }: Readonly<RootLayoutInnerPr
         data-sidebar={showSidebar ? (isCollapsed ? "collapsed" : "expanded") : "none"}
       >
         {showSidebar && <Sidebar />}
-        <main className="app-main">
+        <div className="app-main">
           {showSidebar && <MobileTopBar />}
           <ErrorBoundary>{children}</ErrorBoundary>
-        </main>
+        </div>
       </div>
       <Toaster />
     </>
