@@ -64,7 +64,7 @@ export default function PreferencesPage() {
 
         <Card className="mb-4 animate-fade-in stagger-3">
           <CardTitle>Notificaciones</CardTitle>
-          <NotificationSettings />
+          <NotificationSettings email={user?.email} />
         </Card>
 
         <Card className="animate-fade-in stagger-4">

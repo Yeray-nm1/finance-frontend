@@ -35,8 +35,8 @@ test.describe('notificaciones in-app', () => {
     // evita que un intento fallido deje los switches activados para el siguiente.
     await request.put('/api/v1/notifications/rules', {
       data: {
-        subscriptionDue: { enabled: false, daysBefore: 3 },
-        spendingSummary: { enabled: false, frequency: 'weekly' },
+        subscriptionDue: { enabled: false, emailEnabled: false, daysBefore: 3 },
+        spendingSummary: { enabled: false, emailEnabled: false, frequency: 'weekly' },
       },
     });
 
@@ -67,8 +67,8 @@ test.describe('notificaciones in-app', () => {
     expect(rulesResponse.ok()).toBe(true);
     const rules = await rulesResponse.json();
     expect(rules).toEqual({
-      subscriptionDue: { enabled: true, daysBefore: 7 },
-      spendingSummary: { enabled: true, frequency: 'monthly' },
+      subscriptionDue: { enabled: true, emailEnabled: false, daysBefore: 7 },
+      spendingSummary: { enabled: true, emailEnabled: false, frequency: 'monthly' },
     });
 
     // Suscripción semanal cuyo último cobro fue hace 7 días: el próximo cae hoy.
