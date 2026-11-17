@@ -31,6 +31,15 @@ test.describe('notificaciones in-app', () => {
   }) => {
     const fixtures = readFixtures();
 
+    // Los reintentos comparten usuario: devolver las reglas a su estado inicial
+    // evita que un intento fallido deje los switches activados para el siguiente.
+    await request.put('/api/v1/notifications/rules', {
+      data: {
+        subscriptionDue: { enabled: false, daysBefore: 3 },
+        spendingSummary: { enabled: false, frequency: 'weekly' },
+      },
+    });
+
     await page.goto('/preferences');
     await expect(page.getByRole('heading', { name: 'Preferencias' })).toBeVisible();
 
@@ -50,7 +59,9 @@ test.describe('notificaciones in-app', () => {
     await page.getByRole('combobox', { name: 'Frecuencia' }).click();
     await page.getByRole('option', { name: 'Mensual' }).click();
     await page.getByRole('button', { name: 'Guardar preferencias' }).click();
-    await expect(page.getByText('Preferencias de notificaciones guardadas')).toBeVisible();
+    await expect(
+      page.getByText('Preferencias de notificaciones guardadas', { exact: true })
+    ).toBeVisible();
 
     const rulesResponse = await request.get('/api/v1/notifications/rules');
     expect(rulesResponse.ok()).toBe(true);
