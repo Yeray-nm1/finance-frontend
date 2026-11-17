@@ -1,3 +1,8 @@
+## [0.10.1] - 2026-11-17
+
+- 38c4c49 Merge pull request #32 from Yeray-nm1/fix/ynm-e2e-toast-strict
+- 643cf9f test(e2e): make toast assertions exact and reset rules for retries
+
 ## [0.10.0] - 2026-11-17
 
 - eb83556 Merge pull request #31 from Yeray-nm1/feature/ynm-preferences-delete
