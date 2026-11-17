@@ -7,8 +7,12 @@ export interface BudgetHeaderProps {
   nextMonthLabel: string;
   showEditButton: boolean;
   editButtonLabel: string;
+  showCopyButton?: boolean;
+  copyButtonLabel?: string;
+  copying?: boolean;
   onPrevMonth: () => void;
   onNextMonth: () => void;
   onMonthChange: (value: string) => void;
   onStartEdit: () => void;
+  onCopyPrevious?: () => void;
 }

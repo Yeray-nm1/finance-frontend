@@ -146,6 +146,7 @@ export default function BudgetsPage() {
   const [incomeDialogOpen, setIncomeDialogOpen] = useState(false);
   const [calculatingIncome, setCalculatingIncome] = useState(false);
   const [editingBudget, setEditingBudget] = useState(false);
+  const [copyingBudget, setCopyingBudget] = useState(false);
 
   const isInitialLoad = useRef(true);
   const editSnapshotRef = useRef<{
@@ -415,6 +416,11 @@ export default function BudgetsPage() {
   const showEditButton = !editingBudget && !isPastMonth;
   const editButtonLabel = budget ? "Editar" : "Crear presupuesto";
   const badge = getBudgetBadge(editingBudget, budget);
+  const showCopyButton =
+    !editingBudget && !isPastMonth && budget === null && previousBudgetMonth !== null;
+  const copyButtonLabel = previousBudgetMonth
+    ? `Copiar de ${MONTH_NAMES[previousBudgetMonth.month - 1]} ${previousBudgetMonth.year}`
+    : undefined;
 
   function handleStartEdit() {
     editSnapshotRef.current = {
@@ -423,6 +429,55 @@ export default function BudgetsPage() {
       categoryAllocations,
     };
     setEditingBudget(true);
+  }
+
+  async function handleCopyPrevious() {
+    if (!previousBudgetMonth) return;
+    setCopyingBudget(true);
+    try {
+      const previous = await api.budgets.monthly.get(
+        previousBudgetMonth.month,
+        previousBudgetMonth.year
+      );
+      if (!previous) {
+        toast({
+          title: "No hay presupuesto que copiar",
+          description: "El mes anterior no tiene un presupuesto guardado.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const allocations = buildInitialAllocations(
+        categories,
+        previous.typeAllocations,
+        previous.totalIncome,
+        previous.categoryAllocations ?? []
+      );
+
+      editSnapshotRef.current = {
+        totalIncome,
+        typeAllocations,
+        categoryAllocations,
+      };
+      setTotalIncome(previous.totalIncome);
+      setTypeAllocations(previous.typeAllocations);
+      setCategoryAllocations(allocations);
+      setSelectedType(previous.typeAllocations[0]?.type ?? "needs");
+      setEditingBudget(true);
+      toast({
+        title: `Presupuesto de ${MONTH_NAMES[previousBudgetMonth.month - 1]} ${previousBudgetMonth.year} copiado`,
+        description: "Revisa los importes y guarda para aplicarlo a este mes.",
+      });
+    } catch (err) {
+      toast({
+        title: "No se pudo copiar el presupuesto",
+        description: err instanceof Error ? err.message : undefined,
+        variant: "destructive",
+      });
+    } finally {
+      setCopyingBudget(false);
+    }
   }
 
   function handleCancelEdit() {
@@ -493,10 +548,14 @@ export default function BudgetsPage() {
           nextMonthLabel={nextMonthLabel}
           showEditButton={showEditButton}
           editButtonLabel={editButtonLabel}
+          showCopyButton={showCopyButton}
+          copyButtonLabel={copyButtonLabel}
+          copying={copyingBudget}
           onPrevMonth={goToPrevMonth}
           onNextMonth={goToNextMonth}
           onMonthChange={goToMonth}
           onStartEdit={handleStartEdit}
+          onCopyPrevious={handleCopyPrevious}
         />
 
         {isPastMonth || !editingBudget ? (
