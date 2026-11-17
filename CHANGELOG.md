@@ -1,3 +1,8 @@
+## [0.11.1] - 2026-11-17
+
+- a5734d0 Merge pull request #34 from Yeray-nm1/feature/ynm-email-wi3-frontend
+- 7ff7d88 feat(preferences): switches de email por regla de notificacion (WI-3)
+
 ## [0.11.0] - 2026-11-17
 
 - 12d2a58 Merge pull request #33 from Yeray-nm1/feature/ynm-goals-a11y
