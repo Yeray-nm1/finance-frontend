@@ -1,3 +1,8 @@
+## [0.11.0] - 2026-11-17
+
+- 12d2a58 Merge pull request #33 from Yeray-nm1/feature/ynm-goals-a11y
+- 286050f Add goals E2E coverage and axe accessibility checks
+
 ## [0.10.1] - 2026-11-17
 
 - 38c4c49 Merge pull request #32 from Yeray-nm1/fix/ynm-e2e-toast-strict
