@@ -16,7 +16,7 @@ export function CalendarFilter({ dateFrom, dateTo, onChange }: Readonly<Calendar
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          aria-label="Abrir calendario"
+          aria-label={`Abrir calendario, ${formatDateRange(dateFrom, dateTo)}`}
           className={`h-10 w-full justify-center whitespace-nowrap text-left font-normal sm:w-[220px] sm:shrink-0 sm:justify-start ${!dateFrom && !dateTo ? "text-text-muted" : "text-text-primary"}`}
         >
           {formatDateRange(dateFrom, dateTo)}

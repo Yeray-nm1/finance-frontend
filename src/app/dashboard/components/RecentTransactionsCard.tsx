@@ -14,7 +14,12 @@ export function RecentTransactionsCard({ transactions, monthValue }: Readonly<Re
       linkText="Ver más"
       isEmpty={transactions.length === 0}
     >
-      <div className="max-h-[200px] overflow-y-auto pr-2 space-y-0 scrollbar-thin">
+      <div
+        role="region"
+        aria-label="Transacciones recientes"
+        tabIndex={0}
+        className="max-h-[200px] overflow-y-auto pr-2 space-y-0 scrollbar-thin"
+      >
         {transactions.map((tx) => (
           <div
             key={tx.id}

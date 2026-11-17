@@ -119,7 +119,7 @@ test.describe('notificaciones en móvil', () => {
     await page.goto('/dashboard');
 
     const bell = page
-      .getByRole('main')
+      .getByRole('banner')
       .getByRole('button', { name: /Notificaciones/ });
     await expect(bell).toBeVisible();
     await bell.click();

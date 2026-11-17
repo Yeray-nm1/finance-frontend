@@ -13,7 +13,12 @@ export function RecurringCard({ subscriptions }: Readonly<RecurringCardProps>) {
       linkText="Gestionar suscripciones"
       isEmpty={subscriptions.length === 0}
     >
-      <div className="max-h-[200px] overflow-y-auto pr-1 space-y-0 scrollbar-thin">
+      <div
+        role="region"
+        aria-label="Suscripciones del mes"
+        tabIndex={0}
+        className="max-h-[200px] overflow-y-auto pr-1 space-y-0 scrollbar-thin"
+      >
         {subscriptions.map((item, i) => (
           <div
             key={item.name}

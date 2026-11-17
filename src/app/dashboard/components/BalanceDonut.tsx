@@ -36,9 +36,9 @@ export function BalanceDonut({ income, expenses, savings, available, balance }: 
       role="img"
       aria-label={chartSummary}
     >
-      <div aria-hidden="true" className="h-full w-full">
+      <div className="h-full w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
+          <PieChart accessibilityLayer={false}>
             <Pie
               data={data}
               cx="50%"

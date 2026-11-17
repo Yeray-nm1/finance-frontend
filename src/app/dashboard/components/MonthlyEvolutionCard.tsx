@@ -45,7 +45,11 @@ export function MonthlyEvolutionCard({ data }: Readonly<MonthlyEvolutionCardProp
           </figcaption>
           <div className="h-56" aria-hidden="true">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <BarChart
+                data={chartData}
+                margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                accessibilityLayer={false}
+              >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
                 <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={11} />
                 <YAxis
