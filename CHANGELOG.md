@@ -1,3 +1,8 @@
+## [0.10.0] - 2026-11-17
+
+- eb83556 Merge pull request #31 from Yeray-nm1/feature/ynm-preferences-delete
+- 15c27dd feat(preferences): redesign notification settings and add data/account deletion
+
 ## [0.9.0] - 2026-11-17
 
 - a1b6859 Merge pull request #30 from Yeray-nm1/feature/ynm-in-app-notifications
