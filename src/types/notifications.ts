@@ -1,7 +1,8 @@
 export type NotificationType =
   | "subscription_due"
   | "spending_summary"
-  | "goal_reminder";
+  | "goal_reminder"
+  | "goal_contribution";
 
 export interface NotificationItem {
   id: string;

@@ -40,6 +40,7 @@ describe('GoalDialog', () => {
       accountId: 'account-1',
       reminderDay: null,
       reminderAmount: null,
+      contributionScheduled: false,
     });
   });
 
@@ -206,5 +207,137 @@ describe('GoalDialog', () => {
     expect(screen.getByLabelText('Objetivo (€)')).toHaveValue(5000);
     expect(screen.getByLabelText('Fecha objetivo')).toHaveValue('2027-01-01');
     expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeEnabled();
+  });
+
+  it('programa la aportación mensual con día e importe reales', async () => {
+    const onSubmit = vi.fn();
+    const user = userEvent.setup();
+
+    render(
+      <GoalDialog
+        open
+        goal={null}
+        accounts={[savingsAccount]}
+        saving={false}
+        onOpenChange={vi.fn()}
+        onSubmit={onSubmit}
+        onAccountCreated={vi.fn()}
+      />
+    );
+
+    await user.type(screen.getByLabelText('Nombre'), 'Viaje a Japón');
+    await user.type(screen.getByLabelText('Objetivo (€)'), '1200');
+    await user.click(screen.getByRole('checkbox', { name: 'Programar aportación mensual' }));
+    await user.type(screen.getByLabelText('Día de la aportación'), '18');
+    await user.type(screen.getByLabelText('Importe de la aportación (€)'), '100.50');
+    await user.click(screen.getByRole('button', { name: 'Crear meta' }));
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contributionScheduled: true,
+        reminderDay: 18,
+        reminderAmount: 100.5,
+      })
+    );
+    expect(
+      screen.getByText(/No se cobrará nada sin tu confirmación/i)
+    ).toBeInTheDocument();
+  });
+
+  it('no permite programar sin importe mayor que cero', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <GoalDialog
+        open
+        goal={null}
+        accounts={[savingsAccount]}
+        saving={false}
+        onOpenChange={vi.fn()}
+        onSubmit={vi.fn()}
+        onAccountCreated={vi.fn()}
+      />
+    );
+
+    await user.type(screen.getByLabelText('Nombre'), 'Viaje a Japón');
+    await user.type(screen.getByLabelText('Objetivo (€)'), '1200');
+    await user.click(screen.getByRole('checkbox', { name: 'Programar aportación mensual' }));
+    await user.type(screen.getByLabelText('Día de la aportación'), '18');
+
+    const submit = screen.getByRole('button', { name: 'Crear meta' });
+    expect(submit).toBeDisabled();
+
+    await user.type(screen.getByLabelText('Importe de la aportación (€)'), '0');
+    expect(submit).toBeDisabled();
+
+    await user.clear(screen.getByLabelText('Importe de la aportación (€)'));
+    await user.type(screen.getByLabelText('Importe de la aportación (€)'), '50');
+    expect(submit).toBeEnabled();
+  });
+
+  it('carga la aportación programada al editar una meta', () => {
+    render(
+      <GoalDialog
+        open
+        goal={{
+          id: 'goal-1',
+          name: 'Coche',
+          targetAmount: 5000,
+          targetDate: null,
+          accountId: 'account-1',
+          account: savingsAccount,
+          isArchived: false,
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+          reminderDay: 5,
+          reminderAmount: 250,
+          contributionScheduled: true,
+          saved: 1000,
+          progress: 20,
+          remaining: 4000,
+          monthlyNeeded: 400,
+          contributionsCount: 3,
+        }}
+        accounts={[savingsAccount]}
+        saving={false}
+        onOpenChange={vi.fn()}
+        onSubmit={vi.fn()}
+        onAccountCreated={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('checkbox', { name: 'Programar aportación mensual' })).toBeChecked();
+    expect(screen.getByLabelText('Día de la aportación')).toHaveValue(5);
+    expect(screen.getByLabelText('Importe de la aportación (€)')).toHaveValue(250);
+  });
+
+  it('conserva el recordatorio manual cuando no se programa la aportación', async () => {
+    const onSubmit = vi.fn();
+    const user = userEvent.setup();
+
+    render(
+      <GoalDialog
+        open
+        goal={null}
+        accounts={[savingsAccount]}
+        saving={false}
+        onOpenChange={vi.fn()}
+        onSubmit={onSubmit}
+        onAccountCreated={vi.fn()}
+      />
+    );
+
+    await user.type(screen.getByLabelText('Nombre'), 'Viaje a Japón');
+    await user.type(screen.getByLabelText('Objetivo (€)'), '1200');
+    await user.type(screen.getByLabelText('Día del recordatorio'), '18');
+    await user.type(screen.getByLabelText('Importe sugerido (€)'), '100');
+    await user.click(screen.getByRole('button', { name: 'Crear meta' }));
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ contributionScheduled: false, reminderDay: 18, reminderAmount: 100 })
+    );
+    expect(
+      screen.getByText(/Te avisaremos ese día para confirmar la aportación manual/i)
+    ).toBeInTheDocument();
   });
 });
