@@ -1,3 +1,8 @@
+## [0.13.1] - 2026-11-18
+
+- 5b8b335 Merge pull request #41 from Yeray-nm1/fix/ynm-goal-contribution-followup
+- 9e7e392 fix: campana accionable y reintento de aportación
+
 ## [0.13.0] - 2026-11-18
 
 - c89680a Merge pull request #40 from Yeray-nm1/feature/ynm-goal-contribution-ui
