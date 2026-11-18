@@ -40,18 +40,10 @@ export default function ForgotPasswordPage() {
 
         <div className="bg-white border border-border rounded-lg p-6 shadow-sm">
           {sent ? (
-            <div className="space-y-5">
-              <p className="text-sm text-text-secondary">
-                Si el email está registrado, te hemos enviado un enlace para restablecer tu contraseña.
-                Revisa también la carpeta de spam.
-              </p>
-              <Link
-                href="/login"
-                className="block text-center text-sm text-primary hover:text-primary-hover font-medium"
-              >
-                Volver a iniciar sesión
-              </Link>
-            </div>
+            <p className="text-sm text-text-secondary">
+              Si el email está registrado, te hemos enviado un enlace para restablecer tu contraseña.
+              Revisa también la carpeta de spam.
+            </p>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-1.5">
@@ -81,6 +73,13 @@ export default function ForgotPasswordPage() {
             </form>
           )}
         </div>
+
+        <Link
+          href="/login"
+          className="block text-center text-sm text-primary hover:text-primary-hover font-medium mt-4"
+        >
+          Volver a iniciar sesión
+        </Link>
 
         <p className="text-center text-xs text-text-muted mt-6">
           Finance Dashboard &copy; 2026
