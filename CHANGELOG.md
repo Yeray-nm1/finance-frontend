@@ -1,3 +1,8 @@
+## [0.12.1] - 2026-11-18
+
+- 3e9b6b1 Merge pull request #38 from Yeray-nm1/fix/ynm-email-preferences-dropdown
+- bd246ea fix: desplegable de correos en preferencias y enlace de volver siempre visible
+
 ## [0.12.0] - 2026-11-18
 
 - e6bfd61 Merge pull request #37 from Yeray-nm1/feature/ynm-goal-reminder
