@@ -72,8 +72,10 @@ test.describe('preferencias de email', () => {
         page.getByRole('switch', { name: 'Activar recordatorio mensual de metas' })
       ).not.toBeChecked();
 
-      const emailMenu = page.getByRole('button', { name: /Correo/ });
-      await emailMenu.click();
+      const emailAccordion = page.getByRole('button', { name: /Correo electrónico/ });
+      await expect(emailAccordion).toHaveAttribute('aria-expanded', 'false');
+      await emailAccordion.click();
+      await expect(emailAccordion).toHaveAttribute('aria-expanded', 'true');
       const subscriptionEmail = page.getByRole('checkbox', {
         name: 'Enviar aviso de suscripción próxima por email',
       });
@@ -90,7 +92,6 @@ test.describe('preferencias de email', () => {
 
       await subscriptionEmail.click();
       await goalsEmail.click();
-      await page.keyboard.press('Escape');
       await page.getByRole('switch', { name: 'Activar recordatorio mensual de metas' }).click();
       await page.getByRole('button', { name: 'Guardar preferencias' }).click();
       await expect(
@@ -109,7 +110,7 @@ test.describe('preferencias de email', () => {
       await expect(page.getByRole('switch', {
         name: 'Activar recordatorio mensual de metas',
       })).toBeChecked();
-      await page.getByRole('button', { name: /Correo/ }).click();
+      await page.getByRole('button', { name: /Correo electrónico/ }).click();
       await expect(page.getByRole('checkbox', {
         name: 'Enviar aviso de suscripción próxima por email',
       })).toBeChecked();
