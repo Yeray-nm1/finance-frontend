@@ -273,9 +273,16 @@ test.describe('aportación programada con aceptación por correo', () => {
         }
       }
 
-      await expect(mailTab.getByRole('heading', { name: 'Confirma tu aportación' })).toBeVisible();
+      // La pestaña del correo recibe el ACK y se retira: queda un solo formulario.
+      await expect(mailTab).toHaveURL(/\/goals\/?$/, { timeout: 5000 });
+      await expect(mailTab.getByRole('combobox', { name: 'Cuenta origen' })).toHaveCount(0);
+
       await expect(oldTab).toHaveURL(/\/goals\/aceptar\?token=/);
       await expect(oldTab.getByRole('heading', { name: 'Confirma tu aportación' })).toBeVisible();
+      // La pestaña vieja no reemite el aviso, así que la nueva no vuelve al formulario.
+      await oldTab.waitForTimeout(500);
+      await expect(mailTab).toHaveURL(/\/goals\/?$/);
+      await expect(oldTab).toHaveURL(/\/goals\/aceptar\?token=/);
       await expect(oldTab.getByRole('combobox', { name: 'Cuenta origen' })).toBeEnabled();
       await expect(oldTab.getByText(/25,00/)).toBeVisible();
 

@@ -2,10 +2,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BroadcastChannelStub } from './broadcast-channel-stub';
 import {
   GOAL_CONTRIBUTION_CHANNEL,
+  GOAL_CONTRIBUTION_LINK_ACK,
   GOAL_CONTRIBUTION_LINK_OPENED,
   announceGoalContributionLink,
+  consumeHandoff,
   goalContributionAcceptPath,
+  goalContributionLinkFromMessage,
   goalContributionPathFromMessage,
+  isGoalContributionAck,
+  isSameTab,
+  markHandoff,
 } from '../goal-contribution-channel';
 
 describe('goalContributionAcceptPath', () => {
@@ -43,35 +49,134 @@ describe('goalContributionPathFromMessage', () => {
   });
 });
 
+describe('goalContributionLinkFromMessage', () => {
+  it('exige un requestId para poder correlacionar el ACK', () => {
+    expect(
+      goalContributionLinkFromMessage({
+        type: GOAL_CONTRIBUTION_LINK_OPENED,
+        path: '/goals/aceptar?token=abc',
+        requestId: 'r-1',
+        sourceId: 'otra-pestana',
+      })
+    ).toEqual({
+      path: '/goals/aceptar?token=abc',
+      requestId: 'r-1',
+      sourceId: 'otra-pestana',
+    });
+
+    expect(
+      goalContributionLinkFromMessage({
+        type: GOAL_CONTRIBUTION_LINK_OPENED,
+        path: '/goals/aceptar?token=abc',
+      })
+    ).toBeNull();
+  });
+});
+
+describe('isGoalContributionAck', () => {
+  it('solo acepta el ACK de esta petición', () => {
+    expect(isGoalContributionAck({ type: GOAL_CONTRIBUTION_LINK_ACK, requestId: 'r-1' }, 'r-1')).toBe(true);
+    expect(isGoalContributionAck({ type: GOAL_CONTRIBUTION_LINK_ACK, requestId: 'r-2' }, 'r-1')).toBe(false);
+    expect(isGoalContributionAck({ type: GOAL_CONTRIBUTION_LINK_OPENED, requestId: 'r-1' }, 'r-1')).toBe(false);
+  });
+});
+
+describe('marca de handoff', () => {
+  beforeEach(() => sessionStorage.clear());
+
+  it('la pestaña que recibe el aviso no vuelve a emitirlo', () => {
+    markHandoff('abc123');
+
+    expect(consumeHandoff('abc123')).toBe(true);
+    expect(consumeHandoff('abc123')).toBe(false);
+    expect(consumeHandoff('otro')).toBe(false);
+  });
+});
+
 describe('announceGoalContributionLink', () => {
   beforeEach(() => {
+    vi.useFakeTimers();
     BroadcastChannelStub.reset();
     vi.stubGlobal('BroadcastChannel', BroadcastChannelStub);
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
 
-  it('publica la ruta en el canal compartido y cierra su canal', () => {
-    announceGoalContributionLink('abc123');
+  function postedMessage(): { requestId: string; sourceId: string; path: string; type: string } {
+    const message = BroadcastChannelStub.instances[0]?.posted[0];
+    expect(message).toBeDefined();
+    return message as { requestId: string; sourceId: string; path: string; type: string };
+  }
 
-    const [channel] = BroadcastChannelStub.instances;
-    expect(channel.name).toBe(GOAL_CONTRIBUTION_CHANNEL);
-    expect(channel.posted).toEqual([
-      {
-        type: GOAL_CONTRIBUTION_LINK_OPENED,
-        path: '/goals/aceptar?token=abc123',
-      },
-    ]);
-    expect(channel.closed).toBe(true);
+  function sendAck(requestId: string): void {
+    const otherTab = new BroadcastChannelStub(GOAL_CONTRIBUTION_CHANNEL);
+    otherTab.postMessage({ type: GOAL_CONTRIBUTION_LINK_ACK, requestId });
+  }
+
+  it('publica la ruta con un requestId y cierra su canal', () => {
+    const onHandoff = vi.fn();
+    announceGoalContributionLink('abc123', onHandoff);
+
+    expect(postedMessage()).toMatchObject({
+      type: GOAL_CONTRIBUTION_LINK_OPENED,
+      path: '/goals/aceptar?token=abc123',
+      requestId: expect.any(String),
+      sourceId: expect.any(String),
+    });
+    expect(isSameTab(postedMessage().sourceId)).toBe(true);
+    expect(BroadcastChannelStub.instances[0].closed).toBe(false);
+
+    vi.advanceTimersByTime(1600);
+    expect(BroadcastChannelStub.instances[0].closed).toBe(true);
+    expect(onHandoff).not.toHaveBeenCalled();
+  });
+
+  it('hace el handoff solo cuando otra pestaña confirma este requestId', () => {
+    const onHandoff = vi.fn();
+    announceGoalContributionLink('abc123', onHandoff);
+    const { requestId } = postedMessage();
+
+    sendAck('otro-request');
+    expect(onHandoff).not.toHaveBeenCalled();
+
+    sendAck(requestId);
+    expect(onHandoff).toHaveBeenCalledTimes(1);
+    expect(BroadcastChannelStub.instances[0].closed).toBe(true);
+  });
+
+  it('no hace el handoff dos veces si llega un ACK repetido', () => {
+    const onHandoff = vi.fn();
+    announceGoalContributionLink('abc123', onHandoff);
+    const { requestId } = postedMessage();
+
+    sendAck(requestId);
+    sendAck(requestId);
+
+    expect(onHandoff).toHaveBeenCalledTimes(1);
+  });
+
+  it('la limpieza cierra el canal y cancela el temporizador', () => {
+    const onHandoff = vi.fn();
+    const close = announceGoalContributionLink('abc123', onHandoff);
+
+    close();
+    vi.advanceTimersByTime(3000);
+
+    expect(BroadcastChannelStub.instances[0].closed).toBe(true);
+    expect(onHandoff).not.toHaveBeenCalled();
   });
 
   it('no publica nada sin token', () => {
-    announceGoalContributionLink('');
+    const close = announceGoalContributionLink('', vi.fn());
+    close();
     expect(BroadcastChannelStub.instances).toHaveLength(0);
   });
 
   it('no falla en navegadores sin BroadcastChannel', () => {
     vi.stubGlobal('BroadcastChannel', undefined);
-    expect(() => announceGoalContributionLink('abc123')).not.toThrow();
+    expect(() => announceGoalContributionLink('abc123', vi.fn())).not.toThrow();
   });
 });

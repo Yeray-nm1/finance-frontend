@@ -4,7 +4,10 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   GOAL_CONTRIBUTION_CHANNEL,
-  goalContributionPathFromMessage,
+  GOAL_CONTRIBUTION_LINK_ACK,
+  goalContributionLinkFromMessage,
+  isSameTab,
+  markHandoff,
 } from "@/lib/goal-contribution-channel";
 
 /**
@@ -19,13 +22,21 @@ export function GoalContributionChannelBridge() {
 
     const channel = new BroadcastChannel(GOAL_CONTRIBUTION_CHANNEL);
     channel.onmessage = (event: MessageEvent<unknown>) => {
-      const path = goalContributionPathFromMessage(event.data);
-      if (!path) return;
+      const link = goalContributionLinkFromMessage(event.data);
+      if (!link || isSameTab(link.sourceId)) return;
+
+      // Confirmamos recepción antes de navegar: la pestaña del correo podrá
+      // saltar a /goals y dejar un solo formulario abierto.
+      channel.postMessage({
+        type: GOAL_CONTRIBUTION_LINK_ACK,
+        requestId: link.requestId,
+      });
 
       const current = `${window.location.pathname}${window.location.search}`;
-      if (current === path) return;
+      if (current === link.path) return;
 
-      router.push(path);
+      markHandoff(new URL(link.path, window.location.origin).searchParams.get("token") ?? "");
+      router.push(link.path);
     };
 
     return () => channel.close();
