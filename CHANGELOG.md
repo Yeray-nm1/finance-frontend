@@ -1,3 +1,8 @@
+## [0.13.3] - 2026-11-18
+
+- 0eeb5c1 Merge pull request #43 from Yeray-nm1/fix/ynm-broadcast-handoff
+- 8930eab fix: handoff con ACK y una sola pestaña con el formulario
+
 ## [0.13.2] - 2026-11-18
 
 - eda5efe Merge pull request #42 from Yeray-nm1/feat/ynm-goal-contribution-broadcast
