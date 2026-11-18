@@ -132,4 +132,39 @@ test.describe('metas de ahorro', () => {
       await context.close();
     }
   });
+
+  test('guarda el día y el importe sugerido del recordatorio mensual', async ({ browser }) => {
+    const { context, runId, savings } = await createUserWithAccounts(browser);
+    const goalName = `Meta Recordatorio ${runId}`;
+
+    try {
+      const page = await context.newPage();
+      await page.goto('/goals');
+      await page.getByRole('button', { name: 'Nueva meta' }).click();
+
+      const dialog = page.getByRole('dialog');
+      await dialog.getByLabel('Nombre').fill(goalName);
+      await dialog.getByLabel('Objetivo (€)').fill('1000');
+      await dialog.getByLabel('Día del recordatorio').fill('18');
+      await dialog.getByLabel('Importe sugerido (€)').fill('100');
+      await dialog.getByRole('combobox', { name: 'Cuenta de ahorro' }).click();
+      await page.getByRole('option', { name: savings.name }).click();
+      await dialog.getByRole('button', { name: 'Crear meta' }).click();
+      await expect(dialog).toBeHidden();
+
+      const response = await context.request.get('/api/v1/goals');
+      expect(response.ok()).toBe(true);
+      const goals = (await response.json()) as Array<{
+        name: string;
+        reminderDay: number | null;
+        reminderAmount: number | null;
+      }>;
+      expect(goals.find((goal) => goal.name === goalName)).toMatchObject({
+        reminderDay: 18,
+        reminderAmount: 100,
+      });
+    } finally {
+      await context.close();
+    }
+  });
 });

@@ -7,11 +7,13 @@ interface NotificationRules {
     emailEnabled: boolean;
     frequency: string;
   };
+  goalReminder: { enabled: boolean; emailEnabled: boolean };
 }
 
 const initialRules: NotificationRules = {
   subscriptionDue: { enabled: true, emailEnabled: false, daysBefore: 3 },
   spendingSummary: { enabled: true, emailEnabled: false, frequency: 'weekly' },
+  goalReminder: { enabled: false, emailEnabled: false },
 };
 
 test.describe('preferencias de email', () => {
@@ -75,8 +77,16 @@ test.describe('preferencias de email', () => {
       await expect(
         page.getByRole('switch', { name: 'Activar resumen de gastos' })
       ).toBeChecked();
+      await expect(
+        page.getByRole('switch', { name: 'Activar recordatorio mensual de metas' })
+      ).not.toBeChecked();
+      await expect(
+        page.getByRole('switch', { name: 'Enviar recordatorio de metas por email' })
+      ).not.toBeChecked();
 
       await subscriptionEmail.click();
+      await page.getByRole('switch', { name: 'Activar recordatorio mensual de metas' }).click();
+      await page.getByRole('switch', { name: 'Enviar recordatorio de metas por email' }).click();
       await page.getByRole('button', { name: 'Guardar preferencias' }).click();
       await expect(
         page.getByText('Preferencias de notificaciones guardadas', { exact: true })
@@ -87,6 +97,7 @@ test.describe('preferencias de email', () => {
       expect(await response.json()).toEqual({
         ...initialRules,
         subscriptionDue: { ...initialRules.subscriptionDue, emailEnabled: true },
+        goalReminder: { enabled: true, emailEnabled: true },
       });
 
       await page.reload();
@@ -96,6 +107,12 @@ test.describe('preferencias de email', () => {
       await expect(page.getByRole('switch', {
         name: 'Enviar resumen de gastos por email',
       })).not.toBeChecked();
+      await expect(page.getByRole('switch', {
+        name: 'Activar recordatorio mensual de metas',
+      })).toBeChecked();
+      await expect(page.getByRole('switch', {
+        name: 'Enviar recordatorio de metas por email',
+      })).toBeChecked();
     } finally {
       await context.close();
     }

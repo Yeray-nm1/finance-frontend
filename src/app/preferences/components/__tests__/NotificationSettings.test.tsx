@@ -36,6 +36,7 @@ beforeAll(() => {
 const defaults: NotificationRules = {
   subscriptionDue: { enabled: false, emailEnabled: false, daysBefore: 3 },
   spendingSummary: { enabled: false, emailEnabled: false, frequency: "weekly" },
+  goalReminder: { enabled: false, emailEnabled: false },
 };
 
 const mockGet = vi.mocked(api.notifications.rules.get);
@@ -57,6 +58,7 @@ describe("NotificationSettings", () => {
     mockGet.mockResolvedValue({
       subscriptionDue: { enabled: true, emailEnabled: true, daysBefore: 7 },
       spendingSummary: { enabled: true, emailEnabled: false, frequency: "monthly" },
+      goalReminder: { enabled: true, emailEnabled: true },
     });
 
     render(<NotificationSettings email="user@example.com" />);
@@ -77,6 +79,50 @@ describe("NotificationSettings", () => {
     expect(
       screen.getByRole("switch", {
         name: "Enviar resumen de gastos por email",
+      })
+    ).not.toBeChecked();
+    expect(
+      screen.getByRole("switch", { name: "Activar recordatorio mensual de metas" })
+    ).toBeChecked();
+    expect(
+      screen.getByRole("switch", { name: "Enviar recordatorio de metas por email" })
+    ).toBeChecked();
+  });
+
+  it("guarda las preferencias del recordatorio mensual de metas", async () => {
+    const user = userEvent.setup();
+    render(<NotificationSettings email="user@example.com" />);
+
+    const saveButton = await screen.findByRole("button", {
+      name: "Guardar preferencias",
+    });
+    await user.click(
+      screen.getByRole("switch", { name: "Activar recordatorio mensual de metas" })
+    );
+    await user.click(
+      screen.getByRole("switch", { name: "Enviar recordatorio de metas por email" })
+    );
+    await user.click(saveButton);
+
+    await waitFor(() => expect(mockSave).toHaveBeenCalledOnce());
+    expect(mockSave).toHaveBeenCalledWith({
+      subscriptionDue: { enabled: false, emailEnabled: false, daysBefore: 3 },
+      spendingSummary: { enabled: false, emailEnabled: false, frequency: "weekly" },
+      goalReminder: { enabled: true, emailEnabled: true },
+    });
+  });
+
+  it("rellena goalReminder con valores por defecto si el backend no lo devuelve", async () => {
+    mockGet.mockResolvedValue({
+      subscriptionDue: { enabled: false, emailEnabled: false, daysBefore: 3 },
+      spendingSummary: { enabled: false, emailEnabled: false, frequency: "weekly" },
+    } as NotificationRules);
+
+    render(<NotificationSettings email="user@example.com" />);
+
+    expect(
+      await screen.findByRole("switch", {
+        name: "Activar recordatorio mensual de metas",
       })
     ).not.toBeChecked();
   });
@@ -136,6 +182,7 @@ describe("NotificationSettings", () => {
     expect(mockSave).toHaveBeenCalledWith({
       subscriptionDue: { enabled: false, emailEnabled: true, daysBefore: 3 },
       spendingSummary: { enabled: false, emailEnabled: false, frequency: "weekly" },
+      goalReminder: { enabled: false, emailEnabled: false },
     });
     expect(toast).toHaveBeenCalledWith({
       title: "Preferencias de notificaciones guardadas",
@@ -160,6 +207,7 @@ describe("NotificationSettings", () => {
     expect(mockSave).toHaveBeenCalledWith({
       subscriptionDue: { enabled: true, emailEnabled: false, daysBefore: 3 },
       spendingSummary: { enabled: false, emailEnabled: false, frequency: "weekly" },
+      goalReminder: { enabled: false, emailEnabled: false },
     });
   });
 

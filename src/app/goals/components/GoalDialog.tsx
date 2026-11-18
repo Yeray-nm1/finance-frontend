@@ -46,6 +46,8 @@ export function GoalDialog({
   const [targetAmount, setTargetAmount] = useState("");
   const [targetDate, setTargetDate] = useState("");
   const [accountId, setAccountId] = useState("");
+  const [reminderDay, setReminderDay] = useState("");
+  const [reminderAmount, setReminderAmount] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -53,6 +55,8 @@ export function GoalDialog({
     setTargetAmount(goal ? String(goal.targetAmount) : "");
     setTargetDate(goal?.targetDate ? goal.targetDate.slice(0, 10) : "");
     setAccountId(goal?.accountId ?? "");
+    setReminderDay(goal?.reminderDay == null ? "" : String(goal.reminderDay));
+    setReminderAmount(goal?.reminderAmount == null ? "" : String(goal.reminderAmount));
   }, [open, goal]);
 
   useEffect(() => {
@@ -61,11 +65,19 @@ export function GoalDialog({
   }, [open, accountId, accounts]);
 
   const amount = Number(targetAmount);
+  const reminderDayValue = reminderDay === "" ? null : Number(reminderDay);
+  const reminderAmountValue = reminderAmount === "" ? null : Number(reminderAmount);
+  const reminderValid =
+    (reminderDayValue === null ||
+      (Number.isInteger(reminderDayValue) && reminderDayValue >= 1 && reminderDayValue <= 28)) &&
+    (reminderAmountValue === null ||
+      (Number.isFinite(reminderAmountValue) && reminderAmountValue > 0));
   const valid =
     name.trim().length > 0 &&
     Number.isFinite(amount) &&
     amount > 0 &&
-    accountId.length > 0;
+    accountId.length > 0 &&
+    reminderValid;
 
   function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -76,6 +88,8 @@ export function GoalDialog({
       targetAmount: amount,
       targetDate: targetDate || null,
       accountId,
+      reminderDay: reminderDayValue,
+      reminderAmount: reminderAmountValue,
     });
   }
 
@@ -183,6 +197,45 @@ export function GoalDialog({
                 </SelectContent>
               </Select>
             )}
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-text-secondary">
+              Recordatorio mensual (opcional)
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="goal-reminder-day">Día del recordatorio</Label>
+                <Input
+                  id="goal-reminder-day"
+                  type="number"
+                  min="1"
+                  max="28"
+                  step="1"
+                  placeholder="1-28"
+                  value={reminderDay}
+                  onChange={(e) => setReminderDay(e.target.value)}
+                  aria-describedby="goal-reminder-hint"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="goal-reminder-amount">Importe sugerido (€)</Label>
+                <Input
+                  id="goal-reminder-amount"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  placeholder="0.00"
+                  value={reminderAmount}
+                  onChange={(e) => setReminderAmount(e.target.value)}
+                  aria-describedby="goal-reminder-hint"
+                />
+              </div>
+            </div>
+            <p id="goal-reminder-hint" className="text-xs leading-snug text-text-muted">
+              Te avisaremos ese día para confirmar la aportación manual. Activa también el
+              recordatorio en Preferencias → Avisos.
+            </p>
           </div>
 
           <Button type="submit" className="w-full" disabled={saving || !valid}>
