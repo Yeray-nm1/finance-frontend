@@ -100,6 +100,12 @@ function ResetPasswordForm() {
           {loading ? "Guardando..." : "Guardar contraseña"}
         </Button>
       </form>
+      <Link
+        href="/login"
+        className="block text-center text-sm text-primary hover:text-primary-hover font-medium"
+      >
+        Volver a iniciar sesión
+      </Link>
     </Card>
   );
 }

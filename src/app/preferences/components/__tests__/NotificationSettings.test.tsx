@@ -42,6 +42,10 @@ const defaults: NotificationRules = {
 const mockGet = vi.mocked(api.notifications.rules.get);
 const mockSave = vi.mocked(api.notifications.rules.save);
 
+async function openEmailMenu(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole("button", { name: /Correo/ }));
+}
+
 describe("NotificationSettings", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -55,6 +59,7 @@ describe("NotificationSettings", () => {
   });
 
   it("carga las reglas y refleja el estado de los switches in-app y de email", async () => {
+    const user = userEvent.setup();
     mockGet.mockResolvedValue({
       subscriptionDue: { enabled: true, emailEnabled: true, daysBefore: 7 },
       spendingSummary: { enabled: true, emailEnabled: false, frequency: "monthly" },
@@ -72,20 +77,22 @@ describe("NotificationSettings", () => {
       screen.getByRole("switch", { name: "Activar resumen de gastos" })
     ).toBeChecked();
     expect(
-      screen.getByRole("switch", {
+      screen.getByRole("switch", { name: "Activar recordatorio mensual de metas" })
+    ).toBeChecked();
+
+    await openEmailMenu(user);
+    expect(
+      await screen.findByRole("checkbox", {
         name: "Enviar aviso de suscripción próxima por email",
       })
     ).toBeChecked();
     expect(
-      screen.getByRole("switch", {
+      screen.getByRole("checkbox", {
         name: "Enviar resumen de gastos por email",
       })
     ).not.toBeChecked();
     expect(
-      screen.getByRole("switch", { name: "Activar recordatorio mensual de metas" })
-    ).toBeChecked();
-    expect(
-      screen.getByRole("switch", { name: "Enviar recordatorio de metas por email" })
+      screen.getByRole("checkbox", { name: "Enviar recordatorio de metas por email" })
     ).toBeChecked();
   });
 
@@ -99,9 +106,11 @@ describe("NotificationSettings", () => {
     await user.click(
       screen.getByRole("switch", { name: "Activar recordatorio mensual de metas" })
     );
+    await openEmailMenu(user);
     await user.click(
-      screen.getByRole("switch", { name: "Enviar recordatorio de metas por email" })
+      await screen.findByRole("checkbox", { name: "Enviar recordatorio de metas por email" })
     );
+    await user.keyboard("{Escape}");
     await user.click(saveButton);
 
     await waitFor(() => expect(mockSave).toHaveBeenCalledOnce());
@@ -150,6 +159,7 @@ describe("NotificationSettings", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Avisar con" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Frecuencia" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Correo/ })).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Guardar preferencias" })
     ).toBeInTheDocument();
@@ -164,18 +174,20 @@ describe("NotificationSettings", () => {
     expect(saveButton).toBeDisabled();
   });
 
-  it("guarda emailEnabled por regla cuando cambia un switch de email", async () => {
+  it("guarda emailEnabled por regla cuando cambia una opción del desplegable de correo", async () => {
     const user = userEvent.setup();
     render(<NotificationSettings email="user@example.com" />);
 
     const saveButton = await screen.findByRole("button", {
       name: "Guardar preferencias",
     });
+    await openEmailMenu(user);
     await user.click(
-      screen.getByRole("switch", {
+      await screen.findByRole("checkbox", {
         name: "Enviar aviso de suscripción próxima por email",
       })
     );
+    await user.keyboard("{Escape}");
     await user.click(saveButton);
 
     await waitFor(() => expect(mockSave).toHaveBeenCalledOnce());

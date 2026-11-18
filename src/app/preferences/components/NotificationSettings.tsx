@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CalendarClock, ChartColumn, Mail, Target } from "lucide-react";
+import { CalendarClock, ChartColumn, ChevronDown, Mail, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -78,6 +80,10 @@ export function NotificationSettings({ email }: NotificationSettingsProps) {
   }, []);
 
   const dirty = JSON.stringify(rules) !== JSON.stringify(savedRules);
+  const emailCount =
+    Number(rules.subscriptionDue.emailEnabled) +
+    Number(rules.spendingSummary.emailEnabled) +
+    Number(rules.goalReminder.emailEnabled);
 
   const handleSave = async () => {
     setSaving(true);
@@ -178,22 +184,6 @@ export function NotificationSettings({ email }: NotificationSettingsProps) {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center gap-3 border-t border-border bg-bg-elevated/60 px-4 py-2.5">
-            <span className="w-9 shrink-0" aria-hidden="true" />
-            <span className="min-w-0 flex-1 text-xs font-medium text-text-secondary">
-              Enviar por email
-            </span>
-            <Switch
-              aria-label="Enviar aviso de suscripción próxima por email"
-              checked={rules.subscriptionDue.emailEnabled}
-              onCheckedChange={(emailEnabled) =>
-                setRules((prev) => ({
-                  ...prev,
-                  subscriptionDue: { ...prev.subscriptionDue, emailEnabled },
-                }))
-              }
-            />
-          </div>
         </section>
 
         <section>
@@ -260,22 +250,6 @@ export function NotificationSettings({ email }: NotificationSettingsProps) {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center gap-3 border-t border-border bg-bg-elevated/60 px-4 py-2.5">
-            <span className="w-9 shrink-0" aria-hidden="true" />
-            <span className="min-w-0 flex-1 text-xs font-medium text-text-secondary">
-              Enviar por email
-            </span>
-            <Switch
-              aria-label="Enviar resumen de gastos por email"
-              checked={rules.spendingSummary.emailEnabled}
-              onCheckedChange={(emailEnabled) =>
-                setRules((prev) => ({
-                  ...prev,
-                  spendingSummary: { ...prev.spendingSummary, emailEnabled },
-                }))
-              }
-            />
-          </div>
         </section>
 
         <section>
@@ -310,21 +284,71 @@ export function NotificationSettings({ email }: NotificationSettingsProps) {
               }
             />
           </div>
-          <div className="flex items-center gap-3 border-t border-border bg-bg-elevated/60 px-4 py-2.5">
-            <span className="w-9 shrink-0" aria-hidden="true" />
-            <span className="min-w-0 flex-1 text-xs font-medium text-text-secondary">
-              Enviar por email
+        </section>
+
+        <section>
+          <div className="flex items-center gap-3 p-4">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-bg-elevated text-text-muted" aria-hidden="true">
+              <Mail size={18} />
             </span>
-            <Switch
-              aria-label="Enviar recordatorio de metas por email"
-              checked={rules.goalReminder.emailEnabled}
-              onCheckedChange={(emailEnabled) =>
-                setRules((prev) => ({
-                  ...prev,
-                  goalReminder: { ...prev.goalReminder, emailEnabled },
-                }))
-              }
-            />
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-medium text-text-primary">Correo electrónico</h3>
+              <p className="mt-0.5 text-xs leading-snug text-text-muted">
+                Recibe también por email los avisos que tengas activados.
+              </p>
+            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="h-9 shrink-0 gap-1.5 px-2.5 text-xs">
+                  Correo: {emailCount === 0 ? "Desactivado" : `${emailCount} activo${emailCount === 1 ? "" : "s"}`}
+                  <ChevronDown size={14} aria-hidden="true" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-64 p-2">
+                <p className="px-2 pb-1.5 text-xs font-medium text-text-secondary">
+                  Enviar también por email
+                </p>
+                <label className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-xs text-text-primary hover:bg-bg-elevated">
+                  <Checkbox
+                    aria-label="Enviar aviso de suscripción próxima por email"
+                    checked={rules.subscriptionDue.emailEnabled}
+                    onCheckedChange={(value) =>
+                      setRules((prev) => ({
+                        ...prev,
+                        subscriptionDue: { ...prev.subscriptionDue, emailEnabled: value === true },
+                      }))
+                    }
+                  />
+                  Suscripciones
+                </label>
+                <label className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-xs text-text-primary hover:bg-bg-elevated">
+                  <Checkbox
+                    aria-label="Enviar resumen de gastos por email"
+                    checked={rules.spendingSummary.emailEnabled}
+                    onCheckedChange={(value) =>
+                      setRules((prev) => ({
+                        ...prev,
+                        spendingSummary: { ...prev.spendingSummary, emailEnabled: value === true },
+                      }))
+                    }
+                  />
+                  Resumen de gastos
+                </label>
+                <label className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-xs text-text-primary hover:bg-bg-elevated">
+                  <Checkbox
+                    aria-label="Enviar recordatorio de metas por email"
+                    checked={rules.goalReminder.emailEnabled}
+                    onCheckedChange={(value) =>
+                      setRules((prev) => ({
+                        ...prev,
+                        goalReminder: { ...prev.goalReminder, emailEnabled: value === true },
+                      }))
+                    }
+                  />
+                  Recordatorio de metas
+                </label>
+              </PopoverContent>
+            </Popover>
           </div>
         </section>
       </div>

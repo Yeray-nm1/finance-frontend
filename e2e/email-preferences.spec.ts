@@ -61,16 +61,7 @@ test.describe('preferencias de email', () => {
       await expect(page.getByRole('heading', { name: 'Preferencias' })).toBeVisible();
       await expect(page.getByText(email, { exact: true }).first()).toBeVisible();
 
-      const subscriptionEmail = page.getByRole('switch', {
-        name: 'Enviar aviso de suscripción próxima por email',
-      });
-      const summaryEmail = page.getByRole('switch', {
-        name: 'Enviar resumen de gastos por email',
-      });
-
-      await expect(subscriptionEmail).not.toBeChecked();
-      await expect(summaryEmail).not.toBeChecked();
-      // Los nombres accesibles anteriores siguen intactos.
+      // Los avisos in-app conservan sus switches y nombres accesibles.
       await expect(
         page.getByRole('switch', { name: 'Activar aviso de suscripción próxima' })
       ).toBeChecked();
@@ -80,13 +71,27 @@ test.describe('preferencias de email', () => {
       await expect(
         page.getByRole('switch', { name: 'Activar recordatorio mensual de metas' })
       ).not.toBeChecked();
-      await expect(
-        page.getByRole('switch', { name: 'Enviar recordatorio de metas por email' })
-      ).not.toBeChecked();
+
+      const emailMenu = page.getByRole('button', { name: /Correo/ });
+      await emailMenu.click();
+      const subscriptionEmail = page.getByRole('checkbox', {
+        name: 'Enviar aviso de suscripción próxima por email',
+      });
+      const summaryEmail = page.getByRole('checkbox', {
+        name: 'Enviar resumen de gastos por email',
+      });
+      const goalsEmail = page.getByRole('checkbox', {
+        name: 'Enviar recordatorio de metas por email',
+      });
+
+      await expect(subscriptionEmail).not.toBeChecked();
+      await expect(summaryEmail).not.toBeChecked();
+      await expect(goalsEmail).not.toBeChecked();
 
       await subscriptionEmail.click();
+      await goalsEmail.click();
+      await page.keyboard.press('Escape');
       await page.getByRole('switch', { name: 'Activar recordatorio mensual de metas' }).click();
-      await page.getByRole('switch', { name: 'Enviar recordatorio de metas por email' }).click();
       await page.getByRole('button', { name: 'Guardar preferencias' }).click();
       await expect(
         page.getByText('Preferencias de notificaciones guardadas', { exact: true })
@@ -102,15 +107,16 @@ test.describe('preferencias de email', () => {
 
       await page.reload();
       await expect(page.getByRole('switch', {
-        name: 'Enviar aviso de suscripción próxima por email',
-      })).toBeChecked();
-      await expect(page.getByRole('switch', {
-        name: 'Enviar resumen de gastos por email',
-      })).not.toBeChecked();
-      await expect(page.getByRole('switch', {
         name: 'Activar recordatorio mensual de metas',
       })).toBeChecked();
-      await expect(page.getByRole('switch', {
+      await page.getByRole('button', { name: /Correo/ }).click();
+      await expect(page.getByRole('checkbox', {
+        name: 'Enviar aviso de suscripción próxima por email',
+      })).toBeChecked();
+      await expect(page.getByRole('checkbox', {
+        name: 'Enviar resumen de gastos por email',
+      })).not.toBeChecked();
+      await expect(page.getByRole('checkbox', {
         name: 'Enviar recordatorio de metas por email',
       })).toBeChecked();
     } finally {

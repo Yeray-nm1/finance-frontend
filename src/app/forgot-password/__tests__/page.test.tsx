@@ -40,5 +40,15 @@ describe('ForgotPasswordPage', () => {
     await user.click(screen.getByRole('button', { name: 'Enviar enlace' }));
 
     await waitFor(() => expect(screen.getByText('Servidor no disponible')).toBeInTheDocument());
+    expect(screen.getByRole('link', { name: 'Volver a iniciar sesión' })).toBeInTheDocument();
+  });
+
+  it('mantiene el enlace de volver antes de enviar nada', () => {
+    render(<ForgotPasswordPage />);
+
+    expect(screen.getByRole('link', { name: 'Volver a iniciar sesión' })).toHaveAttribute(
+      'href',
+      '/login'
+    );
   });
 });
