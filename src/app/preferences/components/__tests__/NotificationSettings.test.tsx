@@ -42,8 +42,12 @@ const defaults: NotificationRules = {
 const mockGet = vi.mocked(api.notifications.rules.get);
 const mockSave = vi.mocked(api.notifications.rules.save);
 
-async function openEmailMenu(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole("button", { name: /Correo/ }));
+function emailAccordion() {
+  return screen.getByRole("button", { name: /Correo electrónico/ });
+}
+
+async function openEmailAccordion(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(emailAccordion());
 }
 
 describe("NotificationSettings", () => {
@@ -80,7 +84,7 @@ describe("NotificationSettings", () => {
       screen.getByRole("switch", { name: "Activar recordatorio mensual de metas" })
     ).toBeChecked();
 
-    await openEmailMenu(user);
+    await openEmailAccordion(user);
     expect(
       await screen.findByRole("checkbox", {
         name: "Enviar aviso de suscripción próxima por email",
@@ -96,6 +100,36 @@ describe("NotificationSettings", () => {
     ).toBeChecked();
   });
 
+  it("abre y cierra el acordeón de correo y refleja el estado con los checkboxes", async () => {
+    const user = userEvent.setup();
+    mockGet.mockResolvedValue({
+      subscriptionDue: { enabled: true, emailEnabled: true, daysBefore: 3 },
+      spendingSummary: { enabled: true, emailEnabled: false, frequency: "weekly" },
+      goalReminder: { enabled: false, emailEnabled: false },
+    });
+
+    render(<NotificationSettings email="user@example.com" />);
+    await screen.findByRole("switch", {
+      name: "Activar aviso de suscripción próxima",
+    });
+
+    const trigger = emailAccordion();
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("checkbox")).toBeNull();
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(
+      await screen.findByRole("checkbox", {
+        name: "Enviar aviso de suscripción próxima por email",
+      })
+    ).toBeChecked();
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("checkbox")).toBeNull();
+  });
+
   it("guarda las preferencias del recordatorio mensual de metas", async () => {
     const user = userEvent.setup();
     render(<NotificationSettings email="user@example.com" />);
@@ -106,11 +140,10 @@ describe("NotificationSettings", () => {
     await user.click(
       screen.getByRole("switch", { name: "Activar recordatorio mensual de metas" })
     );
-    await openEmailMenu(user);
+    await openEmailAccordion(user);
     await user.click(
       await screen.findByRole("checkbox", { name: "Enviar recordatorio de metas por email" })
     );
-    await user.keyboard("{Escape}");
     await user.click(saveButton);
 
     await waitFor(() => expect(mockSave).toHaveBeenCalledOnce());
@@ -174,20 +207,19 @@ describe("NotificationSettings", () => {
     expect(saveButton).toBeDisabled();
   });
 
-  it("guarda emailEnabled por regla cuando cambia una opción del desplegable de correo", async () => {
+  it("guarda emailEnabled por regla cuando cambia una opción del acordeón de correo", async () => {
     const user = userEvent.setup();
     render(<NotificationSettings email="user@example.com" />);
 
     const saveButton = await screen.findByRole("button", {
       name: "Guardar preferencias",
     });
-    await openEmailMenu(user);
+    await openEmailAccordion(user);
     await user.click(
       await screen.findByRole("checkbox", {
         name: "Enviar aviso de suscripción próxima por email",
       })
     );
-    await user.keyboard("{Escape}");
     await user.click(saveButton);
 
     await waitFor(() => expect(mockSave).toHaveBeenCalledOnce());
