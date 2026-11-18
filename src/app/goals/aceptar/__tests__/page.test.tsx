@@ -4,17 +4,21 @@ import userEvent from '@testing-library/user-event';
 import { api } from '@/lib/api';
 import { BroadcastChannelStub } from '@/lib/__tests__/broadcast-channel-stub';
 import {
+  GOAL_CONTRIBUTION_CHANNEL,
+  GOAL_CONTRIBUTION_LINK_ACK,
   GOAL_CONTRIBUTION_LINK_OPENED,
+  markHandoff,
 } from '@/lib/goal-contribution-channel';
 import AcceptContributionPage from '../page';
 
 const navigation = vi.hoisted(() => ({
   push: vi.fn(),
+  replace: vi.fn(),
   token: 'token-valido' as string | null,
 }));
 
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: navigation.push }),
+  useRouter: () => ({ push: navigation.push, replace: navigation.replace }),
   useSearchParams: () =>
     new URLSearchParams(navigation.token ? `?token=${navigation.token}` : ''),
 }));
@@ -44,6 +48,7 @@ const pending = {
 describe('AcceptContributionPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    sessionStorage.clear();
     BroadcastChannelStub.reset();
     vi.stubGlobal('BroadcastChannel', BroadcastChannelStub);
     navigation.token = 'token-valido';
@@ -189,8 +194,39 @@ describe('AcceptContributionPage', () => {
       expect(channel?.posted).toContainEqual({
         type: GOAL_CONTRIBUTION_LINK_OPENED,
         path: '/goals/aceptar?token=token-valido',
+        requestId: expect.any(String),
+        sourceId: expect.any(String),
       });
     });
+  });
+
+  it('BC-2 se retira a /goals cuando otra pestaña confirma que viene a aceptar', async () => {
+    render(<AcceptContributionPage />);
+
+    await waitFor(() => expect(BroadcastChannelStub.instances[0]?.posted[0]).toBeDefined());
+    const { requestId } = BroadcastChannelStub.instances[0].posted[0] as { requestId: string };
+    const otherTab = new BroadcastChannelStub(GOAL_CONTRIBUTION_CHANNEL);
+    otherTab.postMessage({ type: GOAL_CONTRIBUTION_LINK_ACK, requestId });
+
+    expect(navigation.replace).toHaveBeenCalledWith('/goals');
+  });
+
+  it('BC-2 ignora un ACK de otra petición', async () => {
+    render(<AcceptContributionPage />);
+
+    await waitFor(() => expect(BroadcastChannelStub.instances[0]?.posted[0]).toBeDefined());
+    const otherTab = new BroadcastChannelStub(GOAL_CONTRIBUTION_CHANNEL);
+    otherTab.postMessage({ type: GOAL_CONTRIBUTION_LINK_ACK, requestId: 'otro' });
+
+    expect(navigation.replace).not.toHaveBeenCalled();
+  });
+
+  it('BC-2 la pestaña que ya recibió el aviso no lo reemite', () => {
+    markHandoff('token-valido');
+    render(<AcceptContributionPage />);
+
+    expect(BroadcastChannelStub.instances).toHaveLength(0);
+    expect(sessionStorage.getItem('finance-goal-contribution-handoff')).toBeNull();
   });
 
   it('BC-1 no publica nada si la página se abre sin token', () => {
