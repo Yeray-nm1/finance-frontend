@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Bell, Check } from "lucide-react";
 import {
   Popover,
@@ -124,6 +125,17 @@ export function NotificationBell({
                   <p className="mt-1 text-[11px] text-text-muted">
                     {formatRelative(item.createdAt)}
                   </p>
+                  {item.actionUrl && (
+                    <Link
+                      href={item.actionUrl}
+                      onClick={() => void markRead(item.id)}
+                      className="mt-2 inline-block text-xs font-medium text-primary hover:underline"
+                    >
+                      {item.type === "goal_contribution"
+                        ? "Aceptar aportación"
+                        : "Ver detalle"}
+                    </Link>
+                  )}
                 </div>
                 {!item.readAt && (
                   <button

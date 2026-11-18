@@ -92,6 +92,21 @@ test.describe('aportación programada con aceptación por correo', () => {
         period,
       });
 
+      const notificationKey = `goal_contribution:${goal.id}:${period}`;
+      await pool.query(
+        `INSERT INTO "Notification"
+          ("id", "userId", "key", "type", "title", "body", "actionUrl", "createdAt")
+         VALUES ($1, $2, $3, 'goal_contribution', $4, $5, $6, NOW())`,
+        [
+          randomUUID(),
+          user.id,
+          notificationKey,
+          `Aportación programada: ${goalName}`,
+          'Tienes una aportación de 50,00 € pendiente de confirmar.',
+          `/goals/aceptar?token=${token}`,
+        ]
+      );
+
       async function goalSaved(): Promise<number> {
         const response = await context.request.get('/api/v1/goals');
         expect(response.ok()).toBe(true);
@@ -112,10 +127,21 @@ test.describe('aportación programada con aceptación por correo', () => {
       expect(await transferCount()).toBe(0);
 
       const page = await context.newPage();
-      await page.goto(`/goals/aceptar?token=${token}`);
+      await page.goto('/goals');
+      await page.getByRole('button', { name: /^Notificaciones/ }).first().click();
+      await page.getByRole('link', { name: 'Aceptar aportación' }).click();
+      await expect(page).toHaveURL(/\/goals\/aceptar\?token=/);
+      await expect.poll(async () => {
+        const row = await pool.query<{ readAt: Date | null }>(
+          'SELECT "readAt" FROM "Notification" WHERE "key" = $1',
+          [notificationKey]
+        );
+        return row.rows[0]?.readAt != null;
+      }).toBe(true);
       await expect(page.getByRole('heading', { name: 'Confirma tu aportación' })).toBeVisible();
-      await expect(page.getByText(goalName)).toBeVisible();
-      await expect(page.getByText(/50,00/)).toBeVisible();
+      const acceptMain = page.getByRole('main');
+      await expect(acceptMain.getByText(goalName, { exact: true })).toBeVisible();
+      await expect(acceptMain.getByText(/50,00/)).toBeVisible();
       await expect(
         page.getByText(/No se cobrará nada sin tu confirmación/i)
       ).toBeVisible();
@@ -155,6 +181,12 @@ test.describe('aportación programada con aceptación por correo', () => {
             item.title.startsWith('Aportación confirmada')
         )
       ).toBe(true);
+
+      await page.reload();
+      await expect(page.getByRole('heading', { name: 'Aportación confirmada' })).toBeVisible();
+      await expect(page.getByRole('combobox', { name: 'Cuenta origen' })).toHaveCount(0);
+      expect(await goalSaved()).toBe(50);
+      expect(await transferCount()).toBe(1);
 
       const repeated = await context.request.post('/api/v1/goal-contributions/accept', {
         data: { token, accountId: checking.id },
