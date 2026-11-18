@@ -16,6 +16,16 @@ export const auth = {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
+  forgotPassword: (email: string) =>
+    request<void>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+  resetPassword: (token: string, password: string) =>
+    request<void>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    }),
   me: (signal?: AbortSignal) => request<AuthResponse>('/auth/me', { signal }),
   changePassword: (currentPassword: string, newPassword: string) =>
     request<void>('/auth/password', {

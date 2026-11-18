@@ -5,7 +5,10 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get("finance_token")?.value;
   const pathname = request.nextUrl.pathname;
 
-  const publicPaths = ["/login", "/register"];
+  const publicPaths = ["/login", "/register", "/forgot-password", "/reset-password"];
+  // El enlace de restablecimiento se abre a menudo desde el propio navegador
+  // donde ya hay sesión: redirigir al dashboard rompería el flujo.
+  const accessibleWhenLoggedIn = ["/reset-password"];
   const isPublicPath = publicPaths.includes(pathname);
   const isApiPath = pathname.startsWith("/api/");
   const isStaticPath = pathname.startsWith("/_next/") || pathname === "/favicon.ico";
@@ -18,7 +21,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (token && isPublicPath) {
+  if (token && isPublicPath && !accessibleWhenLoggedIn.includes(pathname)) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
