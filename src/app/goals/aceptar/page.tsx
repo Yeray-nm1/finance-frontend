@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { formatCurrency } from "@/lib/format";
 import { api } from "@/lib/api";
+import { announceGoalContributionLink } from "@/lib/goal-contribution-channel";
 import type { PendingGoalContribution } from "@/types/goals";
 
 function messageFrom(error: unknown): string {
@@ -20,6 +21,12 @@ function AcceptContributionForm({ token }: { readonly token: string | null }) {
   const [accepted, setAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [accountId, setAccountId] = useState("");
+
+  // El enlace del correo abre esta página en una pestaña nueva: avisamos a la
+  // pestaña que ya tenía la app abierta para que también venga a aceptar.
+  useEffect(() => {
+    if (token) announceGoalContributionLink(token);
+  }, [token]);
 
   useEffect(() => {
     if (!token) return;

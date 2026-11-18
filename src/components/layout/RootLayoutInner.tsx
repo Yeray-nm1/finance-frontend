@@ -6,6 +6,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { MobileTopBar } from "@/components/layout/MobileTopBar";
 import { Toaster } from "@/components/ui/toaster";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { GoalContributionChannelBridge } from "@/components/layout/GoalContributionChannelBridge";
 import { useSidebar } from "@/contexts/SidebarContext";
 
 interface RootLayoutInnerProps {
@@ -30,6 +31,7 @@ export default function RootLayoutInner({ children }: Readonly<RootLayoutInnerPr
           <ErrorBoundary>{children}</ErrorBoundary>
         </div>
       </div>
+      <GoalContributionChannelBridge />
       <Toaster />
     </>
   );
