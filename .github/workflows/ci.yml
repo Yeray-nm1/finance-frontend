@@ -92,3 +92,24 @@ jobs:
             playwright-report
             test-results
           retention-days: 7
+
+  deploy:
+    name: Deploy en Netlify
+    needs: [lint-and-build, e2e]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-finance-frontend
+      cancel-in-progress: false
+    env:
+      NETLIFY_BUILD_HOOK_URL: ${{ secrets.NETLIFY_BUILD_HOOK_URL }}
+    steps:
+      - name: Verificar configuración del build hook
+        if: env.NETLIFY_BUILD_HOOK_URL == ''
+        run: |
+          echo "::error::Falta el secreto NETLIFY_BUILD_HOOK_URL"
+          exit 1
+
+      - name: Disparar build hook de Netlify
+        if: env.NETLIFY_BUILD_HOOK_URL != ''
+        run: curl --fail --silent --show-error -X POST "$NETLIFY_BUILD_HOOK_URL"
