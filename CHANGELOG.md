@@ -1,3 +1,8 @@
+## [0.11.2] - 2026-11-18
+
+- 3954518 Merge pull request #35 from Yeray-nm1/feature/ynm-auto-deploy
+- 8bc65b6 ci: despliega en Netlify tras pasar la CI
+
 ## [0.11.1] - 2026-11-17
 
 - a5734d0 Merge pull request #34 from Yeray-nm1/feature/ynm-email-wi3-frontend
