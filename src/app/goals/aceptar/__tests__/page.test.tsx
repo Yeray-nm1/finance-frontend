@@ -1,7 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { api } from '@/lib/api';
+import { BroadcastChannelStub } from '@/lib/__tests__/broadcast-channel-stub';
+import {
+  GOAL_CONTRIBUTION_LINK_OPENED,
+} from '@/lib/goal-contribution-channel';
 import AcceptContributionPage from '../page';
 
 const navigation = vi.hoisted(() => ({
@@ -40,6 +44,8 @@ const pending = {
 describe('AcceptContributionPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    BroadcastChannelStub.reset();
+    vi.stubGlobal('BroadcastChannel', BroadcastChannelStub);
     navigation.token = 'token-valido';
     vi.mocked(api.goalContributions.getPending).mockResolvedValue(pending as never);
     vi.mocked(api.goalContributions.accept).mockResolvedValue({
@@ -48,6 +54,8 @@ describe('AcceptContributionPage', () => {
       alreadyAccepted: false,
     } as never);
   });
+
+  afterEach(() => vi.unstubAllGlobals());
 
   it('CA-5.2 consulta el pendiente sin crear ninguna transferencia al abrir la página', async () => {
     render(<AcceptContributionPage />);
@@ -171,5 +179,24 @@ describe('AcceptContributionPage', () => {
         screen.getByRole('heading', { name: 'Aportación confirmada' })
       ).toBeVisible()
     );
+  });
+
+  it('BC-1 avisa a las demás pestañas al abrir el enlace con token', async () => {
+    render(<AcceptContributionPage />);
+
+    await waitFor(() => {
+      const channel = BroadcastChannelStub.instances[0];
+      expect(channel?.posted).toContainEqual({
+        type: GOAL_CONTRIBUTION_LINK_OPENED,
+        path: '/goals/aceptar?token=token-valido',
+      });
+    });
+  });
+
+  it('BC-1 no publica nada si la página se abre sin token', () => {
+    navigation.token = null;
+    render(<AcceptContributionPage />);
+
+    expect(BroadcastChannelStub.instances).toHaveLength(0);
   });
 });

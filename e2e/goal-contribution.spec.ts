@@ -201,4 +201,95 @@ test.describe('aportación programada con aceptación por correo', () => {
       await pool.end();
     }
   });
+
+  test('el enlace del correo lleva la aceptación a una pestaña ya abierta', async ({ browser }) => {
+    test.setTimeout(60_000);
+    const databaseUrl = process.env.E2E_DATABASE_URL;
+    if (!databaseUrl) throw new Error('E2E_DATABASE_URL is required');
+
+    const pool = new Pool({ connectionString: databaseUrl });
+    const context = await browser.newContext({ baseURL: FRONTEND_URL });
+    const runId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+    const email = `broadcast-${runId}@example.com`;
+    const goalName = `Meta broadcast ${runId}`;
+
+    try {
+      const register = await context.request.post('/api/v1/auth/register', {
+        data: { email, password: PASSWORD },
+      });
+      expect(register.status(), await register.text()).toBe(201);
+      const { user } = (await register.json()) as { user: { id: string } };
+
+      async function createAccount(type: 'checking' | 'savings'): Promise<SeededAccount> {
+        const response = await context.request.post('/api/v1/accounts', {
+          data: { name: `${type} BC ${runId}`, type },
+        });
+        expect(response.status(), await response.text()).toBe(201);
+        return (await response.json()) as SeededAccount;
+      }
+
+      const savings = await createAccount('savings');
+      const goalResponse = await context.request.post('/api/v1/goals', {
+        data: {
+          name: goalName,
+          targetAmount: 1000,
+          accountId: savings.id,
+          contributionScheduled: true,
+          reminderDay: 1,
+          reminderAmount: 25,
+        },
+      });
+      expect(goalResponse.status(), await goalResponse.text()).toBe(201);
+      const goal = (await goalResponse.json()) as { id: string };
+
+      const period = new Date().toISOString().slice(0, 7);
+      await pool.query(
+        `INSERT INTO "GoalContribution"
+          ("id", "userId", "goalId", "period", "amount", "goalAccountId", "status", "createdAt")
+         VALUES ($1, $2, $3, $4, $5, $6, 'pending', NOW())`,
+        [randomUUID(), user.id, goal.id, period, 25, savings.id]
+      );
+      const token = signGoalContributionToken({
+        sub: user.id,
+        scope: 'goal_contribution',
+        goalId: goal.id,
+        period,
+      });
+
+      // Pestaña vieja: tiene la app abierta y escucha el canal.
+      const oldTab = await context.newPage();
+      await oldTab.goto('/goals');
+      await expect(oldTab.getByRole('button', { name: /^Notificaciones/ }).first()).toBeVisible();
+
+      // Pestaña nueva: es la que abre el enlace del correo y publica el aviso.
+      const mailTab = await context.newPage();
+      for (let attempt = 0; attempt < 3; attempt++) {
+        await mailTab.goto(`/goals/aceptar?token=${token}`);
+        try {
+          await expect(oldTab).toHaveURL(/\/goals\/aceptar\?token=/, { timeout: 2000 });
+          break;
+        } catch (error) {
+          if (attempt === 2) throw error;
+        }
+      }
+
+      await expect(mailTab.getByRole('heading', { name: 'Confirma tu aportación' })).toBeVisible();
+      await expect(oldTab).toHaveURL(/\/goals\/aceptar\?token=/);
+      await expect(oldTab.getByRole('heading', { name: 'Confirma tu aportación' })).toBeVisible();
+      await expect(oldTab.getByRole('combobox', { name: 'Cuenta origen' })).toBeEnabled();
+      await expect(oldTab.getByText(/25,00/)).toBeVisible();
+
+      // El aviso no mueve dinero: solo lo hace el POST autenticado.
+      const goals = await context.request.get('/api/v1/goals');
+      const goalItems = (await goals.json()) as Array<{ id: string; saved: number }>;
+      expect(goalItems.find((item) => item.id === goal.id)?.saved).toBe(0);
+      const transfers = await context.request.get('/api/v1/transactions', {
+        params: { search: `Aportación a ${goalName}` },
+      });
+      expect(((await transfers.json()) as { total: number }).total).toBe(0);
+    } finally {
+      await context.close();
+      await pool.end();
+    }
+  });
 });
