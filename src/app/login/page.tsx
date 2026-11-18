@@ -1,12 +1,21 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+function ResetNotice() {
+  if (useSearchParams().get("reset") !== "1") return null;
+  return (
+    <div className="bg-primary-light text-primary text-sm font-medium px-4 py-2.5 rounded-lg">
+      Contraseña actualizada. Ya puedes iniciar sesión.
+    </div>
+  );
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -92,6 +101,19 @@ export default function LoginPage() {
                 minLength={6}
               />
             </div>
+
+            <div className="flex justify-end -mt-2">
+              <Link
+                href="/forgot-password"
+                className="text-xs text-primary hover:text-primary-hover font-medium"
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
+
+            <Suspense fallback={null}>
+              <ResetNotice />
+            </Suspense>
 
             {error && (
               <div className="bg-delete-bg text-expense text-sm font-medium px-4 py-2.5 rounded-lg">
