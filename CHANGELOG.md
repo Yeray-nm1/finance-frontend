@@ -1,3 +1,8 @@
+## [0.11.3] - 2026-11-18
+
+- aec3742 Merge pull request #36 from Yeray-nm1/feature/ynm-password-reset
+- 978e377 feat: páginas de recuperación de contraseña
+
 ## [0.11.2] - 2026-11-18
 
 - 3954518 Merge pull request #35 from Yeray-nm1/feature/ynm-auto-deploy
