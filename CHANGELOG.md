@@ -1,3 +1,8 @@
+## [0.13.0] - 2026-11-18
+
+- c89680a Merge pull request #40 from Yeray-nm1/feature/ynm-goal-contribution-ui
+- 75283a8 feat: configuración y aceptación de aportación programada a metas
+
 ## [0.12.2] - 2026-11-18
 
 - 3ef2c61 Merge pull request #39 from Yeray-nm1/fix/ynm-email-preferences-accordion
