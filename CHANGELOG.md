@@ -1,3 +1,8 @@
+## [0.12.0] - 2026-11-18
+
+- e6bfd61 Merge pull request #37 from Yeray-nm1/feature/ynm-goal-reminder
+- 281753c feat: recordatorio mensual de metas en metas y preferencias
+
 ## [0.11.3] - 2026-11-18
 
 - aec3742 Merge pull request #36 from Yeray-nm1/feature/ynm-password-reset
