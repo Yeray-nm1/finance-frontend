@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -48,6 +49,7 @@ export function GoalDialog({
   const [accountId, setAccountId] = useState("");
   const [reminderDay, setReminderDay] = useState("");
   const [reminderAmount, setReminderAmount] = useState("");
+  const [contributionScheduled, setContributionScheduled] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -57,6 +59,7 @@ export function GoalDialog({
     setAccountId(goal?.accountId ?? "");
     setReminderDay(goal?.reminderDay == null ? "" : String(goal.reminderDay));
     setReminderAmount(goal?.reminderAmount == null ? "" : String(goal.reminderAmount));
+    setContributionScheduled(goal?.contributionScheduled ?? false);
   }, [open, goal]);
 
   useEffect(() => {
@@ -67,11 +70,15 @@ export function GoalDialog({
   const amount = Number(targetAmount);
   const reminderDayValue = reminderDay === "" ? null : Number(reminderDay);
   const reminderAmountValue = reminderAmount === "" ? null : Number(reminderAmount);
-  const reminderValid =
-    (reminderDayValue === null ||
-      (Number.isInteger(reminderDayValue) && reminderDayValue >= 1 && reminderDayValue <= 28)) &&
-    (reminderAmountValue === null ||
-      (Number.isFinite(reminderAmountValue) && reminderAmountValue > 0));
+  const dayValid =
+    reminderDayValue === null ||
+    (Number.isInteger(reminderDayValue) && reminderDayValue >= 1 && reminderDayValue <= 28);
+  const amountValid =
+    reminderAmountValue === null ||
+    (Number.isFinite(reminderAmountValue) && reminderAmountValue > 0);
+  const reminderValid = contributionScheduled
+    ? reminderDayValue !== null && reminderAmountValue !== null && dayValid && amountValid
+    : dayValid && amountValid;
   const valid =
     name.trim().length > 0 &&
     Number.isFinite(amount) &&
@@ -90,6 +97,7 @@ export function GoalDialog({
       accountId,
       reminderDay: reminderDayValue,
       reminderAmount: reminderAmountValue,
+      contributionScheduled,
     });
   }
 
@@ -201,11 +209,33 @@ export function GoalDialog({
 
           <div className="space-y-2">
             <p className="text-xs font-medium text-text-secondary">
-              Recordatorio mensual (opcional)
+              {contributionScheduled ? "Aportación mensual programada" : "Recordatorio mensual (opcional)"}
             </p>
+            <div className="flex items-start gap-2.5">
+              <Checkbox
+                id="goal-contribution-scheduled"
+                checked={contributionScheduled}
+                onCheckedChange={(checked) => setContributionScheduled(checked === true)}
+                aria-describedby="goal-contribution-hint"
+              />
+              <div className="space-y-1">
+                <Label
+                  htmlFor="goal-contribution-scheduled"
+                  className="cursor-pointer text-sm font-medium"
+                >
+                  Programar aportación mensual
+                </Label>
+                <p id="goal-contribution-hint" className="text-xs leading-snug text-text-muted">
+                  Te enviaremos un correo con un enlace para aceptar la aportación. Tú eliges
+                  la cuenta origen al confirmar.
+                </p>
+              </div>
+            </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="goal-reminder-day">Día del recordatorio</Label>
+                <Label htmlFor="goal-reminder-day">
+                  {contributionScheduled ? "Día de la aportación" : "Día del recordatorio"}
+                </Label>
                 <Input
                   id="goal-reminder-day"
                   type="number"
@@ -216,10 +246,13 @@ export function GoalDialog({
                   value={reminderDay}
                   onChange={(e) => setReminderDay(e.target.value)}
                   aria-describedby="goal-reminder-hint"
+                  required={contributionScheduled}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="goal-reminder-amount">Importe sugerido (€)</Label>
+                <Label htmlFor="goal-reminder-amount">
+                  {contributionScheduled ? "Importe de la aportación (€)" : "Importe sugerido (€)"}
+                </Label>
                 <Input
                   id="goal-reminder-amount"
                   type="number"
@@ -229,12 +262,14 @@ export function GoalDialog({
                   value={reminderAmount}
                   onChange={(e) => setReminderAmount(e.target.value)}
                   aria-describedby="goal-reminder-hint"
+                  required={contributionScheduled}
                 />
               </div>
             </div>
             <p id="goal-reminder-hint" className="text-xs leading-snug text-text-muted">
-              Te avisaremos ese día para confirmar la aportación manual. Activa también el
-              recordatorio en Preferencias → Avisos.
+              {contributionScheduled
+                ? "No se cobrará nada sin tu confirmación. Si no aceptas, el importe no se acumulará al mes siguiente."
+                : "Te avisaremos ese día para confirmar la aportación manual. Activa también el recordatorio en Preferencias → Avisos."}
             </p>
           </div>
 

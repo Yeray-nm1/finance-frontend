@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { safeRedirectPath } from "./lib/auth-next";
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get("finance_token")?.value;
   const pathname = request.nextUrl.pathname;
+  const search = request.nextUrl.search;
 
   const publicPaths = ["/login", "/register", "/forgot-password", "/reset-password"];
   // El enlace de restablecimiento se abre a menudo desde el propio navegador
@@ -18,11 +20,15 @@ export function middleware(request: NextRequest) {
   }
 
   if (!token && !isPublicPath) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    const loginUrl = new URL("/login", request.url);
+    const next = safeRedirectPath(`${pathname}${search}`);
+    if (next) loginUrl.searchParams.set("next", next);
+    return NextResponse.redirect(loginUrl);
   }
 
   if (token && isPublicPath && !accessibleWhenLoggedIn.includes(pathname)) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    const requested = safeRedirectPath(new URLSearchParams(search).get("next"));
+    return NextResponse.redirect(new URL(requested ?? "/dashboard", request.url));
   }
 
   return NextResponse.next();

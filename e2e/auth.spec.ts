@@ -7,7 +7,7 @@ test.use({ storageState: { cookies: [], origins: [] } });
 test('redirige a login si no hay sesión', async ({ page }) => {
   await page.goto('/transactions');
 
-  await expect(page).toHaveURL(/\/login$/);
+  await expect(page).toHaveURL(/\/login(\?.*)?$/);
   await expect(page.getByRole('heading', { name: 'Bienvenido', exact: true })).toBeVisible();
 });
 

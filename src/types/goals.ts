@@ -32,6 +32,8 @@ export interface SavingsGoal {
   reminderDay: number | null;
   /** Cuota sugerida para la aportación manual del recordatorio. */
   reminderAmount: number | null;
+  /** Si la aportación mensual se propone por correo y requiere aceptación. */
+  contributionScheduled?: boolean;
 }
 
 export interface GoalInput {
@@ -41,10 +43,35 @@ export interface GoalInput {
   accountId?: string | null;
   reminderDay?: number | null;
   reminderAmount?: number | null;
+  contributionScheduled?: boolean;
 }
 
 export interface GoalContributionInput {
   amount: number;
   date: string;
   accountId: string;
+}
+
+export interface GoalContributionAccount {
+  id: string;
+  name: string;
+  type: "checking" | "savings";
+}
+
+/** Aportación pendiente que el usuario debe confirmar desde el correo. */
+export interface PendingGoalContribution {
+  id: string;
+  amount: number;
+  period: string;
+  goalName: string;
+  status: string;
+  goalAccountId: string;
+  accounts: GoalContributionAccount[];
+}
+
+export interface AcceptGoalContributionResult {
+  id: string;
+  status: string;
+  sourceAccountId?: string | null;
+  alreadyAccepted: boolean;
 }
