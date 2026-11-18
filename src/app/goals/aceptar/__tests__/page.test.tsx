@@ -63,6 +63,23 @@ describe('AcceptContributionPage', () => {
     expect(api.goalContributions.accept).not.toHaveBeenCalled();
   });
 
+  it('FIX-3 reabrir un enlace ya aceptado muestra la confirmación sin formulario', async () => {
+    vi.mocked(api.goalContributions.getPending).mockResolvedValue({
+      ...pending,
+      status: 'accepted',
+    } as never);
+    render(<AcceptContributionPage />);
+
+    expect(
+      await screen.findByRole('heading', { name: 'Aportación confirmada' })
+    ).toBeVisible();
+    expect(screen.getByText(/Se ha registrado/)).toBeVisible();
+    expect(
+      screen.queryByRole('combobox', { name: 'Cuenta origen' })
+    ).not.toBeInTheDocument();
+    expect(api.goalContributions.accept).not.toHaveBeenCalled();
+  });
+
   it('CA-5.3 exige elegir la cuenta origen antes de aceptar', async () => {
     const user = userEvent.setup();
     render(<AcceptContributionPage />);

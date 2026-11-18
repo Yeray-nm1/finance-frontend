@@ -9,6 +9,26 @@ vi.mock("@/contexts/NotificationsContext", () => ({
   useNotifications: vi.fn(),
 }));
 
+vi.mock("next/link", () => ({
+  default: ({
+    href,
+    children,
+    onClick,
+    ...props
+  }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { href: string }) => (
+    <a
+      href={href}
+      {...props}
+      onClick={(event) => {
+        event.preventDefault();
+        onClick?.(event);
+      }}
+    >
+      {children}
+    </a>
+  ),
+}));
+
 beforeAll(() => {
   globalThis.ResizeObserver = class ResizeObserver {
     observe() { /* noop */ }
@@ -107,6 +127,30 @@ describe("NotificationBell", () => {
       })
     );
     expect(markRead).toHaveBeenCalledWith("n-1");
+  });
+
+  it("FIX-2 la notificación de aportación permite aceptar y se marca como leída", async () => {
+    const actionable: NotificationItem = {
+      ...unreadItem,
+      id: "n-action",
+      type: "goal_contribution",
+      title: "Aportación programada: Viaje a Japón",
+      body: "Tienes una aportación pendiente de confirmar.",
+      actionUrl: "/goals/aceptar?token=token-de-la-campana",
+    };
+    const { markRead } = setup({ items: [actionable], unreadCount: 1 });
+    const user = userEvent.setup();
+
+    render(<NotificationBell />);
+    await user.click(
+      screen.getByRole("button", { name: "Notificaciones, 1 sin leer" })
+    );
+
+    const action = await screen.findByRole("link", { name: "Aceptar aportación" });
+    expect(action).toHaveAttribute("href", "/goals/aceptar?token=token-de-la-campana");
+
+    await user.click(action);
+    expect(markRead).toHaveBeenCalledWith("n-action");
   });
 
   it("permite marcar todas como leídas", async () => {

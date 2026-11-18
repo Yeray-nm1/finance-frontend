@@ -11,6 +11,8 @@ export interface NotificationItem {
   body: string;
   createdAt: string;
   readAt: string | null;
+  /** Acción que el usuario puede ejecutar desde la campana, si la tiene. */
+  actionUrl?: string | null;
 }
 
 export interface NotificationsResponse {

@@ -27,6 +27,7 @@ function AcceptContributionForm({ token }: { readonly token: string | null }) {
     let active = true;
     setLoading(true);
     setError(null);
+    setAccepted(false);
 
     api.goalContributions
       .getPending(token)
@@ -34,6 +35,7 @@ function AcceptContributionForm({ token }: { readonly token: string | null }) {
         if (!active) return;
         setPending(result);
         setAccountId("");
+        if (result.status === "accepted") setAccepted(true);
       })
       .catch((err: unknown) => {
         if (!active) return;
