@@ -1,4 +1,7 @@
-export type NotificationType = "subscription_due" | "spending_summary";
+export type NotificationType =
+  | "subscription_due"
+  | "spending_summary"
+  | "goal_reminder";
 
 export interface NotificationItem {
   id: string;
@@ -27,5 +30,9 @@ export interface NotificationRules {
     enabled: boolean;
     emailEnabled: boolean;
     frequency: SummaryFrequency;
+  };
+  goalReminder: {
+    enabled: boolean;
+    emailEnabled: boolean;
   };
 }

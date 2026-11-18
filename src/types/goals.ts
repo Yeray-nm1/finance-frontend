@@ -28,6 +28,10 @@ export interface SavingsGoal {
   monthlyNeeded: number | null;
   contributionsCount: number;
   contributions?: GoalContribution[];
+  /** Día del mes (1-28) en que se envía el recordatorio mensual. */
+  reminderDay: number | null;
+  /** Cuota sugerida para la aportación manual del recordatorio. */
+  reminderAmount: number | null;
 }
 
 export interface GoalInput {
@@ -35,6 +39,8 @@ export interface GoalInput {
   targetAmount: number;
   targetDate?: string | null;
   accountId?: string | null;
+  reminderDay?: number | null;
+  reminderAmount?: number | null;
 }
 
 export interface GoalContributionInput {

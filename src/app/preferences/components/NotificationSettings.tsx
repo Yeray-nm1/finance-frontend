@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CalendarClock, ChartColumn, Mail } from "lucide-react";
+import { CalendarClock, ChartColumn, Mail, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -23,7 +23,17 @@ import type {
 const DEFAULT_RULES: NotificationRules = {
   subscriptionDue: { enabled: false, emailEnabled: false, daysBefore: 3 },
   spendingSummary: { enabled: false, emailEnabled: false, frequency: "weekly" },
+  goalReminder: { enabled: false, emailEnabled: false },
 };
+
+/** Las reglas guardadas antes de existir el recordatorio no traen goalReminder. */
+function normalizeRules(loaded: Partial<NotificationRules>): NotificationRules {
+  return {
+    subscriptionDue: loaded.subscriptionDue ?? DEFAULT_RULES.subscriptionDue,
+    spendingSummary: loaded.spendingSummary ?? DEFAULT_RULES.spendingSummary,
+    goalReminder: loaded.goalReminder ?? DEFAULT_RULES.goalReminder,
+  };
+}
 
 interface NotificationSettingsProps {
   /** Correo de la cuenta, en modo lectura: no se puede editar ni verificar aquí. */
@@ -52,8 +62,9 @@ export function NotificationSettings({ email }: NotificationSettingsProps) {
       .get()
       .then((loaded) => {
         if (!active) return;
-        setRules(loaded);
-        setSavedRules(loaded);
+        const normalized = normalizeRules(loaded);
+        setRules(normalized);
+        setSavedRules(normalized);
       })
       .catch(() => {
         // Si no se pueden cargar, se muestran los valores por defecto.
@@ -71,7 +82,7 @@ export function NotificationSettings({ email }: NotificationSettingsProps) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const updated = await api.notifications.rules.save(rules);
+      const updated = normalizeRules(await api.notifications.rules.save(rules));
       setRules(updated);
       setSavedRules(updated);
       toast({ title: "Preferencias de notificaciones guardadas" });
@@ -261,6 +272,56 @@ export function NotificationSettings({ email }: NotificationSettingsProps) {
                 setRules((prev) => ({
                   ...prev,
                   spendingSummary: { ...prev.spendingSummary, emailEnabled },
+                }))
+              }
+            />
+          </div>
+        </section>
+
+        <section>
+          <div className="flex items-center gap-3 p-4">
+            <span
+              className={cn(
+                "flex size-9 shrink-0 items-center justify-center rounded-[10px] transition-colors",
+                rules.goalReminder.enabled
+                  ? "bg-primary-light text-primary"
+                  : "bg-bg-elevated text-text-muted"
+              )}
+              aria-hidden="true"
+            >
+              <Target size={18} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-medium text-text-primary">
+                Recordatorio mensual de metas
+              </h3>
+              <p className="mt-0.5 text-xs leading-snug text-text-muted">
+                Te avisamos el día elegido en cada meta para confirmar tu aportación manual.
+              </p>
+            </div>
+            <Switch
+              aria-label="Activar recordatorio mensual de metas"
+              checked={rules.goalReminder.enabled}
+              onCheckedChange={(enabled) =>
+                setRules((prev) => ({
+                  ...prev,
+                  goalReminder: { ...prev.goalReminder, enabled },
+                }))
+              }
+            />
+          </div>
+          <div className="flex items-center gap-3 border-t border-border bg-bg-elevated/60 px-4 py-2.5">
+            <span className="w-9 shrink-0" aria-hidden="true" />
+            <span className="min-w-0 flex-1 text-xs font-medium text-text-secondary">
+              Enviar por email
+            </span>
+            <Switch
+              aria-label="Enviar recordatorio de metas por email"
+              checked={rules.goalReminder.emailEnabled}
+              onCheckedChange={(emailEnabled) =>
+                setRules((prev) => ({
+                  ...prev,
+                  goalReminder: { ...prev.goalReminder, emailEnabled },
                 }))
               }
             />

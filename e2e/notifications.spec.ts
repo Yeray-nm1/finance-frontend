@@ -69,6 +69,7 @@ test.describe('notificaciones in-app', () => {
     expect(rules).toEqual({
       subscriptionDue: { enabled: true, emailEnabled: false, daysBefore: 7 },
       spendingSummary: { enabled: true, emailEnabled: false, frequency: 'monthly' },
+      goalReminder: { enabled: false, emailEnabled: false },
     });
 
     // Suscripción semanal cuyo último cobro fue hace 7 días: el próximo cae hoy.

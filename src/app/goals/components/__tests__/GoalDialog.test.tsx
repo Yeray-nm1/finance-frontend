@@ -38,7 +38,96 @@ describe('GoalDialog', () => {
       targetAmount: 1200,
       targetDate: null,
       accountId: 'account-1',
+      reminderDay: null,
+      reminderAmount: null,
     });
+  });
+
+  it('envía el día y el importe sugerido del recordatorio mensual', async () => {
+    const onSubmit = vi.fn();
+    const user = userEvent.setup();
+
+    render(
+      <GoalDialog
+        open
+        goal={null}
+        accounts={[savingsAccount]}
+        saving={false}
+        onOpenChange={vi.fn()}
+        onSubmit={onSubmit}
+        onAccountCreated={vi.fn()}
+      />
+    );
+
+    await user.type(screen.getByLabelText('Nombre'), 'Viaje a Japón');
+    await user.type(screen.getByLabelText('Objetivo (€)'), '1200');
+    await user.type(screen.getByLabelText('Día del recordatorio'), '18');
+    await user.type(screen.getByLabelText('Importe sugerido (€)'), '100.50');
+    await user.click(screen.getByRole('button', { name: 'Crear meta' }));
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ reminderDay: 18, reminderAmount: 100.5 })
+    );
+  });
+
+  it('deja el recordatorio vacío cuando no se rellena el día', async () => {
+    const onSubmit = vi.fn();
+    const user = userEvent.setup();
+
+    render(
+      <GoalDialog
+        open
+        goal={null}
+        accounts={[savingsAccount]}
+        saving={false}
+        onOpenChange={vi.fn()}
+        onSubmit={onSubmit}
+        onAccountCreated={vi.fn()}
+      />
+    );
+
+    await user.type(screen.getByLabelText('Nombre'), 'Viaje a Japón');
+    await user.type(screen.getByLabelText('Objetivo (€)'), '1200');
+    await user.type(screen.getByLabelText('Importe sugerido (€)'), '100');
+    await user.click(screen.getByRole('button', { name: 'Crear meta' }));
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ reminderDay: null, reminderAmount: 100 })
+    );
+  });
+
+  it('carga el recordatorio al editar una meta', () => {
+    render(
+      <GoalDialog
+        open
+        goal={{
+          id: 'goal-1',
+          name: 'Coche',
+          targetAmount: 5000,
+          targetDate: '2027-01-01T00:00:00.000Z',
+          accountId: 'account-1',
+          account: savingsAccount,
+          isArchived: false,
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+          reminderDay: 5,
+          reminderAmount: 250,
+          saved: 1000,
+          progress: 20,
+          remaining: 4000,
+          monthlyNeeded: 400,
+          contributionsCount: 3,
+        }}
+        accounts={[savingsAccount]}
+        saving={false}
+        onOpenChange={vi.fn()}
+        onSubmit={vi.fn()}
+        onAccountCreated={vi.fn()}
+      />
+    );
+
+    expect(screen.getByLabelText('Día del recordatorio')).toHaveValue(5);
+    expect(screen.getByLabelText('Importe sugerido (€)')).toHaveValue(250);
   });
 
   it('marks the target date as optional with a hint', () => {
@@ -97,6 +186,8 @@ describe('GoalDialog', () => {
           isArchived: false,
           createdAt: '2026-01-01T00:00:00.000Z',
           updatedAt: '2026-01-01T00:00:00.000Z',
+          reminderDay: null,
+          reminderAmount: null,
           saved: 1000,
           progress: 20,
           remaining: 4000,
