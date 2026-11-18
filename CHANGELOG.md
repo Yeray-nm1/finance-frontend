@@ -1,3 +1,8 @@
+## [0.12.2] - 2026-11-18
+
+- 3ef2c61 Merge pull request #39 from Yeray-nm1/fix/ynm-email-preferences-accordion
+- bf87dce fix: acordeon de correo en preferencias como el de categorias
+
 ## [0.12.1] - 2026-11-18
 
 - 3e9b6b1 Merge pull request #38 from Yeray-nm1/fix/ynm-email-preferences-dropdown
