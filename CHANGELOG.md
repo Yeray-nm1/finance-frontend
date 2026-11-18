@@ -1,3 +1,8 @@
+## [0.13.2] - 2026-11-18
+
+- eda5efe Merge pull request #42 from Yeray-nm1/feat/ynm-goal-contribution-broadcast
+- ba9fd92 feat: avisa a la pestaña abierta al abrir el enlace de aportación
+
 ## [0.13.1] - 2026-11-18
 
 - 5b8b335 Merge pull request #41 from Yeray-nm1/fix/ynm-goal-contribution-followup
