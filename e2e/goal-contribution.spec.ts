@@ -202,7 +202,7 @@ test.describe('aportación programada con aceptación por correo', () => {
     }
   });
 
-  test('el enlace del correo lleva la aceptación a una pestaña ya abierta', async ({ browser }) => {
+  test('el enlace del correo deja el formulario en la pestaña nueva y lleva la vieja a /goals', async ({ browser }) => {
     test.setTimeout(60_000);
     const databaseUrl = process.env.E2E_DATABASE_URL;
     if (!databaseUrl) throw new Error('E2E_DATABASE_URL is required');
@@ -256,9 +256,9 @@ test.describe('aportación programada con aceptación por correo', () => {
         period,
       });
 
-      // Pestaña vieja: tiene la app abierta y escucha el canal.
+      // Pestaña vieja: tiene la app abierta en otra ruta y escucha el canal.
       const oldTab = await context.newPage();
-      await oldTab.goto('/goals');
+      await oldTab.goto('/dashboard');
       await expect(oldTab.getByRole('button', { name: /^Notificaciones/ }).first()).toBeVisible();
 
       // Pestaña nueva: es la que abre el enlace del correo y publica el aviso.
@@ -266,25 +266,26 @@ test.describe('aportación programada con aceptación por correo', () => {
       for (let attempt = 0; attempt < 3; attempt++) {
         await mailTab.goto(`/goals/aceptar?token=${token}`);
         try {
-          await expect(oldTab).toHaveURL(/\/goals\/aceptar\?token=/, { timeout: 2000 });
+          await expect(oldTab).toHaveURL(/\/goals\/?$/, { timeout: 2000 });
           break;
         } catch (error) {
           if (attempt === 2) throw error;
         }
       }
 
-      // La pestaña del correo recibe el ACK y se retira: queda un solo formulario.
-      await expect(mailTab).toHaveURL(/\/goals\/?$/, { timeout: 5000 });
-      await expect(mailTab.getByRole('combobox', { name: 'Cuenta origen' })).toHaveCount(0);
+      // La pestaña vieja confirma con ACK y se retira: queda un solo formulario,
+      // el de la pestaña donde se abrió el enlace.
+      await expect(oldTab).toHaveURL(/\/goals\/?$/, { timeout: 5000 });
+      await expect(oldTab.getByRole('combobox', { name: 'Cuenta origen' })).toHaveCount(0);
 
-      await expect(oldTab).toHaveURL(/\/goals\/aceptar\?token=/);
-      await expect(oldTab.getByRole('heading', { name: 'Confirma tu aportación' })).toBeVisible();
-      // La pestaña vieja no reemite el aviso, así que la nueva no vuelve al formulario.
-      await oldTab.waitForTimeout(500);
-      await expect(mailTab).toHaveURL(/\/goals\/?$/);
-      await expect(oldTab).toHaveURL(/\/goals\/aceptar\?token=/);
-      await expect(oldTab.getByRole('combobox', { name: 'Cuenta origen' })).toBeEnabled();
-      await expect(oldTab.getByText(/25,00/)).toBeVisible();
+      await expect(mailTab).toHaveURL(/\/goals\/aceptar\?token=/);
+      await expect(mailTab.getByRole('heading', { name: 'Confirma tu aportación' })).toBeVisible();
+      await expect(mailTab.getByRole('combobox', { name: 'Cuenta origen' })).toBeEnabled();
+      await expect(mailTab.getByText(/25,00/)).toBeVisible();
+      // La pestaña nueva no se retira aunque siga abierta la vieja.
+      await mailTab.waitForTimeout(500);
+      await expect(mailTab).toHaveURL(/\/goals\/aceptar\?token=/);
+      await expect(oldTab).toHaveURL(/\/goals\/?$/);
 
       // El aviso no mueve dinero: solo lo hace el POST autenticado.
       const goals = await context.request.get('/api/v1/goals');
