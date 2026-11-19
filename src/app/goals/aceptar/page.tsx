@@ -195,7 +195,7 @@ function AcceptContributionForm({ token }: { readonly token: string | null }) {
 
               <label
                 className={cn(
-                  "flex items-start gap-2.5 text-xs leading-snug",
+                  "flex items-start gap-2.5 text-xs leading-5",
                   amountChanged
                     ? "cursor-pointer text-text-primary"
                     : "cursor-not-allowed text-text-muted opacity-70"
@@ -207,7 +207,6 @@ function AcceptContributionForm({ token }: { readonly token: string | null }) {
                   disabled={!amountChanged}
                   onCheckedChange={(checked) => setUpdateSuggestion(checked === true)}
                   aria-label="Actualizar el importe para futuras aportaciones"
-                  className="mt-0.5"
                 />
                 Actualizar el importe para futuras aportaciones
               </label>
