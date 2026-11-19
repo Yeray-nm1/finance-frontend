@@ -199,7 +199,11 @@ export function GoalDialog({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="goal-amount">Objetivo (€)</Label>
+                {/* `block` iguala su caja a la etiqueta de fecha, que Radix bloquea
+                    dentro del flex del icono; si no, el campo de fecha sube 2 px. */}
+                <Label htmlFor="goal-amount" className="block">
+                  Objetivo (€)
+                </Label>
                 <Input
                   id="goal-amount"
                   type="number"
