@@ -1,3 +1,8 @@
+## [0.14.2] - 2026-11-19
+
+- 87b1a8e Merge pull request #47 from Yeray-nm1/fix/ynm-goal-fields-alignment
+- 06563ec fix: alinea objetivo y fecha en Nueva meta
+
 ## [0.14.1] - 2026-11-19
 
 - 589b4bf Merge pull request #46 from Yeray-nm1/fix/ynm-checkbox-alignment
