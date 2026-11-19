@@ -61,6 +61,15 @@ test.describe('metas de ahorro', () => {
       await expect(
         createDialog.getByRole('heading', { name: 'Nueva meta de ahorro' })
       ).toBeVisible();
+
+      // La etiqueta de fecha va dentro de un flex (se bloquea) y la de objetivo
+      // es inline: sin `block` en esta última, el campo de fecha sube 2 px.
+      const amountBox = await createDialog.locator('#goal-amount').boundingBox();
+      const dateBox = await createDialog.locator('#goal-date').boundingBox();
+      expect(amountBox).not.toBeNull();
+      expect(dateBox).not.toBeNull();
+      expect(Math.abs(amountBox!.y - dateBox!.y)).toBeLessThanOrEqual(1);
+
       await createDialog.getByLabel('Nombre').fill(goalName);
       await createDialog.getByLabel('Objetivo (€)').fill('100');
       await createDialog.getByRole('combobox', { name: 'Cuenta de ahorro' }).click();
