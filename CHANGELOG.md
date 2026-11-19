@@ -1,3 +1,8 @@
+## [0.14.1] - 2026-11-19
+
+- 589b4bf Merge pull request #46 from Yeray-nm1/fix/ynm-checkbox-alignment
+- 1182d8b fix: alinea el checkbox de actualizar importe con su texto
+
 ## [0.14.0] - 2026-11-19
 
 - 5eb2714 Merge pull request #45 from Yeray-nm1/feature/ynm-unified-goal-reminders
