@@ -5,13 +5,11 @@ import {
   GOAL_CONTRIBUTION_LINK_ACK,
   GOAL_CONTRIBUTION_LINK_OPENED,
   announceGoalContributionLink,
-  consumeHandoff,
   goalContributionAcceptPath,
   goalContributionLinkFromMessage,
   goalContributionPathFromMessage,
   isGoalContributionAck,
   isSameTab,
-  markHandoff,
 } from '../goal-contribution-channel';
 
 describe('goalContributionAcceptPath', () => {
@@ -81,18 +79,6 @@ describe('isGoalContributionAck', () => {
   });
 });
 
-describe('marca de handoff', () => {
-  beforeEach(() => sessionStorage.clear());
-
-  it('la pestaña que recibe el aviso no vuelve a emitirlo', () => {
-    markHandoff('abc123');
-
-    expect(consumeHandoff('abc123')).toBe(true);
-    expect(consumeHandoff('abc123')).toBe(false);
-    expect(consumeHandoff('otro')).toBe(false);
-  });
-});
-
 describe('announceGoalContributionLink', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -116,9 +102,8 @@ describe('announceGoalContributionLink', () => {
     otherTab.postMessage({ type: GOAL_CONTRIBUTION_LINK_ACK, requestId });
   }
 
-  it('publica la ruta con un requestId y cierra su canal', () => {
-    const onHandoff = vi.fn();
-    announceGoalContributionLink('abc123', onHandoff);
+  it('publica la ruta con un requestId y cierra su canal al expirar', () => {
+    announceGoalContributionLink('abc123');
 
     expect(postedMessage()).toMatchObject({
       type: GOAL_CONTRIBUTION_LINK_OPENED,
@@ -131,52 +116,46 @@ describe('announceGoalContributionLink', () => {
 
     vi.advanceTimersByTime(1600);
     expect(BroadcastChannelStub.instances[0].closed).toBe(true);
-    expect(onHandoff).not.toHaveBeenCalled();
   });
 
-  it('hace el handoff solo cuando otra pestaña confirma este requestId', () => {
-    const onHandoff = vi.fn();
-    announceGoalContributionLink('abc123', onHandoff);
+  it('cierra el canal solo cuando otra pestaña confirma este requestId', () => {
+    announceGoalContributionLink('abc123');
     const { requestId } = postedMessage();
 
     sendAck('otro-request');
-    expect(onHandoff).not.toHaveBeenCalled();
+    expect(BroadcastChannelStub.instances[0].closed).toBe(false);
 
     sendAck(requestId);
-    expect(onHandoff).toHaveBeenCalledTimes(1);
     expect(BroadcastChannelStub.instances[0].closed).toBe(true);
   });
 
-  it('no hace el handoff dos veces si llega un ACK repetido', () => {
-    const onHandoff = vi.fn();
-    announceGoalContributionLink('abc123', onHandoff);
+  it('un ACK repetido no hace nada', () => {
+    announceGoalContributionLink('abc123');
     const { requestId } = postedMessage();
 
     sendAck(requestId);
     sendAck(requestId);
 
-    expect(onHandoff).toHaveBeenCalledTimes(1);
+    expect(BroadcastChannelStub.instances[0].closed).toBe(true);
   });
 
   it('la limpieza cierra el canal y cancela el temporizador', () => {
-    const onHandoff = vi.fn();
-    const close = announceGoalContributionLink('abc123', onHandoff);
+    const close = announceGoalContributionLink('abc123');
 
     close();
     vi.advanceTimersByTime(3000);
 
     expect(BroadcastChannelStub.instances[0].closed).toBe(true);
-    expect(onHandoff).not.toHaveBeenCalled();
   });
 
   it('no publica nada sin token', () => {
-    const close = announceGoalContributionLink('', vi.fn());
+    const close = announceGoalContributionLink('');
     close();
     expect(BroadcastChannelStub.instances).toHaveLength(0);
   });
 
   it('no falla en navegadores sin BroadcastChannel', () => {
     vi.stubGlobal('BroadcastChannel', undefined);
-    expect(() => announceGoalContributionLink('abc123', vi.fn())).not.toThrow();
+    expect(() => announceGoalContributionLink('abc123')).not.toThrow();
   });
 });

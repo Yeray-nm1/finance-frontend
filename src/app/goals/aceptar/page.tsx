@@ -2,16 +2,12 @@
 
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { formatCurrency } from "@/lib/format";
 import { api } from "@/lib/api";
-import {
-  GOALS_PATH,
-  announceGoalContributionLink,
-  consumeHandoff,
-} from "@/lib/goal-contribution-channel";
+import { announceGoalContributionLink } from "@/lib/goal-contribution-channel";
 import type { PendingGoalContribution } from "@/types/goals";
 
 function messageFrom(error: unknown): string {
@@ -19,7 +15,6 @@ function messageFrom(error: unknown): string {
 }
 
 function AcceptContributionForm({ token }: { readonly token: string | null }) {
-  const router = useRouter();
   const [pending, setPending] = useState<PendingGoalContribution | null>(null);
   const [loading, setLoading] = useState(Boolean(token));
   const [accepting, setAccepting] = useState(false);
@@ -28,12 +23,12 @@ function AcceptContributionForm({ token }: { readonly token: string | null }) {
   const [accountId, setAccountId] = useState("");
 
   // El enlace del correo abre esta página en una pestaña nueva: avisamos a la
-  // pestaña que ya tenía la app abierta. Si nos confirma que ha venido a
-  // aceptar, esta pestaña se retira a /goals para no dejar dos formularios.
+  // pestaña que ya tenía la app abierta. Si confirma que se retira a /goals,
+  // esta pestaña se queda con el formulario.
   useEffect(() => {
-    if (!token || consumeHandoff(token)) return;
-    return announceGoalContributionLink(token, () => router.replace(GOALS_PATH));
-  }, [token, router]);
+    if (!token) return;
+    return announceGoalContributionLink(token);
+  }, [token]);
 
   useEffect(() => {
     if (!token) return;

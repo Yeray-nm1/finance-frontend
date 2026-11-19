@@ -3,16 +3,17 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
+  GOALS_PATH,
   GOAL_CONTRIBUTION_CHANNEL,
   GOAL_CONTRIBUTION_LINK_ACK,
   goalContributionLinkFromMessage,
   isSameTab,
-  markHandoff,
 } from "@/lib/goal-contribution-channel";
 
 /**
- * Escucha el enlace del correo abierto en otra pestaña y lleva esta a la
- * aceptación. Se monta una sola vez en el layout raíz; no dibuja nada.
+ * Escucha el enlace del correo abierto en otra pestaña: confirma con un ACK y
+ * se retira a /goals para dejar el formulario solo en la pestaña del enlace.
+ * Se monta una sola vez en el layout raíz; no dibuja nada.
  */
 export function GoalContributionChannelBridge() {
   const router = useRouter();
@@ -25,18 +26,15 @@ export function GoalContributionChannelBridge() {
       const link = goalContributionLinkFromMessage(event.data);
       if (!link || isSameTab(link.sourceId)) return;
 
-      // Confirmamos recepción antes de navegar: la pestaña del correo podrá
-      // saltar a /goals y dejar un solo formulario abierto.
+      // Confirmamos recepción antes de retirarnos: la pestaña del enlace
+      // conserva el formulario y cierra su canal al recibir el ACK.
       channel.postMessage({
         type: GOAL_CONTRIBUTION_LINK_ACK,
         requestId: link.requestId,
       });
 
-      const current = `${window.location.pathname}${window.location.search}`;
-      if (current === link.path) return;
-
-      markHandoff(new URL(link.path, window.location.origin).searchParams.get("token") ?? "");
-      router.push(link.path);
+      if (window.location.pathname === GOALS_PATH) return;
+      router.replace(GOALS_PATH);
     };
 
     return () => channel.close();

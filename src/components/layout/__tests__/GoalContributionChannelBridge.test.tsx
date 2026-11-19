@@ -9,10 +9,10 @@ import {
 } from '@/lib/goal-contribution-channel';
 import { GoalContributionChannelBridge } from '../GoalContributionChannelBridge';
 
-const navigation = vi.hoisted(() => ({ push: vi.fn() }));
+const navigation = vi.hoisted(() => ({ replace: vi.fn() }));
 
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: navigation.push }),
+  useRouter: () => ({ replace: navigation.replace }),
 }));
 
 function emitFromOtherTab(
@@ -30,7 +30,6 @@ describe('GoalContributionChannelBridge', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    sessionStorage.clear();
     BroadcastChannelStub.reset();
     vi.stubGlobal('BroadcastChannel', BroadcastChannelStub);
     window.history.replaceState({}, '', originalHref);
@@ -41,13 +40,12 @@ describe('GoalContributionChannelBridge', () => {
     vi.unstubAllGlobals();
   });
 
-  it('navega a la aceptación cuando otra pestaña abre el enlace del correo', () => {
+  it('se retira a /goals y confirma cuando otra pestaña abre el enlace del correo', () => {
     render(<GoalContributionChannelBridge />);
 
     emitFromOtherTab('/goals/aceptar?token=abc123');
 
-    expect(navigation.push).toHaveBeenCalledWith('/goals/aceptar?token=abc123');
-    expect(sessionStorage.getItem('finance-goal-contribution-handoff')).toBe('abc123');
+    expect(navigation.replace).toHaveBeenCalledWith('/goals');
     expect(BroadcastChannelStub.instances[0].posted).toContainEqual({
       type: GOAL_CONTRIBUTION_LINK_ACK,
       requestId: 'r-1',
@@ -55,7 +53,7 @@ describe('GoalContributionChannelBridge', () => {
   });
 
   it('ignora el aviso emitido por esta misma pestaña', () => {
-    const close = announceGoalContributionLink('abc123', vi.fn());
+    const close = announceGoalContributionLink('abc123');
     const ownSourceId = (
       BroadcastChannelStub.instances[0].posted[0] as { sourceId: string }
     ).sourceId;
@@ -69,7 +67,7 @@ describe('GoalContributionChannelBridge', () => {
       ownSourceId
     );
 
-    expect(navigation.push).not.toHaveBeenCalled();
+    expect(navigation.replace).not.toHaveBeenCalled();
   });
 
   it('ignora mensajes de otro tipo o con una ruta que no es la de aceptación', () => {
@@ -79,16 +77,16 @@ describe('GoalContributionChannelBridge', () => {
     emitFromOtherTab('/goals?token=abc');
     emitFromOtherTab('https://evil.test/goals/aceptar?token=abc');
 
-    expect(navigation.push).not.toHaveBeenCalled();
+    expect(navigation.replace).not.toHaveBeenCalled();
   });
 
-  it('no navega si la pestaña ya está en esa misma ruta', () => {
-    window.history.replaceState({}, '', '/goals/aceptar?token=abc123');
+  it('no navega si la pestaña ya está en /goals, pero igual confirma', () => {
+    window.history.replaceState({}, '', '/goals');
     render(<GoalContributionChannelBridge />);
 
     emitFromOtherTab('/goals/aceptar?token=abc123');
 
-    expect(navigation.push).not.toHaveBeenCalled();
+    expect(navigation.replace).not.toHaveBeenCalled();
     expect(BroadcastChannelStub.instances[0].posted).toContainEqual({
       type: GOAL_CONTRIBUTION_LINK_ACK,
       requestId: 'r-1',
@@ -107,6 +105,6 @@ describe('GoalContributionChannelBridge', () => {
   it('no falla en navegadores sin BroadcastChannel', () => {
     vi.stubGlobal('BroadcastChannel', undefined);
     expect(() => render(<GoalContributionChannelBridge />)).not.toThrow();
-    expect(navigation.push).not.toHaveBeenCalled();
+    expect(navigation.replace).not.toHaveBeenCalled();
   });
 });

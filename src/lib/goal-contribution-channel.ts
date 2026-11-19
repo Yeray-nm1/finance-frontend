@@ -2,13 +2,12 @@
  * Puente entre pestañas para la aceptación de aportaciones.
  *
  * Al abrir el enlace del correo en una pestaña nueva, esta publica la ruta de
- * aceptación en un BroadcastChannel. La pestaña que ya tenía la app abierta la
- * recibe, confirma con un ACK y navega allí. La pestaña del correo, al recibir
- * el ACK, salta a /goals para que no queden dos formularios abiertos.
+ * aceptación en un BroadcastChannel y se queda con el formulario. La pestaña
+ * que ya tenía la app abierta recibe el aviso, confirma con un ACK y salta a
+ * /goals, así que no quedan dos formularios abiertos.
  *
  * Es un aviso entre pestañas del mismo navegador: no garantiza el foco y no
- * puede cerrar la pestaña nueva (el navegador solo permite cerrar ventanas
- * abiertas por script, y esta la abre el cliente de correo).
+ * puede cerrar la pestaña vieja ni darle el foco (depende del navegador).
  */
 
 export const GOAL_CONTRIBUTION_CHANNEL = "finance-goal-contribution";
@@ -18,7 +17,6 @@ export const GOALS_PATH = "/goals";
 
 const ACCEPT_PATH = "/goals/aceptar";
 const HANDOFF_TIMEOUT_MS = 1500;
-const HANDOFF_KEY = "finance-goal-contribution-handoff";
 // Una sola pestaña tiene dos canales (el puente y el emisor): el id evita que se
 // confirmen entre sí y se retiren a /goals sin otra pestaña implicada.
 const TAB_ID = createTabId();
@@ -105,29 +103,6 @@ export function isGoalContributionAck(value: unknown, requestId: string): boolea
   );
 }
 
-/**
- * La pestaña que recibe el aviso navega a la aceptación. Marcamos el token para
- * que esa página no vuelva a emitir el enlace: si lo hiciera, la pestaña del
- * correo (ya retirada a /goals) podría volver al formulario.
- */
-export function markHandoff(token: string): void {
-  try {
-    sessionStorage.setItem(HANDOFF_KEY, token);
-  } catch {
-    // sessionStorage puede estar bloqueado; en ese caso solo perdemos la marca.
-  }
-}
-
-export function consumeHandoff(token: string): boolean {
-  try {
-    if (sessionStorage.getItem(HANDOFF_KEY) !== token) return false;
-    sessionStorage.removeItem(HANDOFF_KEY);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function newRequestId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
@@ -136,15 +111,12 @@ function newRequestId(): string {
 }
 
 /**
- * Publica el enlace y espera el ACK de otra pestaña. Si llega, llama a
- * `onHandoff` (la página de aceptación salta a /goals). Si no hay otra pestaña
- * interesada, se conforma con el timeout y deja el formulario donde está.
- * Devuelve la función de limpieza para cerrar el canal al desmontar.
+ * Publica el enlace desde la pestaña que lo abrió y escucha el ACK de la pestaña
+ * vieja. Esta pestaña no navega: conserva el formulario. El canal se cierra al
+ * recibir el ACK o al expirar el timeout (si no hay otra pestaña abierta).
+ * Devuelve la función de limpieza para el desmontaje.
  */
-export function announceGoalContributionLink(
-  token: string,
-  onHandoff: () => void
-): () => void {
+export function announceGoalContributionLink(token: string): () => void {
   if (!token || typeof BroadcastChannel === "undefined") return () => {};
 
   const channel = new BroadcastChannel(GOAL_CONTRIBUTION_CHANNEL);
@@ -163,7 +135,6 @@ export function announceGoalContributionLink(
   channel.onmessage = (event: MessageEvent<unknown>) => {
     if (!isGoalContributionAck(event.data, requestId)) return;
     close();
-    onHandoff();
   };
 
   channel.postMessage({
