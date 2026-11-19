@@ -1,3 +1,8 @@
+## [0.13.4] - 2026-11-19
+
+- efc8bfd Merge pull request #44 from Yeray-nm1/fix/ynm-handoff-new-tab
+- f51e9b9 fix: deja el formulario en la pestaña que abre el enlace
+
 ## [0.13.3] - 2026-11-18
 
 - 0eeb5c1 Merge pull request #43 from Yeray-nm1/fix/ynm-broadcast-handoff
