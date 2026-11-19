@@ -22,6 +22,7 @@ export const transactions = {
     if (params?.uncategorized) qs.set('uncategorized', 'true')
     if (params?.accountId) qs.set('accountId', params.accountId)
     if (params?.accountIds) qs.set('accountIds', params.accountIds)
+    if (params?.goalId) qs.set('goalId', params.goalId)
     if (params?.dateFrom) qs.set('dateFrom', params.dateFrom)
     if (params?.dateTo) qs.set('dateTo', params.dateTo)
     if (params?.search) qs.set('search', params.search)

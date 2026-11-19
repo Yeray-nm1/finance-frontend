@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { CalendarClock, ChartColumn, ChevronDown, Mail, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,6 +14,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import {
+  DEFAULT_NOTIFICATION_RULES,
+  normalizeNotificationRules,
+} from "@/lib/notification-rules";
 import { toast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
 import type {
@@ -21,18 +26,24 @@ import type {
   SummaryFrequency,
 } from "@/types/notifications";
 
-const DEFAULT_RULES: NotificationRules = {
-  subscriptionDue: { enabled: false, emailEnabled: false, daysBefore: 3 },
-  spendingSummary: { enabled: false, emailEnabled: false, frequency: "weekly" },
-  goalReminder: { enabled: false, emailEnabled: false },
-};
+const DEFAULT_RULES = DEFAULT_NOTIFICATION_RULES;
+const normalizeRules = normalizeNotificationRules;
 
-/** Las reglas guardadas antes de existir el recordatorio no traen goalReminder. */
-function normalizeRules(loaded: Partial<NotificationRules>): NotificationRules {
+/** Un aviso apagado no puede tener el correo encendido: el interruptor general manda. */
+function sanitizeEmailFlags(rules: NotificationRules): NotificationRules {
   return {
-    subscriptionDue: loaded.subscriptionDue ?? DEFAULT_RULES.subscriptionDue,
-    spendingSummary: loaded.spendingSummary ?? DEFAULT_RULES.spendingSummary,
-    goalReminder: loaded.goalReminder ?? DEFAULT_RULES.goalReminder,
+    subscriptionDue: {
+      ...rules.subscriptionDue,
+      emailEnabled: rules.subscriptionDue.enabled && rules.subscriptionDue.emailEnabled,
+    },
+    spendingSummary: {
+      ...rules.spendingSummary,
+      emailEnabled: rules.spendingSummary.enabled && rules.spendingSummary.emailEnabled,
+    },
+    goalReminder: {
+      ...rules.goalReminder,
+      emailEnabled: rules.goalReminder.enabled && rules.goalReminder.emailEnabled,
+    },
   };
 }
 
@@ -64,7 +75,7 @@ export function NotificationSettings({ email }: NotificationSettingsProps) {
       .get()
       .then((loaded) => {
         if (!active) return;
-        const normalized = normalizeRules(loaded);
+        const normalized = sanitizeEmailFlags(normalizeRules(loaded));
         setRules(normalized);
         setSavedRules(normalized);
       })
@@ -78,6 +89,15 @@ export function NotificationSettings({ email }: NotificationSettingsProps) {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    const focus = new URLSearchParams(window.location.search).get("focus");
+    if (focus !== "goalReminder") return;
+    const target = document.getElementById("notification-goal-reminder");
+    target?.focus();
+    target?.scrollIntoView({ block: "center" });
+  }, [loading]);
 
   const dirty = JSON.stringify(rules) !== JSON.stringify(savedRules);
   const emailCount =
@@ -146,7 +166,11 @@ export function NotificationSettings({ email }: NotificationSettingsProps) {
               onCheckedChange={(enabled) =>
                 setRules((prev) => ({
                   ...prev,
-                  subscriptionDue: { ...prev.subscriptionDue, enabled },
+                  subscriptionDue: {
+                    ...prev.subscriptionDue,
+                    enabled,
+                    emailEnabled: enabled && prev.subscriptionDue.emailEnabled,
+                  },
                 }))
               }
             />
@@ -213,7 +237,11 @@ export function NotificationSettings({ email }: NotificationSettingsProps) {
               onCheckedChange={(enabled) =>
                 setRules((prev) => ({
                   ...prev,
-                  spendingSummary: { ...prev.spendingSummary, enabled },
+                  spendingSummary: {
+                    ...prev.spendingSummary,
+                    enabled,
+                    emailEnabled: enabled && prev.spendingSummary.emailEnabled,
+                  },
                 }))
               }
             />
@@ -266,20 +294,31 @@ export function NotificationSettings({ email }: NotificationSettingsProps) {
               <Target size={18} />
             </span>
             <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-medium text-text-primary">
-                Recordatorio mensual de metas
-              </h3>
+              <h3 className="text-sm font-medium text-text-primary">Avisos de metas</h3>
               <p className="mt-0.5 text-xs leading-snug text-text-muted">
-                Te avisamos el día elegido en cada meta para confirmar tu aportación manual.
+                Te avisamos el día elegido en cada meta para revisar y confirmar tu aportación.
+              </p>
+              <p className="mt-1">
+                <Link
+                  href="/goals"
+                  className="text-xs font-medium text-primary hover:text-primary-hover"
+                >
+                  Ir a Metas
+                </Link>
               </p>
             </div>
             <Switch
-              aria-label="Activar recordatorio mensual de metas"
+              id="notification-goal-reminder"
+              aria-label="Activar avisos de metas"
               checked={rules.goalReminder.enabled}
               onCheckedChange={(enabled) =>
                 setRules((prev) => ({
                   ...prev,
-                  goalReminder: { ...prev.goalReminder, enabled },
+                  goalReminder: {
+                    ...prev.goalReminder,
+                    enabled,
+                    emailEnabled: enabled && prev.goalReminder.emailEnabled,
+                  },
                 }))
               }
             />
@@ -317,10 +356,14 @@ export function NotificationSettings({ email }: NotificationSettingsProps) {
               <p className="px-2 pb-1 text-xs font-medium text-text-secondary">
                 Enviar también por email
               </p>
-              <label className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-xs text-text-primary hover:bg-white">
+              <p className="px-2 pb-2 text-[11px] leading-snug text-text-muted">
+                Activa cada aviso para poder recibirlo también por correo.
+              </p>
+              <label className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-xs text-text-primary hover:bg-white has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60">
                 <Checkbox
                   aria-label="Enviar aviso de suscripción próxima por email"
                   checked={rules.subscriptionDue.emailEnabled}
+                  disabled={!rules.subscriptionDue.enabled}
                   onCheckedChange={(value) =>
                     setRules((prev) => ({
                       ...prev,
@@ -330,10 +373,11 @@ export function NotificationSettings({ email }: NotificationSettingsProps) {
                 />
                 Suscripciones
               </label>
-              <label className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-xs text-text-primary hover:bg-white">
+              <label className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-xs text-text-primary hover:bg-white has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60">
                 <Checkbox
                   aria-label="Enviar resumen de gastos por email"
                   checked={rules.spendingSummary.emailEnabled}
+                  disabled={!rules.spendingSummary.enabled}
                   onCheckedChange={(value) =>
                     setRules((prev) => ({
                       ...prev,
@@ -343,10 +387,11 @@ export function NotificationSettings({ email }: NotificationSettingsProps) {
                 />
                 Resumen de gastos
               </label>
-              <label className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-xs text-text-primary hover:bg-white">
+              <label className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-xs text-text-primary hover:bg-white has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60">
                 <Checkbox
                   aria-label="Enviar recordatorio de metas por email"
                   checked={rules.goalReminder.emailEnabled}
+                  disabled={!rules.goalReminder.enabled}
                   onCheckedChange={(value) =>
                     setRules((prev) => ({
                       ...prev,

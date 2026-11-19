@@ -30,10 +30,10 @@ export interface SavingsGoal {
   contributions?: GoalContribution[];
   /** Día del mes (1-28) en que se envía el recordatorio mensual. */
   reminderDay: number | null;
-  /** Cuota sugerida para la aportación manual del recordatorio. */
+  /** Importe sugerido para la aportación; se puede editar al confirmar. */
   reminderAmount: number | null;
-  /** Si la aportación mensual se propone por correo y requiere aceptación. */
-  contributionScheduled?: boolean;
+  /** Aviso mensual de esta meta; el switch global sigue siendo el maestro. */
+  reminderEnabled: boolean;
 }
 
 export interface GoalInput {
@@ -43,7 +43,7 @@ export interface GoalInput {
   accountId?: string | null;
   reminderDay?: number | null;
   reminderAmount?: number | null;
-  contributionScheduled?: boolean;
+  reminderEnabled?: boolean;
 }
 
 export interface GoalContributionInput {
@@ -61,7 +61,10 @@ export interface GoalContributionAccount {
 /** Aportación pendiente que el usuario debe confirmar desde el correo. */
 export interface PendingGoalContribution {
   id: string;
-  amount: number;
+  /** Meta de la aportación, para filtrar los movimientos al confirmarla. */
+  goalId: string;
+  /** Sugerencia de la meta; null cuando no se configuró importe. */
+  amount: number | null;
   period: string;
   goalName: string;
   status: string;
@@ -72,6 +75,8 @@ export interface PendingGoalContribution {
 export interface AcceptGoalContributionResult {
   id: string;
   status: string;
+  /** Importe confirmado, para el comprobante de la aceptación reciente. */
+  amount?: number | null;
   sourceAccountId?: string | null;
   alreadyAccepted: boolean;
 }

@@ -24,7 +24,7 @@ function base64url(value: string): string {
   return Buffer.from(value).toString('base64url');
 }
 
-/** Token HS256 siniat/exp, igual que el que genera el backend para el correo. */
+/** Token HS256 sin iat/exp, igual que el que genera el backend para el correo. */
 function signGoalContributionToken(payload: ContributionTokenPayload): string {
   const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   const body = base64url(JSON.stringify(payload));
@@ -34,9 +34,9 @@ function signGoalContributionToken(payload: ContributionTokenPayload): string {
   return `${header}.${body}.${signature}`;
 }
 
-test.describe('aportación programada con aceptación por correo', () => {
-  test('no cobra sin aceptar y transfiere solo tras el POST autenticado', async ({ browser }) => {
-    test.setTimeout(60_000);
+test.describe('aviso mensual de metas con aceptación por correo', () => {
+  test('el aviso no anuncia importe, la aceptación lo elige y reabrir no repite el cargo', async ({ browser }) => {
+    test.setTimeout(90_000);
     const databaseUrl = process.env.E2E_DATABASE_URL;
     if (!databaseUrl) throw new Error('E2E_DATABASE_URL is required');
 
@@ -44,7 +44,7 @@ test.describe('aportación programada con aceptación por correo', () => {
     const context = await browser.newContext({ baseURL: FRONTEND_URL });
     const runId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
     const email = `contribution-${runId}@example.com`;
-    const goalName = `Meta aportación ${runId}`;
+    const goalName = `Meta aviso ${runId}`;
 
     try {
       const register = await context.request.post('/api/v1/auth/register', {
@@ -52,6 +52,17 @@ test.describe('aportación programada con aceptación por correo', () => {
       });
       expect(register.status(), await register.text()).toBe(201);
       const { user } = (await register.json()) as { user: { id: string } };
+
+      // El aviso global de Preferencias manda: lo encendemos para que la
+      // tarjeta muestre el indicador verde (meta y global activos).
+      const rules = await context.request.put('/api/v1/notifications/rules', {
+        data: {
+          subscriptionDue: { enabled: false, emailEnabled: false, daysBefore: 3 },
+          spendingSummary: { enabled: false, emailEnabled: false, frequency: 'weekly' },
+          goalReminder: { enabled: true, emailEnabled: true },
+        },
+      });
+      expect(rules.status(), await rules.text()).toBe(200);
 
       async function createAccount(type: 'checking' | 'savings'): Promise<SeededAccount> {
         const response = await context.request.post('/api/v1/accounts', {
@@ -64,25 +75,27 @@ test.describe('aportación programada con aceptación por correo', () => {
       const checking = await createAccount('checking');
       const savings = await createAccount('savings');
 
+      // La meta nace con el aviso encendido y una sugerencia de 50 € que NO se
+      // anuncia en el correo ni en la campana.
       const goalResponse = await context.request.post('/api/v1/goals', {
         data: {
           name: goalName,
           targetAmount: 1000,
           accountId: savings.id,
-          contributionScheduled: true,
+          reminderEnabled: true,
           reminderDay: 1,
           reminderAmount: 50,
         },
       });
       expect(goalResponse.status(), await goalResponse.text()).toBe(201);
-      const goal = (await goalResponse.json()) as { id: string };
+      const goal = (await goalResponse.json()) as { id: string; reminderAmount: number };
 
       const period = new Date().toISOString().slice(0, 7);
       await pool.query(
         `INSERT INTO "GoalContribution"
           ("id", "userId", "goalId", "period", "amount", "goalAccountId", "status", "createdAt")
          VALUES ($1, $2, $3, $4, $5, $6, 'pending', NOW())`,
-        [randomUUID(), user.id, goal.id, period, 50, savings.id]
+        [randomUUID(), user.id, goal.id, period, goal.reminderAmount, savings.id]
       );
 
       const token = signGoalContributionToken({
@@ -101,8 +114,8 @@ test.describe('aportación programada con aceptación por correo', () => {
           randomUUID(),
           user.id,
           notificationKey,
-          `Aportación programada: ${goalName}`,
-          'Tienes una aportación de 50,00 € pendiente de confirmar.',
+          `Recordatorio de meta: ${goalName}`,
+          'Tienes una aportación pendiente. Confírmala desde aquí.',
           `/goals/aceptar?token=${token}`,
         ]
       );
@@ -123,12 +136,26 @@ test.describe('aportación programada con aceptación por correo', () => {
         return result.total;
       }
 
+      async function suggestedAmount(): Promise<number> {
+        const { rows } = await pool.query<{ reminderAmount: number }>(
+          'SELECT "reminderAmount" FROM "SavingsGoal" WHERE "id" = $1',
+          [goal.id]
+        );
+        return rows[0].reminderAmount;
+      }
+
       expect(await goalSaved()).toBe(0);
       expect(await transferCount()).toBe(0);
+      expect(await suggestedAmount()).toBe(50);
 
       const page = await context.newPage();
       await page.goto('/goals');
+      await expect(
+        page.getByRole('status', { name: 'Avisos de la meta activos' })
+      ).toBeVisible();
       await page.getByRole('button', { name: /^Notificaciones/ }).first().click();
+      await expect(page.getByText('Tienes una aportación pendiente. Confírmala desde aquí.')).toBeVisible();
+      await expect(page.getByText(/50,00/)).toHaveCount(0);
       await page.getByRole('link', { name: 'Aceptar aportación' }).click();
       await expect(page).toHaveURL(/\/goals\/aceptar\?token=/);
       await expect.poll(async () => {
@@ -138,25 +165,54 @@ test.describe('aportación programada con aceptación por correo', () => {
         );
         return row.rows[0]?.readAt != null;
       }).toBe(true);
+
       await expect(page.getByRole('heading', { name: 'Confirma tu aportación' })).toBeVisible();
-      const acceptMain = page.getByRole('main');
-      await expect(acceptMain.getByText(goalName, { exact: true })).toBeVisible();
-      await expect(acceptMain.getByText(/50,00/)).toBeVisible();
+      await expect(page.getByText(`Aportación programada · ${period}`)).toBeVisible();
+      const amountField = page.getByLabel('Importe de la aportación (€)');
+      await expect(amountField).toHaveValue('50');
+      const updateSuggestion = page.getByRole('checkbox', {
+        name: 'Actualizar el importe para futuras aportaciones',
+      });
+      await expect(updateSuggestion).toBeDisabled();
+      await expect(updateSuggestion).not.toBeChecked();
       await expect(
-        page.getByText(/No se cobrará nada sin tu confirmación/i)
+        page.getByText(/No se realizará el movimiento hasta que confirmes/i)
       ).toBeVisible();
+      await expect(page.getByText(/50,00/)).toHaveCount(0);
       await expectAccessible(page, '/goals/aceptar');
 
       // Abrir el enlace (GET) no mueve dinero.
       expect(await goalSaved()).toBe(0);
       expect(await transferCount()).toBe(0);
 
+      await amountField.fill('25');
+      await expect(updateSuggestion).toBeEnabled();
+      await expect(updateSuggestion).not.toBeChecked();
+      await updateSuggestion.check();
       await page.getByRole('combobox', { name: 'Cuenta origen' }).selectOption(checking.id);
       await page.getByRole('button', { name: 'Aceptar aportación' }).click();
       await expect(page.getByRole('heading', { name: 'Aportación confirmada' })).toBeVisible();
+      await expect(page.getByText(`Aportación programada · ${period}`)).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Ver movimientos' })).toHaveAttribute(
+        'href',
+        `/transactions?goalId=${goal.id}&month=${period}`
+      );
+      await expect(page.getByRole('link', { name: 'Volver a metas' })).toHaveAttribute('href', '/goals');
 
-      expect(await goalSaved()).toBe(50);
+      // 3B: el enlace llega filtrado por meta y mes, con el chip correspondiente.
+      await page.getByRole('link', { name: 'Ver movimientos' }).click();
+      await expect(page).toHaveURL(
+        new RegExp(`/transactions\\?goalId=${goal.id}&month=${period}`)
+      );
+      await expect(page.getByRole('group', { name: 'Filtro de meta' })).toContainText(goalName);
+      await expect(
+        page.getByRole('cell', { name: `Aportación a ${goalName}`, exact: true })
+      ).toBeVisible();
+      await page.goBack();
+
+      expect(await goalSaved()).toBe(25);
       expect(await transferCount()).toBe(1);
+      expect(await suggestedAmount()).toBe(25);
 
       const transfers = await context.request.get('/api/v1/transactions', {
         params: { search: `Aportación a ${goalName}` },
@@ -165,31 +221,35 @@ test.describe('aportación programada con aceptación por correo', () => {
         data: Array<{ amount: number; accountId: string; transferAccountId: string }>;
       };
       expect(data[0]).toMatchObject({
-        amount: -50,
+        amount: -25,
         accountId: checking.id,
         transferAccountId: savings.id,
       });
 
       const notifications = await context.request.get('/api/v1/notifications');
       const { items } = (await notifications.json()) as {
-        items: Array<{ type: string; title: string }>;
+        items: Array<{ type: string; title: string; body: string }>;
       };
-      expect(
-        items.some(
-          (item) =>
-            item.type === 'goal_contribution' &&
-            item.title.startsWith('Aportación confirmada')
-        )
-      ).toBe(true);
+      // 4A: la campana conserva el aviso previo, pero no repite la confirmación.
+      expect(items.some((item) => item.title.startsWith('Recordatorio de meta'))).toBe(true);
+      expect(items.some((item) => item.title.startsWith('Aportación confirmada'))).toBe(false);
 
+      // Reabrir el enlace muestra la doble confirmación y no mueve dinero.
       await page.reload();
-      await expect(page.getByRole('heading', { name: 'Aportación confirmada' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Ya confirmaste esta aportación' })).toBeVisible();
+      await expect(
+        page.getByText(
+          `Esta aportación ya se hizo anteriormente para el periodo ${period}. No se ha vuelto a realizar el movimiento.`
+        )
+      ).toBeVisible();
       await expect(page.getByRole('combobox', { name: 'Cuenta origen' })).toHaveCount(0);
-      expect(await goalSaved()).toBe(50);
+      await expect(page.getByRole('link', { name: 'Ver movimientos' })).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Volver a metas' })).toBeVisible();
+      expect(await goalSaved()).toBe(25);
       expect(await transferCount()).toBe(1);
 
       const repeated = await context.request.post('/api/v1/goal-contributions/accept', {
-        data: { token, accountId: checking.id },
+        data: { token, accountId: checking.id, amount: 25, updateSuggestion: false },
       });
       expect(repeated.status(), await repeated.text()).toBe(200);
       expect((await repeated.json()) as { alreadyAccepted: boolean }).toMatchObject({
@@ -234,7 +294,7 @@ test.describe('aportación programada con aceptación por correo', () => {
           name: goalName,
           targetAmount: 1000,
           accountId: savings.id,
-          contributionScheduled: true,
+          reminderEnabled: true,
           reminderDay: 1,
           reminderAmount: 25,
         },
@@ -281,7 +341,7 @@ test.describe('aportación programada con aceptación por correo', () => {
       await expect(mailTab).toHaveURL(/\/goals\/aceptar\?token=/);
       await expect(mailTab.getByRole('heading', { name: 'Confirma tu aportación' })).toBeVisible();
       await expect(mailTab.getByRole('combobox', { name: 'Cuenta origen' })).toBeEnabled();
-      await expect(mailTab.getByText(/25,00/)).toBeVisible();
+      await expect(mailTab.getByLabel('Importe de la aportación (€)')).toHaveValue('25');
       // La pestaña nueva no se retira aunque siga abierta la vieja.
       await mailTab.waitForTimeout(500);
       await expect(mailTab).toHaveURL(/\/goals\/aceptar\?token=/);

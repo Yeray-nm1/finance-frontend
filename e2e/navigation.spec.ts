@@ -65,4 +65,17 @@ test.describe('navegación móvil', () => {
 
     await expect(sidebar).not.toHaveAttribute('aria-modal', 'true');
   });
+
+  test('no duplica la campana en el menú desplegable', async ({ page }) => {
+    await page.goto('/dashboard');
+
+    await expect(
+      page.getByRole('banner').getByRole('button', { name: /Notificaciones/ })
+    ).toBeVisible();
+
+    await page.getByRole('button', { name: 'Abrir menu' }).click();
+    const sidebar = page.getByRole('dialog', { name: 'Navegacion principal' });
+
+    await expect(sidebar.getByRole('button', { name: /Notificaciones/ })).toHaveCount(0);
+  });
 });

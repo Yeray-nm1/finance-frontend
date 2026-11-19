@@ -12,6 +12,7 @@ export interface TransactionFilters {
   uncategorized?: boolean;
   accountId?: string;
   accountIds?: string;
+  goalId?: string;
   dateFrom?: string;
   dateTo?: string;
   search?: string;
