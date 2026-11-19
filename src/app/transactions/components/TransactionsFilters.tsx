@@ -14,6 +14,8 @@ export function TransactionsFilters({
   filterFlow,
   filterCategoryIds,
   filterAccountIds,
+  filterGoalId,
+  goalName,
   filterSearch,
   filterSubscriptionIds,
   filterDates,
@@ -25,6 +27,7 @@ export function TransactionsFilters({
   onFilterTypeChange,
   onFilterCategoryIdsChange,
   onFilterAccountIdsChange,
+  onFilterGoalIdClear,
   onFilterSearchChange,
   onFilterSubscriptionIdsChange,
   onFilterDatesChange,
@@ -47,7 +50,7 @@ export function TransactionsFilters({
     filterCategoryIds.length > 0 ||
     filterAccountIds.length > 0 ||
     filterSubscriptionIds.length > 0;
-  const hasChips = hasMultiChips || typeChipLabel !== null;
+  const hasChips = hasMultiChips || typeChipLabel !== null || Boolean(filterGoalId);
 
   const categoryOptions: SelectFilterOption[] = [
     { value: NO_CATEGORY_SENTINEL, label: "Sin categoría" },
@@ -163,6 +166,20 @@ export function TransactionsFilters({
                 options={accountOptions}
                 onChange={onFilterAccountIdsChange}
               />
+            </div>
+          )}
+          {filterGoalId && (
+            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filtro de meta">
+              <span className="inline-flex items-center gap-1 rounded bg-primary-light px-2 py-1 text-xs text-primary transition-colors animate-chip-in motion-reduce:animate-none">
+                Meta: {goalName ?? "Meta"}
+                <button
+                  onClick={onFilterGoalIdClear}
+                  className="-my-1 -mr-1 flex size-6 items-center justify-center rounded text-primary/70 transition-colors hover:bg-primary/10 hover:text-expense"
+                  aria-label="Quitar filtro Meta"
+                >
+                  <X className="size-3" />
+                </button>
+              </span>
             </div>
           )}
           {filterSubscriptionIds.length > 0 && (

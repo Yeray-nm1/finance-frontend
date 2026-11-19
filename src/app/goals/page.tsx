@@ -8,7 +8,12 @@ import { ErrorState } from "@/components/ErrorState";
 import { toast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
 import { animateRowToTab } from "@/lib/animate-to-tab";
+import {
+  DEFAULT_NOTIFICATION_RULES,
+  normalizeNotificationRules,
+} from "@/lib/notification-rules";
 import type { Account } from "@/types/accounts";
+import type { NotificationRules } from "@/types/notifications";
 import type {
   GoalContributionInput,
   GoalInput,
@@ -42,6 +47,9 @@ function GoalsSkeleton() {
 export default function GoalsPage() {
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [notificationRules, setNotificationRules] = useState<NotificationRules>(
+    DEFAULT_NOTIFICATION_RULES
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("active");
@@ -58,12 +66,14 @@ export default function GoalsPage() {
     setError(null);
 
     try {
-      const [goalList, accountList] = await Promise.all([
+      const [goalList, accountList, rules] = await Promise.all([
         api.goals.list(true),
         api.accounts.list(),
+        api.notifications.rules.get(),
       ]);
       setGoals(goalList);
       setAccounts(accountList);
+      setNotificationRules(normalizeNotificationRules(rules));
     } catch (err) {
       console.error(err);
       setError("No se pudieron cargar las metas");
@@ -124,6 +134,23 @@ export default function GoalsPage() {
 
   function handleAccountCreated(account: Account) {
     setAccounts((prev) => [...prev, account]);
+  }
+
+  async function handleSaveNotificationRules(rules: NotificationRules) {
+    try {
+      setNotificationRules(
+        normalizeNotificationRules(await api.notifications.rules.save(rules))
+      );
+    } catch (err) {
+      toast({
+        title: "No se pudo activar el aviso global",
+        description: "Revisa los avisos de metas en Preferencias para terminar de activarlo.",
+        actionLabel: "Ir a Preferencias",
+        onAction: () => window.location.assign("/preferences"),
+        variant: "destructive",
+      });
+      throw err;
+    }
   }
 
   async function handleGoalSubmit(input: GoalInput) {
@@ -293,6 +320,7 @@ export default function GoalsPage() {
               <GoalCard
                 key={goal.id}
                 goal={goal}
+                reminderGloballyEnabled={notificationRules.goalReminder.enabled}
                 onContribute={setContributingGoal}
                 onEdit={openEdit}
                 onToggleArchive={(item) => void handleToggleArchive(item)}
@@ -309,6 +337,8 @@ export default function GoalsPage() {
         goal={editingGoal}
         accounts={savingsAccounts}
         saving={saving}
+        notificationRules={notificationRules}
+        onSaveNotificationRules={handleSaveNotificationRules}
         onOpenChange={(open) => {
           setGoalDialogOpen(open);
           if (!open) setEditingGoal(null);

@@ -69,7 +69,7 @@ test.describe('preferencias de email', () => {
         page.getByRole('switch', { name: 'Activar resumen de gastos' })
       ).toBeChecked();
       await expect(
-        page.getByRole('switch', { name: 'Activar recordatorio mensual de metas' })
+        page.getByRole('switch', { name: 'Activar avisos de metas' })
       ).not.toBeChecked();
 
       const emailAccordion = page.getByRole('button', { name: /Correo electrónico/ });
@@ -89,10 +89,12 @@ test.describe('preferencias de email', () => {
       await expect(subscriptionEmail).not.toBeChecked();
       await expect(summaryEmail).not.toBeChecked();
       await expect(goalsEmail).not.toBeChecked();
+      await expect(goalsEmail).toBeDisabled();
 
+      await page.getByRole('switch', { name: 'Activar avisos de metas' }).click();
+      await expect(goalsEmail).toBeEnabled();
       await subscriptionEmail.click();
       await goalsEmail.click();
-      await page.getByRole('switch', { name: 'Activar recordatorio mensual de metas' }).click();
       await page.getByRole('button', { name: 'Guardar preferencias' }).click();
       await expect(
         page.getByText('Preferencias de notificaciones guardadas', { exact: true })
@@ -108,7 +110,7 @@ test.describe('preferencias de email', () => {
 
       await page.reload();
       await expect(page.getByRole('switch', {
-        name: 'Activar recordatorio mensual de metas',
+        name: 'Activar avisos de metas',
       })).toBeChecked();
       await page.getByRole('button', { name: /Correo electrónico/ }).click();
       await expect(page.getByRole('checkbox', {

@@ -30,6 +30,7 @@ vi.mock('@/lib/api', () => ({
 
 const pending = {
   id: 'contribution-1',
+  goalId: 'goal-1',
   amount: 100,
   period: '2026-11',
   goalName: 'Viaje a Japón',
@@ -41,7 +42,23 @@ const pending = {
   ],
 };
 
-describe('AcceptContributionPage', () => {
+function amountInput() {
+  return screen.getByLabelText('Importe de la aportación (€)');
+}
+
+function updateCheckbox() {
+  return screen.getByRole('checkbox', {
+    name: 'Actualizar el importe para futuras aportaciones',
+  });
+}
+
+async function fillForm(user: ReturnType<typeof userEvent.setup>, amount = '25') {
+  await user.selectOptions(await screen.findByRole('combobox', { name: 'Cuenta origen' }), 'checking');
+  await user.clear(amountInput());
+  await user.type(amountInput(), amount);
+}
+
+describe('AcceptContributionPage · aviso unificado', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     BroadcastChannelStub.reset();
@@ -51,27 +68,144 @@ describe('AcceptContributionPage', () => {
     vi.mocked(api.goalContributions.accept).mockResolvedValue({
       id: 'contribution-1',
       status: 'accepted',
+      amount: 25,
       alreadyAccepted: false,
     } as never);
   });
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('CA-5.2 consulta el pendiente sin crear ninguna transferencia al abrir la página', async () => {
+  it('CA-WI6.1 consulta el pendiente sin crear transferencias y muestra el subtítulo', async () => {
     render(<AcceptContributionPage />);
 
     expect(
       await screen.findByRole('heading', { name: 'Confirma tu aportación' })
     ).toBeVisible();
-    expect(screen.getByText('Viaje a Japón')).toBeVisible();
-    expect(screen.getByText(/2026-11/)).toBeVisible();
-    expect(screen.getByText(/100,00/)).toBeVisible();
+    expect(screen.getByText('Aportación programada · 2026-11')).toBeVisible();
+    expect(amountInput()).toHaveValue(100);
     expect(screen.getByRole('combobox', { name: 'Cuenta origen' })).toBeInTheDocument();
     expect(api.goalContributions.getPending).toHaveBeenCalledWith('token-valido');
     expect(api.goalContributions.accept).not.toHaveBeenCalled();
   });
 
-  it('FIX-3 reabrir un enlace ya aceptado muestra la confirmación sin formulario', async () => {
+  it('CA-WI6.1 el periodo vive solo en el subtítulo, sin bloque Meta / Periodo en la card', async () => {
+    render(<AcceptContributionPage />);
+
+    expect(
+      await screen.findByText('Aportación programada · 2026-11')
+    ).toBeVisible();
+    expect(screen.queryByText('Meta')).not.toBeInTheDocument();
+    expect(screen.queryByText('Periodo')).not.toBeInTheDocument();
+    expect(screen.queryByText('2026-11')).not.toBeInTheDocument();
+  });
+
+  it('CA-WI6.1 el aviso aclara que no se realizará el movimiento hasta confirmar', async () => {
+    render(<AcceptContributionPage />);
+
+    expect(
+      await screen.findByText(/No se realizará el movimiento hasta que confirmes/)
+    ).toBeVisible();
+    expect(screen.queryByText(/No se cobrará/)).not.toBeInTheDocument();
+  });
+
+  it('CA-WI6.1 el checkbox nace deshabilitado y desmarcado, se habilita al editar y se desmarca al volver al importe original', async () => {
+    const user = userEvent.setup();
+    render(<AcceptContributionPage />);
+    await screen.findByRole('combobox', { name: 'Cuenta origen' });
+
+    expect(updateCheckbox()).toBeDisabled();
+    expect(updateCheckbox()).not.toBeChecked();
+    expect(updateCheckbox().closest('label')).toHaveClass('cursor-not-allowed');
+    expect(updateCheckbox().closest('label')).toHaveClass('text-text-muted');
+
+    await user.clear(amountInput());
+    await user.type(amountInput(), '25');
+
+    expect(updateCheckbox()).toBeEnabled();
+    expect(updateCheckbox().closest('label')).toHaveClass('cursor-pointer');
+    await user.click(updateCheckbox());
+    expect(updateCheckbox()).toBeChecked();
+
+    await user.clear(amountInput());
+    await user.type(amountInput(), '100');
+
+    expect(updateCheckbox()).toBeDisabled();
+    expect(updateCheckbox()).not.toBeChecked();
+  });
+
+  it('CA-WI6.2 el submit envía el importe editado y el checkbox marcado', async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.goalContributions.accept).mockResolvedValue({
+      id: 'contribution-1',
+      status: 'accepted',
+      amount: 25.5,
+      alreadyAccepted: false,
+    } as never);
+    render(<AcceptContributionPage />);
+
+    await user.selectOptions(
+      await screen.findByRole('combobox', { name: 'Cuenta origen' }),
+      'checking'
+    );
+    await user.clear(amountInput());
+    await user.type(amountInput(), '25.50');
+    await user.click(updateCheckbox());
+    await user.click(screen.getByRole('button', { name: 'Aceptar aportación' }));
+
+    await waitFor(() =>
+      expect(api.goalContributions.accept).toHaveBeenCalledWith(
+        'token-valido',
+        'checking',
+        25.5,
+        true
+      )
+    );
+    expect(
+      await screen.findByRole('heading', { name: 'Aportación confirmada' })
+    ).toBeVisible();
+    expect(screen.getByText(/Se ha registrado 25,50/)).toBeVisible();
+    expect(screen.getByText(/«Viaje a Japón»/)).toBeVisible();
+  });
+
+  it('CA-WI6.2 sin marcar el checkbox envía updateSuggestion false', async () => {
+    const user = userEvent.setup();
+    render(<AcceptContributionPage />);
+
+    await fillForm(user);
+    await user.click(screen.getByRole('button', { name: 'Aceptar aportación' }));
+
+    await waitFor(() =>
+      expect(api.goalContributions.accept).toHaveBeenCalledWith(
+        'token-valido',
+        'checking',
+        25,
+        false
+      )
+    );
+  });
+
+  it('CA-WI6.2 sin sugerencia el campo nace vacío y el botón espera un importe válido', async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.goalContributions.getPending).mockResolvedValue({
+      ...pending,
+      amount: null,
+    } as never);
+    render(<AcceptContributionPage />);
+
+    const submit = await screen.findByRole('button', { name: 'Aceptar aportación' });
+    expect(amountInput()).toHaveValue(null);
+    expect(submit).toBeDisabled();
+
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Cuenta origen' }), 'checking');
+    expect(submit).toBeDisabled();
+    await user.type(amountInput(), '0');
+    expect(submit).toBeDisabled();
+    await user.clear(amountInput());
+    await user.type(amountInput(), '25');
+    expect(submit).toBeEnabled();
+  });
+
+  it('CA-WI6.3 un enlace ya aceptado muestra el texto de doble confirmación sin formulario', async () => {
     vi.mocked(api.goalContributions.getPending).mockResolvedValue({
       ...pending,
       status: 'accepted',
@@ -79,46 +213,67 @@ describe('AcceptContributionPage', () => {
     render(<AcceptContributionPage />);
 
     expect(
-      await screen.findByRole('heading', { name: 'Aportación confirmada' })
+      await screen.findByRole('heading', { name: 'Ya confirmaste esta aportación' })
     ).toBeVisible();
-    expect(screen.getByText(/Se ha registrado/)).toBeVisible();
     expect(
-      screen.queryByRole('combobox', { name: 'Cuenta origen' })
-    ).not.toBeInTheDocument();
+      screen.getByText(
+        'Esta aportación ya se hizo anteriormente para el periodo 2026-11. No se ha vuelto a realizar el movimiento.'
+      )
+    ).toBeVisible();
+    expect(screen.getByText('Aportación programada · 2026-11')).toBeVisible();
+    expect(screen.queryByRole('combobox', { name: 'Cuenta origen' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Importe de la aportación (€)')).not.toBeInTheDocument();
     expect(api.goalContributions.accept).not.toHaveBeenCalled();
   });
 
-  it('CA-5.3 exige elegir la cuenta origen antes de aceptar', async () => {
+  it('CA-WI6.4 la aceptación reciente muestra comprobante, subtítulo y ambos enlaces', async () => {
     const user = userEvent.setup();
     render(<AcceptContributionPage />);
 
-    const acceptButton = await screen.findByRole('button', { name: 'Aceptar aportación' });
-    expect(acceptButton).toBeDisabled();
-
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Cuenta origen' }), 'checking');
-    expect(acceptButton).toBeEnabled();
-    expect(api.goalContributions.accept).not.toHaveBeenCalled();
-  });
-
-  it('CA-5.4 acepta con el token de la URL y la cuenta elegida', async () => {
-    const user = userEvent.setup();
-    render(<AcceptContributionPage />);
-
-    await user.selectOptions(
-      await screen.findByRole('combobox', { name: 'Cuenta origen' }),
-      'checking'
-    );
+    await fillForm(user);
     await user.click(screen.getByRole('button', { name: 'Aceptar aportación' }));
 
-    expect(api.goalContributions.accept).toHaveBeenCalledWith('token-valido', 'checking');
     expect(
       await screen.findByRole('heading', { name: 'Aportación confirmada' })
     ).toBeVisible();
-    expect(screen.getByText(/Se ha registrado/)).toBeVisible();
-    expect(screen.getByRole('link', { name: 'Volver a metas' })).toHaveAttribute('href', '/goals');
+    expect(screen.getByText(/Se ha registrado 25,00/)).toBeVisible();
+    expect(screen.getByText('Aportación programada · 2026-11')).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Ver movimientos' })).toHaveAttribute(
+      'href',
+      '/transactions?goalId=goal-1&month=2026-11'
+    );
+    expect(screen.getByRole('link', { name: 'Volver a metas' })).toHaveAttribute(
+      'href',
+      '/goals'
+    );
   });
 
-  it('CA-5.5 muestra el error de un enlace caducado o desactivado sin formulario', async () => {
+  it('CA-WI6.3 la doble confirmación tras el POST también lleva ambos enlaces', async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.goalContributions.accept).mockResolvedValue({
+      id: 'contribution-1',
+      status: 'accepted',
+      alreadyAccepted: true,
+    } as never);
+    render(<AcceptContributionPage />);
+
+    await fillForm(user);
+    await user.click(screen.getByRole('button', { name: 'Aceptar aportación' }));
+
+    expect(
+      await screen.findByRole('heading', { name: 'Ya confirmaste esta aportación' })
+    ).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Ver movimientos' })).toHaveAttribute(
+      'href',
+      '/transactions?goalId=goal-1&month=2026-11'
+    );
+    expect(screen.getByRole('link', { name: 'Volver a metas' })).toHaveAttribute(
+      'href',
+      '/goals'
+    );
+  });
+
+  it('CA-5.5 muestra el error de un enlace caducado sin formulario', async () => {
     vi.mocked(api.goalContributions.getPending).mockRejectedValue(
       new Error('El periodo de la aportación ya ha terminado')
     );
@@ -128,7 +283,6 @@ describe('AcceptContributionPage', () => {
       'El periodo de la aportación ya ha terminado'
     );
     expect(screen.queryByRole('combobox', { name: 'Cuenta origen' })).not.toBeInTheDocument();
-    expect(api.goalContributions.accept).not.toHaveBeenCalled();
   });
 
   it('CA-5.5 muestra el error del servidor y conserva el formulario', async () => {
@@ -138,10 +292,7 @@ describe('AcceptContributionPage', () => {
     );
     render(<AcceptContributionPage />);
 
-    await user.selectOptions(
-      await screen.findByRole('combobox', { name: 'Cuenta origen' }),
-      'checking'
-    );
+    await fillForm(user);
     await user.click(screen.getByRole('button', { name: 'Aceptar aportación' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('La cuenta origen no es válida');
@@ -157,28 +308,6 @@ describe('AcceptContributionPage', () => {
 
     expect(screen.getByText(/El enlace no es válido/i)).toBeInTheDocument();
     expect(api.goalContributions.getPending).not.toHaveBeenCalled();
-  });
-
-  it('CA-5.4 una aceptación repetida también muestra la confirmación', async () => {
-    const user = userEvent.setup();
-    vi.mocked(api.goalContributions.accept).mockResolvedValue({
-      id: 'contribution-1',
-      status: 'accepted',
-      alreadyAccepted: true,
-    } as never);
-    render(<AcceptContributionPage />);
-
-    await user.selectOptions(
-      await screen.findByRole('combobox', { name: 'Cuenta origen' }),
-      'checking'
-    );
-    await user.click(screen.getByRole('button', { name: 'Aceptar aportación' }));
-
-    await waitFor(() =>
-      expect(
-        screen.getByRole('heading', { name: 'Aportación confirmada' })
-      ).toBeVisible()
-    );
   });
 
   it('BC-1 avisa a las demás pestañas al abrir el enlace con token', async () => {

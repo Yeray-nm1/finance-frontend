@@ -55,6 +55,8 @@ export interface TransactionsFiltersProps {
   filterFlow: "" | TransactionFlow;
   filterCategoryIds: string[];
   filterAccountIds: string[];
+  filterGoalId: string | null;
+  goalName: string | null;
   filterSearch: string;
   filterSubscriptionIds: string[];
   filterDates: { from?: Date; to?: Date };
@@ -66,6 +68,7 @@ export interface TransactionsFiltersProps {
   onFilterTypeChange: (value: "" | TransactionType) => void;
   onFilterCategoryIdsChange: (values: string[]) => void;
   onFilterAccountIdsChange: (values: string[]) => void;
+  onFilterGoalIdClear: () => void;
   onFilterSearchChange: (value: string) => void;
   onFilterSubscriptionIdsChange: (value: string[]) => void;
   onFilterDatesChange: (dates: { from?: Date; to?: Date }) => void;

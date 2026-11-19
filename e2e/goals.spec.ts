@@ -133,7 +133,7 @@ test.describe('metas de ahorro', () => {
     }
   });
 
-  test('guarda el día y el importe sugerido del recordatorio mensual', async ({ browser }) => {
+  test('guarda el día y el importe sugerido del aviso mensual', async ({ browser }) => {
     const { context, runId, savings } = await createUserWithAccounts(browser);
     const goalName = `Meta Recordatorio ${runId}`;
 
@@ -145,7 +145,10 @@ test.describe('metas de ahorro', () => {
       const dialog = page.getByRole('dialog');
       await dialog.getByLabel('Nombre').fill(goalName);
       await dialog.getByLabel('Objetivo (€)').fill('1000');
-      await dialog.getByLabel('Día del recordatorio').fill('18');
+      await dialog.getByRole('switch', { name: 'Aviso mensual de esta meta' }).click();
+      await page.getByRole('button', { name: 'Solo en la app' }).click();
+      await expect(dialog.getByRole('switch', { name: 'Aviso mensual de esta meta' })).toBeChecked();
+      await dialog.getByLabel('Día del aviso').fill('18');
       await dialog.getByLabel('Importe sugerido (€)').fill('100');
       await dialog.getByRole('combobox', { name: 'Cuenta de ahorro' }).click();
       await page.getByRole('option', { name: savings.name }).click();
@@ -160,6 +163,7 @@ test.describe('metas de ahorro', () => {
         reminderAmount: number | null;
       }>;
       expect(goals.find((goal) => goal.name === goalName)).toMatchObject({
+        reminderEnabled: true,
         reminderDay: 18,
         reminderAmount: 100,
       });

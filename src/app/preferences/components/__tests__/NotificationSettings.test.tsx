@@ -81,7 +81,7 @@ describe("NotificationSettings", () => {
       screen.getByRole("switch", { name: "Activar resumen de gastos" })
     ).toBeChecked();
     expect(
-      screen.getByRole("switch", { name: "Activar recordatorio mensual de metas" })
+      screen.getByRole("switch", { name: "Activar avisos de metas" })
     ).toBeChecked();
 
     await openEmailAccordion(user);
@@ -138,7 +138,7 @@ describe("NotificationSettings", () => {
       name: "Guardar preferencias",
     });
     await user.click(
-      screen.getByRole("switch", { name: "Activar recordatorio mensual de metas" })
+      screen.getByRole("switch", { name: "Activar avisos de metas" })
     );
     await openEmailAccordion(user);
     await user.click(
@@ -164,9 +164,49 @@ describe("NotificationSettings", () => {
 
     expect(
       await screen.findByRole("switch", {
-        name: "Activar recordatorio mensual de metas",
+        name: "Activar avisos de metas",
       })
     ).not.toBeChecked();
+  });
+
+  it("CA-WI5.5 muestra el título, la nota adaptada y un enlace a Metas", async () => {
+    render(<NotificationSettings email="user@example.com" />);
+
+    expect(
+      await screen.findByRole("heading", { name: "Avisos de metas" })
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Te avisamos el día elegido en cada meta para revisar y confirmar tu aportación."
+      )
+    ).toBeVisible();
+    expect(screen.getByRole("link", { name: "Ir a Metas" })).toHaveAttribute(
+      "href",
+      "/goals"
+    );
+  });
+
+  it("CA-WI5.5 «Ir a Metas» se muestra en su propia línea", async () => {
+    render(<NotificationSettings email="user@example.com" />);
+
+    const link = await screen.findByRole("link", { name: "Ir a Metas" });
+    expect(link.parentElement?.tagName).toBe("P");
+    expect(link.parentElement).toHaveTextContent("Ir a Metas");
+    expect(
+      screen.getByText(
+        "Te avisamos el día elegido en cada meta para revisar y confirmar tu aportación."
+      ).textContent
+    ).not.toContain("Ir a Metas");
+  });
+
+  it("CA-WI5.5 al venir del aviso de una meta el foco va al switch global", async () => {
+    window.history.pushState({}, "", "/preferences?focus=goalReminder");
+    render(<NotificationSettings email="user@example.com" />);
+
+    const goalSwitch = await screen.findByRole("switch", {
+      name: "Activar avisos de metas",
+    });
+    await waitFor(() => expect(document.activeElement).toBe(goalSwitch));
   });
 
   it("muestra la dirección de correo de la cuenta en modo lectura", async () => {
@@ -214,6 +254,9 @@ describe("NotificationSettings", () => {
     const saveButton = await screen.findByRole("button", {
       name: "Guardar preferencias",
     });
+    await user.click(
+      screen.getByRole("switch", { name: "Activar aviso de suscripción próxima" })
+    );
     await openEmailAccordion(user);
     await user.click(
       await screen.findByRole("checkbox", {
@@ -224,13 +267,78 @@ describe("NotificationSettings", () => {
 
     await waitFor(() => expect(mockSave).toHaveBeenCalledOnce());
     expect(mockSave).toHaveBeenCalledWith({
-      subscriptionDue: { enabled: false, emailEnabled: true, daysBefore: 3 },
+      subscriptionDue: { enabled: true, emailEnabled: true, daysBefore: 3 },
       spendingSummary: { enabled: false, emailEnabled: false, frequency: "weekly" },
       goalReminder: { enabled: false, emailEnabled: false },
     });
     expect(toast).toHaveBeenCalledWith({
       title: "Preferencias de notificaciones guardadas",
     });
+  });
+
+  it("deshabilita las opciones de correo mientras su aviso general está apagado", async () => {
+    const user = userEvent.setup();
+    render(<NotificationSettings email="user@example.com" />);
+
+    await screen.findByRole("switch", { name: "Activar aviso de suscripción próxima" });
+    await openEmailAccordion(user);
+
+    expect(
+      screen.getByRole("checkbox", { name: "Enviar aviso de suscripción próxima por email" })
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("checkbox", { name: "Enviar resumen de gastos por email" })
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("checkbox", { name: "Enviar recordatorio de metas por email" })
+    ).toBeDisabled();
+
+    await user.click(screen.getByRole("switch", { name: "Activar resumen de gastos" }));
+
+    expect(
+      screen.getByRole("checkbox", { name: "Enviar resumen de gastos por email" })
+    ).toBeEnabled();
+    expect(
+      screen.getByRole("checkbox", { name: "Enviar aviso de suscripción próxima por email" })
+    ).toBeDisabled();
+  });
+
+  it("apagar un aviso general desmarca y deshabilita su opción de correo", async () => {
+    const user = userEvent.setup();
+    mockGet.mockResolvedValue({
+      subscriptionDue: { enabled: true, emailEnabled: true, daysBefore: 3 },
+      spendingSummary: { enabled: true, emailEnabled: true, frequency: "monthly" },
+      goalReminder: { enabled: true, emailEnabled: true },
+    });
+    render(<NotificationSettings email="user@example.com" />);
+
+    await screen.findByRole("switch", { name: "Activar aviso de suscripción próxima" });
+    await openEmailAccordion(user);
+    expect(
+      screen.getByRole("checkbox", { name: "Enviar aviso de suscripción próxima por email" })
+    ).toBeChecked();
+
+    await user.click(
+      screen.getByRole("switch", { name: "Activar aviso de suscripción próxima" })
+    );
+
+    const checkbox = screen.getByRole("checkbox", {
+      name: "Enviar aviso de suscripción próxima por email",
+    });
+    expect(checkbox).toBeDisabled();
+    expect(checkbox).not.toBeChecked();
+    expect(
+      screen.getByRole("checkbox", { name: "Enviar resumen de gastos por email" })
+    ).toBeChecked();
+
+    await user.click(screen.getByRole("button", { name: "Guardar preferencias" }));
+    await waitFor(() =>
+      expect(mockSave).toHaveBeenCalledWith(
+        expect.objectContaining({
+          subscriptionDue: { enabled: false, emailEnabled: false, daysBefore: 3 },
+        })
+      )
+    );
   });
 
   it("guarda las reglas in-app modificadas sin perder emailEnabled", async () => {

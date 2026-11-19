@@ -4,8 +4,11 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatCurrency } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { announceGoalContributionLink } from "@/lib/goal-contribution-channel";
 import type { PendingGoalContribution } from "@/types/goals";
@@ -19,8 +22,13 @@ function AcceptContributionForm({ token }: { readonly token: string | null }) {
   const [loading, setLoading] = useState(Boolean(token));
   const [accepting, setAccepting] = useState(false);
   const [accepted, setAccepted] = useState(false);
+  const [alreadyAccepted, setAlreadyAccepted] = useState(false);
+  const [confirmedAmount, setConfirmedAmount] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [accountId, setAccountId] = useState("");
+  const [amount, setAmount] = useState("");
+  const [originalAmount, setOriginalAmount] = useState<number | null>(null);
+  const [updateSuggestion, setUpdateSuggestion] = useState(false);
 
   // El enlace del correo abre esta página en una pestaña nueva: avisamos a la
   // pestaña que ya tenía la app abierta. Si confirma que se retira a /goals,
@@ -37,6 +45,9 @@ function AcceptContributionForm({ token }: { readonly token: string | null }) {
     setLoading(true);
     setError(null);
     setAccepted(false);
+    setAlreadyAccepted(false);
+    setOriginalAmount(null);
+    setUpdateSuggestion(false);
 
     api.goalContributions
       .getPending(token)
@@ -44,7 +55,12 @@ function AcceptContributionForm({ token }: { readonly token: string | null }) {
         if (!active) return;
         setPending(result);
         setAccountId("");
-        if (result.status === "accepted") setAccepted(true);
+        setAmount(result.amount == null ? "" : String(result.amount));
+        setOriginalAmount(result.amount ?? null);
+        const previouslyAccepted = result.status === "accepted";
+        setAlreadyAccepted(previouslyAccepted);
+        setAccepted(previouslyAccepted);
+        setConfirmedAmount(result.amount);
       })
       .catch((err: unknown) => {
         if (!active) return;
@@ -59,15 +75,28 @@ function AcceptContributionForm({ token }: { readonly token: string | null }) {
     };
   }, [token]);
 
+  const numericAmount = Number(amount);
+  const validAmount =
+    amount.trim().length > 0 && Number.isFinite(numericAmount) && numericAmount > 0;
+  // El importe original no es «una edición»: volver a él deshabilita y desmarca la opción.
+  const amountChanged = amount.trim().length > 0 && numericAmount !== originalAmount;
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!token || !accountId) return;
+    if (!token || !accountId || !validAmount) return;
 
     setAccepting(true);
     setError(null);
 
     try {
-      await api.goalContributions.accept(token, accountId);
+      const result = await api.goalContributions.accept(
+        token,
+        accountId,
+        numericAmount,
+        updateSuggestion
+      );
+      setAlreadyAccepted(result.alreadyAccepted);
+      setConfirmedAmount(result.amount ?? numericAmount);
       setAccepted(true);
     } catch (err) {
       setError(messageFrom(err));
@@ -76,16 +105,21 @@ function AcceptContributionForm({ token }: { readonly token: string | null }) {
     }
   }
 
+  const subtitle = pending
+    ? `Aportación programada · ${pending.period}`
+    : "Aportación programada a una meta de ahorro";
+  const heading = accepted
+    ? alreadyAccepted
+      ? "Ya confirmaste esta aportación"
+      : "Aportación confirmada"
+    : "Confirma tu aportación";
+
   return (
     <main className="min-h-screen bg-bg-page p-4 md:p-8">
       <div className="mx-auto max-w-md space-y-5">
         <div>
-          <h1 className="text-xl font-semibold text-text-primary">
-            {accepted ? "Aportación confirmada" : "Confirma tu aportación"}
-          </h1>
-          <p className="mt-1 text-sm text-text-muted">
-            Aportación programada a una meta de ahorro
-          </p>
+          <h1 className="text-xl font-semibold text-text-primary">{heading}</h1>
+          <p className="mt-1 text-sm text-text-muted">{subtitle}</p>
         </div>
 
         {error && (
@@ -105,43 +139,79 @@ function AcceptContributionForm({ token }: { readonly token: string | null }) {
         {accepted && pending && (
           <section className="space-y-4 rounded-lg border border-border bg-white p-5">
             <p className="text-sm text-text-secondary">
-              Se ha registrado {formatCurrency(pending.amount)} en la cuenta de ahorro de
-              «{pending.goalName}».
+              {alreadyAccepted ? (
+                <>
+                  Esta aportación ya se hizo anteriormente para el periodo {pending.period}. No
+                  se ha vuelto a realizar el movimiento.
+                </>
+              ) : (
+                <>
+                  Se ha registrado {formatCurrency(confirmedAmount ?? numericAmount)} en la
+                  cuenta de ahorro de «{pending.goalName}».
+                </>
+              )}
             </p>
-            <Link
-              href="/goals"
-              className="inline-block text-sm font-medium text-primary hover:text-primary-hover"
-            >
-              Volver a metas
-            </Link>
+            <div className="flex flex-wrap gap-4">
+              <Link
+                href={`/transactions?goalId=${pending.goalId}&month=${pending.period}`}
+                className="text-sm font-medium text-primary hover:text-primary-hover"
+              >
+                Ver movimientos
+              </Link>
+              <Link
+                href="/goals"
+                className="text-sm font-medium text-primary hover:text-primary-hover"
+              >
+                Volver a metas
+              </Link>
+            </div>
           </section>
         )}
 
         {pending && !accepted && (
           <section className="space-y-4 rounded-lg border border-border bg-white p-5">
-            <dl className="space-y-1 text-sm">
-              <div className="flex justify-between gap-4">
-                <dt className="text-text-muted">Meta</dt>
-                <dd className="font-medium text-text-primary">{pending.goalName}</dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-text-muted">Periodo</dt>
-                <dd className="font-medium text-text-primary">{pending.period}</dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-text-muted">Importe</dt>
-                <dd className="font-semibold text-text-primary">
-                  {formatCurrency(pending.amount)}
-                </dd>
-              </div>
-            </dl>
-
             <p className="rounded-md bg-bg-elevated px-3 py-2 text-xs leading-snug text-text-secondary">
-              No se cobrará nada sin tu confirmación. Si no aceptas, el importe no se acumulará
-              al mes siguiente.
+              El aviso no incluye importe: decide ahora cuánto quieres aportar. No se realizará
+              el movimiento hasta que confirmes.
             </p>
 
             <form onSubmit={(event) => void handleSubmit(event)} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="contribution-amount">Importe de la aportación (€)</Label>
+                <Input
+                  id="contribution-amount"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  placeholder="0.00"
+                  value={amount}
+                  onChange={(event) => {
+                    setAmount(event.target.value);
+                    setUpdateSuggestion(false);
+                  }}
+                  required
+                />
+              </div>
+
+              <label
+                className={cn(
+                  "flex items-start gap-2.5 text-xs leading-snug",
+                  amountChanged
+                    ? "cursor-pointer text-text-primary"
+                    : "cursor-not-allowed text-text-muted opacity-70"
+                )}
+                title={amountChanged ? undefined : "Edita el importe para activar esta opción"}
+              >
+                <Checkbox
+                  checked={updateSuggestion}
+                  disabled={!amountChanged}
+                  onCheckedChange={(checked) => setUpdateSuggestion(checked === true)}
+                  aria-label="Actualizar el importe para futuras aportaciones"
+                  className="mt-0.5"
+                />
+                Actualizar el importe para futuras aportaciones
+              </label>
+
               <div className="space-y-2">
                 <Label htmlFor="contribution-source-account">Cuenta origen</Label>
                 <select
@@ -164,7 +234,11 @@ function AcceptContributionForm({ token }: { readonly token: string | null }) {
                 </p>
               </div>
 
-              <Button type="submit" className="w-full" disabled={accepting || !accountId}>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={accepting || !accountId || !validAmount}
+              >
                 {accepting ? "Aceptando..." : "Aceptar aportación"}
               </Button>
             </form>

@@ -69,6 +69,7 @@ function TransactionsPageContent() {
   const urlUncategorized = searchParams.get("uncategorized") === "true";
   const urlMonth = searchParams.get("month");
   const urlFlow = searchParams.get("flow");
+  const urlGoalId = searchParams.get("goalId");
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [total, setTotal] = useState(0);
@@ -94,6 +95,8 @@ function TransactionsPageContent() {
         : []
   );
   const [filterAccountIds, setFilterAccountIds] = useState<string[]>([]);
+  const [filterGoalId, setFilterGoalId] = useState<string | null>(urlGoalId);
+  const [goals, setGoals] = useState<Array<{ id: string; name: string }>>([]);
   const [filterSearch, setFilterSearch] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterSubscriptionIds, setFilterSubscriptionIds] = useState<string[]>([]);
@@ -149,7 +152,7 @@ function TransactionsPageContent() {
       const resolvedCategoryIds = filterCategoryIds.filter(
         (id) => id !== NO_CATEGORY_SENTINEL
       );
-      const [txResult, accs, cats, subs] = await Promise.all([
+      const [txResult, accs, cats, subs, goalList] = await Promise.all([
         api.transactions.list({
           page,
           limit,
@@ -159,6 +162,7 @@ function TransactionsPageContent() {
             resolvedCategoryIds.length > 0 ? resolvedCategoryIds.join(",") : undefined,
           uncategorized: filterCategoryIds.includes(NO_CATEGORY_SENTINEL) || undefined,
           accountIds: filterAccountIds.length > 0 ? filterAccountIds.join(",") : undefined,
+          goalId: filterGoalId ?? undefined,
           search: searchQuery || undefined,
           subscriptionIds: filterSubscriptionIds.length > 0 ? filterSubscriptionIds.join(',') : undefined,
           dateFrom: filterDates.from ? format(filterDates.from, "yyyy-MM-dd") : undefined,
@@ -169,12 +173,14 @@ function TransactionsPageContent() {
         api.accounts.list(),
         api.categories.list(),
         api.subscriptions.list(),
+        api.goals.list(),
       ]);
       setTransactions(txResult.data);
       setTotal(txResult.total);
       setAccounts(accs);
       setCategories(cats);
       setSubscriptions(subs);
+      setGoals(goalList);
       setListsReady(true);
     } catch (e) {
       console.error(e);
@@ -182,7 +188,7 @@ function TransactionsPageContent() {
     } finally {
       setLoading(false);
     }
-  }, [page, limit, filterType, filterFlow, filterCategoryIds, filterAccountIds, searchQuery, filterSubscriptionIds, filterDates, sortBy, sortOrder]);
+  }, [page, limit, filterType, filterFlow, filterCategoryIds, filterAccountIds, filterGoalId, searchQuery, filterSubscriptionIds, filterDates, sortBy, sortOrder]);
 
   useEffect(() => {
     if (lastAppliedSearchRef.current === searchString) return;
@@ -201,6 +207,7 @@ function TransactionsPageContent() {
     const from = parseDateParam(params.get("dateFrom"));
     const to = parseDateParam(params.get("dateTo"));
     const search = params.get("search") ?? "";
+    const goalIdParam = params.get("goalId");
 
     setFilterType(
       flow
@@ -242,6 +249,7 @@ function TransactionsPageContent() {
         (params.get("subscriptionIds") ?? "").split(",").filter(Boolean)
       );
     }
+    setFilterGoalId(goalIdParam);
     setFilterSearch(search);
     setSearchQuery(search);
 
@@ -373,6 +381,7 @@ function TransactionsPageContent() {
       const account = accounts.find((item) => item.id === id);
       if (account) params.append("account", account.name);
     }
+    if (filterGoalId) params.set("goalId", filterGoalId);
     if (filterSearch.trim()) params.set("search", filterSearch.trim());
     if (filterSubscriptionIds.length > 0) {
       for (const id of filterSubscriptionIds) {
@@ -413,6 +422,7 @@ function TransactionsPageContent() {
     filterFlow,
     filterCategoryIds,
     filterAccountIds,
+    filterGoalId,
     filterSearch,
     filterSubscriptionIds,
     filterDates,
@@ -442,6 +452,7 @@ function TransactionsPageContent() {
     filterFlow,
     filterCategoryIds,
     filterAccountIds,
+    filterGoalId,
     searchQuery,
     filterSubscriptionIds,
     filterDates,
@@ -481,6 +492,7 @@ function TransactionsPageContent() {
     setFilterFlow("");
     setFilterCategoryIds([]);
     setFilterAccountIds([]);
+    setFilterGoalId(null);
     setFilterSearch("");
     setFilterSubscriptionIds([]);
     setFilterDates({});
@@ -502,6 +514,7 @@ function TransactionsPageContent() {
       filterFlow ||
       filterCategoryIds.length > 0 ||
       filterAccountIds.length > 0 ||
+      filterGoalId ||
       filterSearch ||
       filterSubscriptionIds.length > 0 ||
       filterDates.from ||
@@ -921,6 +934,8 @@ function TransactionsPageContent() {
             filterFlow={filterFlow}
             filterCategoryIds={filterCategoryIds}
             filterAccountIds={filterAccountIds}
+            filterGoalId={filterGoalId}
+            goalName={goals.find((item) => item.id === filterGoalId)?.name ?? null}
             filterSearch={filterSearch}
             filterSubscriptionIds={filterSubscriptionIds}
             filterDates={filterDates}
@@ -936,6 +951,7 @@ function TransactionsPageContent() {
             }}
             onFilterCategoryIdsChange={(v) => { setFilterCategoryIds(v); setPage(1); }}
             onFilterAccountIdsChange={(v) => { setFilterAccountIds(v); setPage(1); }}
+            onFilterGoalIdClear={() => { setFilterGoalId(null); setPage(1); }}
             onFilterSearchChange={setFilterSearch}
             onFilterSubscriptionIdsChange={(v) => { setFilterSubscriptionIds(v); setPage(1); }}
             onFilterDatesChange={(dates) => { setFilterDates(dates); setPage(1); }}

@@ -166,7 +166,7 @@ export function Sidebar() {
         </nav>
 
         <div className="px-2 pt-4 border-t border-border">
-          <NotificationBell variant="sidebar" collapsed={collapsed} />
+          {!isMobile && <NotificationBell variant="sidebar" collapsed={collapsed} />}
           <button
             onClick={() => setCsvDialogOpen(true)}
             className={cn(
