@@ -1,3 +1,9 @@
+## [0.14.0] - 2026-11-19
+
+- 5eb2714 Merge pull request #45 from Yeray-nm1/feature/ynm-unified-goal-reminders
+- fb4c809 chore: reejecuta la CI con el backend unificado
+- d4f7822 feat: unifica los avisos mensuales de metas
+
 ## [0.13.4] - 2026-11-19
 
 - efc8bfd Merge pull request #44 from Yeray-nm1/fix/ynm-handoff-new-tab
