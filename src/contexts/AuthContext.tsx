@@ -27,9 +27,13 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     setUser(res.user);
   }, []);
 
-  const register = useCallback(async (email: string, password: string) => {
-    const res = await api.auth.register(email, password);
+  const register = useCallback(async (email: string, password: string, name?: string) => {
+    const res = await api.auth.register(email, password, name);
     setUser(res.user);
+  }, []);
+
+  const updateName = useCallback(async (name: string | null) => {
+    setUser(await api.auth.updateName(name));
   }, []);
 
   const logout = useCallback(async () => {
@@ -42,10 +46,11 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     user,
     login,
     register,
+    updateName,
     logout,
     isAuthenticated: !!user,
     isLoading,
-  }), [user, login, register, logout, isLoading]);
+  }), [user, login, register, updateName, logout, isLoading]);
 
   return (
     <AuthContext.Provider value={value}>

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { api } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
@@ -49,7 +49,14 @@ const goal: SavingsGoal = {
   isArchived: false,
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',
+  reminderFrequency: 'MONTHLY',
+  reminderChannel: 'APP_AND_EMAIL',
+  reminderWeekday: null,
   reminderDay: 18,
+  reminderLastDay: false,
+  reminderInterval: null,
+  reminderIntervalUnit: null,
+  reminderStartDate: null,
   reminderAmount: 100,
   reminderEnabled: true,
   saved: 250,
@@ -68,6 +75,16 @@ const rulesOff: NotificationRules = {
 async function openCreateDialog(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByRole('button', { name: 'Nueva meta' }));
   await screen.findByLabelText('Nombre');
+}
+
+async function enableReminder(user: ReturnType<typeof userEvent.setup>) {
+  const dialog = screen.getByRole('dialog');
+  await user.click(within(dialog).getByRole('switch', { name: 'Recordatorio de aportación' }));
+}
+
+async function choose(user: ReturnType<typeof userEvent.setup>, name: string, option: string) {
+  await user.click(screen.getByRole('combobox', { name }));
+  await user.click(await screen.findByRole('option', { name: option }));
 }
 
 describe('GoalsPage', () => {
@@ -130,9 +147,9 @@ describe('GoalsPage', () => {
 
     await user.type(screen.getByLabelText('Nombre'), 'Fondo de emergencia');
     await user.type(screen.getByLabelText('Objetivo (€)'), '2000');
-    await user.click(screen.getByRole('switch', { name: 'Aviso mensual de esta meta' }));
-    await user.click(await screen.findByRole('button', { name: 'En la app y por email' }));
-    await user.type(await screen.findByLabelText('Día del aviso'), '5');
+    await enableReminder(user);
+    await choose(user, 'Canal', 'App y email');
+    await user.type(screen.getByLabelText('Día del mes'), '5');
     await user.click(screen.getByRole('button', { name: 'Crear meta' }));
 
     await waitFor(() =>
@@ -157,9 +174,8 @@ describe('GoalsPage', () => {
 
     await user.type(screen.getByLabelText('Nombre'), 'Fondo de emergencia');
     await user.type(screen.getByLabelText('Objetivo (€)'), '2000');
-    await user.click(screen.getByRole('switch', { name: 'Aviso mensual de esta meta' }));
-    await user.click(await screen.findByRole('button', { name: 'Solo en la app' }));
-    await user.type(await screen.findByLabelText('Día del aviso'), '5');
+    await enableReminder(user);
+    await user.type(screen.getByLabelText('Día del mes'), '5');
     await user.click(screen.getByRole('button', { name: 'Crear meta' }));
 
     await waitFor(() =>
@@ -177,9 +193,8 @@ describe('GoalsPage', () => {
 
     await user.type(screen.getByLabelText('Nombre'), 'Fondo de emergencia');
     await user.type(screen.getByLabelText('Objetivo (€)'), '2000');
-    await user.click(screen.getByRole('switch', { name: 'Aviso mensual de esta meta' }));
-    await user.click(await screen.findByRole('button', { name: 'Solo en la app' }));
-    await user.type(await screen.findByLabelText('Día del aviso'), '5');
+    await enableReminder(user);
+    await user.type(screen.getByLabelText('Día del mes'), '5');
     await user.click(screen.getByRole('button', { name: 'Crear meta' }));
 
     await waitFor(() =>

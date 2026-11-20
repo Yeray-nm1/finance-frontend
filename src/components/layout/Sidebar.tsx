@@ -25,7 +25,7 @@ export function Sidebar() {
   const collapsed = !isMobile && isCollapsed;
   const drawerOpen = isMobile && isMobileOpen;
 
-  const userInitial = user?.email ? user.email.charAt(0).toUpperCase() : "U";
+  const userInitial = (user?.name?.trim() || user?.email || "U").charAt(0).toUpperCase();
 
   useEffect(() => {
     if (!drawerOpen) return;

@@ -159,6 +159,54 @@ describe('api.transactions.delete()', () => {
   });
 });
 
+describe('api.auth · nombre del usuario', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('CA-2 register envía el nombre opcional', async () => {
+    const user = { id: 'u1', email: 'ana@example.com', name: 'Ana', createdAt: '2026-11-20' };
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({ user }), { status: 201 })
+    );
+
+    await api.auth.register('ana@example.com', 'Password1', '  Ana  ');
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/v1/auth/register',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ email: 'ana@example.com', password: 'Password1', name: '  Ana  ' }),
+      })
+    );
+  });
+
+  it('CA-2 register omite el nombre cuando no se aporta', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({ user: {} }), { status: 201 })
+    );
+
+    await api.auth.register('ana@example.com', 'Password1');
+
+    expect(getFetchMock().mock.calls[0][1]?.body).toBe(
+      JSON.stringify({ email: 'ana@example.com', password: 'Password1' })
+    );
+  });
+
+  it('CA-3 updateName llama a PUT /auth/me', async () => {
+    const user = { id: 'u1', email: 'ana@example.com', name: null, createdAt: '2026-11-20' };
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({ user }), { status: 200 })
+    );
+
+    await expect(api.auth.updateName(null)).resolves.toEqual(user);
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/v1/auth/me',
+      expect.objectContaining({ method: 'PUT', body: JSON.stringify({ name: null }) })
+    );
+  });
+});
+
 describe('api.me', () => {
   beforeEach(() => {
     vi.restoreAllMocks();

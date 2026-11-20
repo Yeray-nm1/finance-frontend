@@ -154,10 +154,11 @@ test.describe('metas de ahorro', () => {
       const dialog = page.getByRole('dialog');
       await dialog.getByLabel('Nombre').fill(goalName);
       await dialog.getByLabel('Objetivo (€)').fill('1000');
-      await dialog.getByRole('switch', { name: 'Aviso mensual de esta meta' }).click();
-      await page.getByRole('button', { name: 'Solo en la app' }).click();
-      await expect(dialog.getByRole('switch', { name: 'Aviso mensual de esta meta' })).toBeChecked();
-      await dialog.getByLabel('Día del aviso').fill('18');
+      await dialog.getByRole('switch', { name: 'Recordatorio de aportación' }).click();
+      await dialog.getByRole('combobox', { name: 'Canal' }).click();
+      await page.getByRole('option', { name: 'Solo en la app' }).click();
+      await expect(dialog.getByRole('switch', { name: 'Recordatorio de aportación' })).toBeChecked();
+      await dialog.getByLabel('Día del mes', { exact: true }).fill('18');
       await dialog.getByLabel('Importe sugerido (€)').fill('100');
       await dialog.getByRole('combobox', { name: 'Cuenta de ahorro' }).click();
       await page.getByRole('option', { name: savings.name }).click();
@@ -173,8 +174,45 @@ test.describe('metas de ahorro', () => {
       }>;
       expect(goals.find((goal) => goal.name === goalName)).toMatchObject({
         reminderEnabled: true,
+        reminderFrequency: 'MONTHLY',
+        reminderChannel: 'APP_ONLY',
         reminderDay: 18,
         reminderAmount: 100,
+      });
+    } finally {
+      await context.close();
+    }
+  });
+
+  test('guarda la frecuencia semanal por meta', async ({ browser }) => {
+    const { context, runId, savings } = await createUserWithAccounts(browser);
+    const goalName = `Meta Semanal ${runId}`;
+
+    try {
+      const page = await context.newPage();
+      await page.goto('/goals');
+      await page.getByRole('button', { name: 'Nueva meta' }).click();
+
+      const dialog = page.getByRole('dialog');
+      await dialog.getByLabel('Nombre').fill(goalName);
+      await dialog.getByLabel('Objetivo (€)').fill('500');
+      await dialog.getByRole('switch', { name: 'Recordatorio de aportación' }).click();
+      await dialog.getByRole('combobox', { name: 'Frecuencia' }).click();
+      await page.getByRole('option', { name: 'Semanal' }).click();
+      await dialog.getByRole('button', { name: 'Viernes' }).click();
+      await dialog.getByRole('combobox', { name: 'Cuenta de ahorro' }).click();
+      await page.getByRole('option', { name: savings.name }).click();
+      await dialog.getByRole('button', { name: 'Crear meta' }).click();
+      await expect(dialog).toBeHidden();
+
+      const response = await context.request.get('/api/v1/goals');
+      expect(response.ok()).toBe(true);
+      const goals = (await response.json()) as Array<{ name: string }>;
+      expect(goals.find((goal) => goal.name === goalName)).toMatchObject({
+        reminderEnabled: true,
+        reminderFrequency: 'WEEKLY',
+        reminderWeekday: 5,
+        reminderDay: null,
       });
     } finally {
       await context.close();

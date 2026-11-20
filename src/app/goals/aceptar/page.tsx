@@ -17,6 +17,11 @@ function messageFrom(error: unknown): string {
   return error instanceof Error ? error.message : "No se pudo procesar la aportación";
 }
 
+/** El filtro de movimientos espera YYYY-MM, sin el prefijo W:/M:/C: del periodo. */
+function monthFromPeriod(period: string): string {
+  return period.replace(/^[MWC]:/, "");
+}
+
 function AcceptContributionForm({ token }: { readonly token: string | null }) {
   const [pending, setPending] = useState<PendingGoalContribution | null>(null);
   const [loading, setLoading] = useState(Boolean(token));
@@ -153,7 +158,7 @@ function AcceptContributionForm({ token }: { readonly token: string | null }) {
             </p>
             <div className="flex flex-wrap gap-4">
               <Link
-                href={`/transactions?goalId=${pending.goalId}&month=${pending.period}`}
+                href={`/transactions?goalId=${pending.goalId}&month=${monthFromPeriod(pending.period)}`}
                 className="text-sm font-medium text-primary hover:text-primary-hover"
               >
                 Ver movimientos

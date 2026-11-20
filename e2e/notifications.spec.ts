@@ -42,6 +42,7 @@ test.describe('notificaciones in-app', () => {
 
     await page.goto('/preferences');
     await expect(page.getByRole('heading', { name: 'Preferencias' })).toBeVisible();
+    await page.getByRole('tab', { name: 'Notificaciones' }).click();
 
     const subscriptionSwitch = page.getByRole('switch', {
       name: 'Activar aviso de suscripción próxima',

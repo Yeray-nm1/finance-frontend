@@ -6,10 +6,10 @@ interface AuthResponse {
 }
 
 export const auth = {
-  register: (email: string, password: string) =>
+  register: (email: string, password: string, name?: string) =>
     request<AuthResponse>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, ...(name ? { name } : {}) }),
     }),
   login: (email: string, password: string) =>
     request<AuthResponse>('/auth/login', {
@@ -27,6 +27,11 @@ export const auth = {
       body: JSON.stringify({ token, password }),
     }),
   me: (signal?: AbortSignal) => request<AuthResponse>('/auth/me', { signal }),
+  updateName: (name: string | null) =>
+    request<AuthResponse>('/auth/me', {
+      method: 'PUT',
+      body: JSON.stringify({ name }),
+    }).then((res) => res.user),
   changePassword: (currentPassword: string, newPassword: string) =>
     request<void>('/auth/password', {
       method: 'PUT',

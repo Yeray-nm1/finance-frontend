@@ -90,7 +90,8 @@ test.describe('aviso mensual de metas con aceptación por correo', () => {
       expect(goalResponse.status(), await goalResponse.text()).toBe(201);
       const goal = (await goalResponse.json()) as { id: string; reminderAmount: number };
 
-      const period = new Date().toISOString().slice(0, 7);
+      const month = new Date().toISOString().slice(0, 7);
+      const period = `M:${month}`;
       await pool.query(
         `INSERT INTO "GoalContribution"
           ("id", "userId", "goalId", "period", "amount", "goalAccountId", "status", "createdAt")
@@ -195,14 +196,14 @@ test.describe('aviso mensual de metas con aceptación por correo', () => {
       await expect(page.getByText(`Aportación programada · ${period}`)).toBeVisible();
       await expect(page.getByRole('link', { name: 'Ver movimientos' })).toHaveAttribute(
         'href',
-        `/transactions?goalId=${goal.id}&month=${period}`
+        `/transactions?goalId=${goal.id}&month=${month}`
       );
       await expect(page.getByRole('link', { name: 'Volver a metas' })).toHaveAttribute('href', '/goals');
 
       // 3B: el enlace llega filtrado por meta y mes, con el chip correspondiente.
       await page.getByRole('link', { name: 'Ver movimientos' }).click();
       await expect(page).toHaveURL(
-        new RegExp(`/transactions\\?goalId=${goal.id}&month=${period}`)
+        new RegExp(`/transactions\\?goalId=${goal.id}&month=${month}`)
       );
       await expect(page.getByRole('group', { name: 'Filtro de meta' })).toContainText(goalName);
       await expect(
@@ -302,7 +303,7 @@ test.describe('aviso mensual de metas con aceptación por correo', () => {
       expect(goalResponse.status(), await goalResponse.text()).toBe(201);
       const goal = (await goalResponse.json()) as { id: string };
 
-      const period = new Date().toISOString().slice(0, 7);
+      const period = `M:${new Date().toISOString().slice(0, 7)}`;
       await pool.query(
         `INSERT INTO "GoalContribution"
           ("id", "userId", "goalId", "period", "amount", "goalAccountId", "status", "createdAt")

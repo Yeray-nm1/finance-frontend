@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function RegisterPage() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -22,7 +23,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      await register(email, password);
+      await register(email, password, name.trim());
       router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al registrarse");
@@ -63,6 +64,22 @@ export default function RegisterPage() {
 
         <div className="bg-white border border-border rounded-lg p-6 shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="name" className="text-xs text-text-secondary font-medium">
+                Nombre
+              </Label>
+              <Input
+                id="name"
+                placeholder="Tu nombre (opcional)"
+                autoComplete="given-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                maxLength={50}
+              />
+              <p className="text-[11px] text-text-muted">
+                Opcional: personalizaremos los correos con él.
+              </p>
+            </div>
             <div className="space-y-1.5">
               <Label htmlFor="email" className="text-xs text-text-secondary font-medium">
                 Email

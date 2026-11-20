@@ -59,6 +59,7 @@ test.describe('preferencias de email', () => {
 
       await page.goto('/preferences');
       await expect(page.getByRole('heading', { name: 'Preferencias' })).toBeVisible();
+      await page.getByRole('tab', { name: 'Notificaciones' }).click();
       await expect(page.getByText(email, { exact: true }).first()).toBeVisible();
 
       // Los avisos in-app conservan sus switches y nombres accesibles.
@@ -109,6 +110,7 @@ test.describe('preferencias de email', () => {
       });
 
       await page.reload();
+      await page.getByRole('tab', { name: 'Notificaciones' }).click();
       await expect(page.getByRole('switch', {
         name: 'Activar avisos de metas',
       })).toBeChecked();

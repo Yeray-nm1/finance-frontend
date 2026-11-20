@@ -28,12 +28,36 @@ export interface SavingsGoal {
   monthlyNeeded: number | null;
   contributionsCount: number;
   contributions?: GoalContribution[];
-  /** Día del mes (1-28) en que se envía el recordatorio mensual. */
+  reminderFrequency: GoalReminderFrequency;
+  reminderChannel: GoalReminderChannel;
+  reminderWeekday: number | null;
+  /** Día del mes (1-31) en que se envía el aviso mensual. */
   reminderDay: number | null;
+  reminderLastDay: boolean;
+  reminderInterval: number | null;
+  reminderIntervalUnit: GoalReminderIntervalUnit | null;
+  reminderStartDate: string | null;
   /** Importe sugerido para la aportación; se puede editar al confirmar. */
   reminderAmount: number | null;
-  /** Aviso mensual de esta meta; el switch global sigue siendo el maestro. */
+  /** Aviso de esta meta; el switch global sigue siendo el maestro. */
   reminderEnabled: boolean;
+}
+
+export type GoalReminderFrequency = "WEEKLY" | "MONTHLY" | "CUSTOM";
+export type GoalReminderChannel = "APP_ONLY" | "APP_AND_EMAIL";
+export type GoalReminderIntervalUnit = "DAYS" | "WEEKS" | "MONTHS";
+
+/** Configuración compartida por la modal y el resumen de una línea. */
+export interface ReminderSettings {
+  reminderEnabled: boolean;
+  reminderFrequency: GoalReminderFrequency;
+  reminderChannel: GoalReminderChannel;
+  reminderWeekday: number | null;
+  reminderDay: number | null;
+  reminderLastDay: boolean;
+  reminderInterval: number | null;
+  reminderIntervalUnit: GoalReminderIntervalUnit | null;
+  reminderStartDate: string | null;
 }
 
 export interface GoalInput {
@@ -41,9 +65,16 @@ export interface GoalInput {
   targetAmount: number;
   targetDate?: string | null;
   accountId?: string | null;
-  reminderDay?: number | null;
   reminderAmount?: number | null;
   reminderEnabled?: boolean;
+  reminderFrequency?: GoalReminderFrequency;
+  reminderChannel?: GoalReminderChannel;
+  reminderWeekday?: number | null;
+  reminderDay?: number | null;
+  reminderLastDay?: boolean;
+  reminderInterval?: number | null;
+  reminderIntervalUnit?: GoalReminderIntervalUnit | null;
+  reminderStartDate?: string | null;
 }
 
 export interface GoalContributionInput {
