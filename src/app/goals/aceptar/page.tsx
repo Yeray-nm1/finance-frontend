@@ -175,10 +175,12 @@ function AcceptContributionForm({ token }: { readonly token: string | null }) {
 
         {pending && !accepted && (
           <section className="space-y-4 rounded-lg border border-border bg-white p-5">
-            <p className="rounded-md bg-bg-elevated px-3 py-2 text-xs leading-snug text-text-secondary">
-              El aviso no incluye importe: decide ahora cuánto quieres aportar. No se realizará
-              el movimiento hasta que confirmes.
-            </p>
+            {pending.amount == null && (
+              <p className="rounded-md bg-bg-elevated px-3 py-2 text-xs leading-snug text-text-secondary">
+                El aviso no incluye importe: decide ahora cuánto quieres aportar. No se realizará
+                el movimiento hasta que confirmes.
+              </p>
+            )}
 
             <form onSubmit={(event) => void handleSubmit(event)} className="space-y-4">
               <div className="space-y-2">

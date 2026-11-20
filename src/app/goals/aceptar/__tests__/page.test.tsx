@@ -99,11 +99,28 @@ describe('AcceptContributionPage · aviso unificado', () => {
     expect(screen.queryByText('2026-11')).not.toBeInTheDocument();
   });
 
-  it('CA-WI6.1 el aviso aclara que no se realizará el movimiento hasta confirmar', async () => {
+  it('CA-WI6.1 con importe no muestra el aviso de «sin importe»', async () => {
     render(<AcceptContributionPage />);
 
     expect(
-      await screen.findByText(/No se realizará el movimiento hasta que confirmes/)
+      await screen.findByRole('heading', { name: 'Confirma tu aportación' })
+    ).toBeVisible();
+    expect(screen.queryByText(/El aviso no incluye importe/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/No se realizará el movimiento hasta que confirmes/)
+    ).not.toBeInTheDocument();
+  });
+
+  it('CA-WI6.1 sin importe sí muestra el aviso de decisión y de no movimiento', async () => {
+    vi.mocked(api.goalContributions.getPending).mockResolvedValue({
+      ...pending,
+      amount: null,
+    } as never);
+    render(<AcceptContributionPage />);
+
+    expect(await screen.findByText(/El aviso no incluye importe/)).toBeVisible();
+    expect(
+      screen.getByText(/No se realizará el movimiento hasta que confirmes/)
     ).toBeVisible();
     expect(screen.queryByText(/No se cobrará/)).not.toBeInTheDocument();
   });
