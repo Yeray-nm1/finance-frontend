@@ -177,8 +177,11 @@ test.describe('aviso mensual de metas con aceptación por correo', () => {
       await expect(updateSuggestion).toBeDisabled();
       await expect(updateSuggestion).not.toBeChecked();
       await expect(
+        page.getByText(/El aviso no incluye importe/i)
+      ).toHaveCount(0);
+      await expect(
         page.getByText(/No se realizará el movimiento hasta que confirmes/i)
-      ).toBeVisible();
+      ).toHaveCount(0);
       await expect(page.getByText(/50,00/)).toHaveCount(0);
       await expectAccessible(page, '/goals/aceptar');
 
