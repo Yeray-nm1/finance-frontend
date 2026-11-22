@@ -17,8 +17,14 @@ vi.mock('../components/NotificationSettings', () => ({
   NotificationSettings: () => <p>Panel de notificaciones</p>,
 }));
 vi.mock('../components/ChangePasswordDialog', () => ({ ChangePasswordDialog: () => null }));
-vi.mock('../components/DeleteAccountDialog', () => ({ DeleteAccountDialog: () => null }));
-vi.mock('../components/DeleteDataDialog', () => ({ DeleteDataDialog: () => null }));
+vi.mock('../components/DeleteAccountDialog', () => ({
+  DeleteAccountDialog: ({ open }: { open: boolean }) =>
+    open ? <div data-testid="delete-account-dialog" /> : null,
+}));
+vi.mock('../components/DeleteDataDialog', () => ({
+  DeleteDataDialog: ({ open }: { open: boolean }) =>
+    open ? <div data-testid="delete-data-dialog" /> : null,
+}));
 
 import PreferencesPage from '../page';
 
@@ -30,7 +36,7 @@ beforeEach(() => {
 });
 
 describe('PreferencesPage · tabs', () => {
-  it('CA-20 muestra cuatro pestañas y solo el panel activo', async () => {
+  it('CA-20 muestra dos pestañas y solo el panel activo', async () => {
     const user = userEvent.setup();
     render(<PreferencesPage />);
 
@@ -38,13 +44,11 @@ describe('PreferencesPage · tabs', () => {
     expect(screen.getByRole('tablist').className).not.toContain('overflow');
     expect(tabs.map((tab) => tab.textContent)).toEqual([
       'Perfil',
-      'Cuentas bancarias',
       'Notificaciones',
-      'Sesión',
     ]);
     expect(screen.getByRole('tab', { name: 'Perfil' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.queryByText('Panel de notificaciones')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Borrar mi cuenta' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Borrar mi cuenta' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: 'Notificaciones' }));
 
@@ -179,5 +183,49 @@ describe('PreferencesPage · nombre del usuario', () => {
 
     expect(screen.getByLabelText('Nombre')).toHaveValue('');
     expect(screen.getByRole('button', { name: 'Guardar' })).toBeDisabled();
+  });
+});
+
+describe('PreferencesPage · perfil rediseñado', () => {
+  it('no muestra pestañas de cuentas ni sesión ni el logout en la página', () => {
+    render(<PreferencesPage />);
+
+    expect(screen.queryByRole('tab', { name: 'Cuentas bancarias' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Sesión' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cerrar sesión' })).not.toBeInTheDocument();
+  });
+
+  it('muestra CUENTA, TUS DATOS y ZONA DE PELIGRO con sus acciones', () => {
+    render(<PreferencesPage />);
+
+    expect(screen.getByText('CUENTA')).toBeInTheDocument();
+    expect(screen.getByText('TUS DATOS')).toBeInTheDocument();
+    expect(screen.getByText('ZONA DE PELIGRO')).toBeInTheDocument();
+    expect(screen.getByText('Exportar mis datos')).toBeInTheDocument();
+    expect(screen.getByText('Movimientos, cuentas y metas en un archivo.')).toBeInTheDocument();
+    expect(screen.getByText('Próximamente')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Exportar' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Cuentas bancarias')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Gestionar cuentas' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Borrar mis datos' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Borrar mi cuenta' })).toBeInTheDocument();
+  });
+
+  it('abre el diálogo de borrado de datos desde la zona de peligro', async () => {
+    const user = userEvent.setup();
+    render(<PreferencesPage />);
+
+    await user.click(screen.getByRole('button', { name: 'Borrar mis datos' }));
+
+    expect(screen.getByTestId('delete-data-dialog')).toBeInTheDocument();
+  });
+
+  it('abre el diálogo de borrado de cuenta desde la zona de peligro', async () => {
+    const user = userEvent.setup();
+    render(<PreferencesPage />);
+
+    await user.click(screen.getByRole('button', { name: 'Borrar mi cuenta' }));
+
+    expect(screen.getByTestId('delete-account-dialog')).toBeInTheDocument();
   });
 });

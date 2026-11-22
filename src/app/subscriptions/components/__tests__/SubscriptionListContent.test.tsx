@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { describe, it, expect, vi, beforeAll } from 'vitest';
+import { afterEach, describe, it, expect, vi, beforeAll } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SubscriptionListContent } from '../SubscriptionListContent';
@@ -11,6 +11,10 @@ beforeAll(() => {
     unobserve() { /* noop */ }
     disconnect() { /* noop */ }
   };
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 function buildSubscription(overrides: Partial<Subscription> = {}): Subscription {
@@ -90,11 +94,7 @@ describe('SubscriptionListContent', () => {
   it('only adds active subscriptions to the annual total', () => {
     render(<SubscriptionListContent {...buildProps()} />);
 
-    const summary = screen
-      .getAllByText(/coste anual/i)
-      .find((element) => element.tagName === 'P' && element.querySelector('span'));
-
-    expect(summary).toHaveTextContent(/120,00/);
+    expect(screen.getByText('COSTE ANUAL').parentElement).toHaveTextContent('120,00 €');
   });
 
   it('opens the history of the selected subscription', async () => {
@@ -140,5 +140,97 @@ describe('SubscriptionListContent', () => {
       'aria-selected',
       'false'
     );
+  });
+
+  it('muestra el coste anual y el primer cobro del día con su importe', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 10, 21, 12));
+
+    const lastCharge = {
+      id: 'tx',
+      amount: -10,
+      date: new Date(2026, 9, 27).toISOString(),
+      description: 'cargo',
+    };
+    render(
+      <SubscriptionListContent
+        {...buildProps({
+          subscriptions: [
+            buildSubscription({ id: 'a', name: 'Netflix', amount: 11.99, lastTransaction: lastCharge }),
+            buildSubscription({ id: 'b', name: 'Nueva prueba', amount: 10, lastTransaction: lastCharge }),
+          ],
+        })}
+      />
+    );
+
+    expect(screen.getByText('COSTE ANUAL')).toBeInTheDocument();
+    expect(screen.getByText('263,88 €')).toBeInTheDocument();
+    expect(screen.getByText(/PRÓXIMO COBRO · 27 Nov · EN 6 DÍAS/i)).toBeInTheDocument();
+    expect(screen.getByText(/21,99 €/)).toBeInTheDocument();
+    expect(screen.getByText(/2 pagos/)).toBeInTheDocument();
+  });
+
+  it('avisa de las suscripciones sin cobros y permite revisarlas', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 10, 21, 12));
+
+    const oldCharge = {
+      id: 'tx',
+      amount: -10,
+      date: new Date(2026, 4, 10).toISOString(),
+      description: 'cargo',
+    };
+    render(
+      <SubscriptionListContent
+        {...buildProps({
+          subscriptions: [
+            buildSubscription({ id: 'a', lastTransaction: oldCharge }),
+            buildSubscription({ id: 'b', name: 'Spotify', lastTransaction: oldCharge }),
+          ],
+        })}
+      />
+    );
+
+    expect(screen.getByText(/2 suscripciones sin cobros desde mayo/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /revisar/i })).toBeInTheDocument();
+  });
+
+  it('indica que la lista está ordenada por próximo cobro', () => {
+    render(<SubscriptionListContent {...buildProps()} />);
+
+    expect(screen.getByText('Ordenadas por próximo cobro')).toBeInTheDocument();
+  });
+
+  it('la lista tiene scroll para muchos elementos', () => {
+    render(<SubscriptionListContent {...buildProps()} />);
+
+    expect(screen.getByTestId('subscription-list').className).toContain('overflow-y-auto');
+  });
+
+  it('ordena las activas por próximo cobro', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 10, 21, 12));
+
+    const charge = (day: number) => ({
+      id: 'tx',
+      amount: -10,
+      date: new Date(2026, 9, day).toISOString(),
+      description: 'cargo',
+    });
+    const { container } = render(
+      <SubscriptionListContent
+        {...buildProps({
+          subscriptions: [
+            buildSubscription({ id: 'late', name: 'Tardía', lastTransaction: charge(15) }),
+            buildSubscription({ id: 'soon', name: 'Pronto', lastTransaction: charge(25) }),
+          ],
+        })}
+      />
+    );
+
+    const ids = [...container.querySelectorAll('[data-subscription-row]')].map((row) =>
+      row.getAttribute('data-subscription-row')
+    );
+    expect(ids).toEqual(['soon', 'late']);
   });
 });

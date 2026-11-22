@@ -46,9 +46,8 @@ test.describe('borrado de datos y de cuenta', () => {
 
     const page = await context.newPage();
     await page.goto('/preferences');
-    await page.getByRole('tab', { name: 'Sesión' }).click();
 
-    await page.getByRole('button', { name: 'Borrar todos mis datos' }).click();
+    await page.getByRole('button', { name: 'Borrar mis datos' }).click();
     await expect(
       page.getByRole('heading', { name: 'Borrar todos mis datos' })
     ).toBeVisible();
@@ -72,7 +71,6 @@ test.describe('borrado de datos y de cuenta', () => {
 
     const page = await context.newPage();
     await page.goto('/preferences');
-    await page.getByRole('tab', { name: 'Sesión' }).click();
 
     await page.getByRole('button', { name: 'Borrar mi cuenta' }).click();
     await page.getByLabel('Contraseña').fill('WrongPass123');
@@ -93,7 +91,6 @@ test.describe('borrado de datos y de cuenta', () => {
 
     const page = await context.newPage();
     await page.goto('/preferences');
-    await page.getByRole('tab', { name: 'Sesión' }).click();
 
     await page.getByRole('button', { name: 'Borrar mi cuenta' }).click();
     await page.getByLabel('Contraseña').fill(PASSWORD);
