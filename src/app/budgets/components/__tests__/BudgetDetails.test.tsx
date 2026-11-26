@@ -24,15 +24,31 @@ function renderDefault(props: Partial<Parameters<typeof BudgetDetails>[0]> = {})
   );
 }
 
+describe('BudgetDetails — sección de presupuesto total', () => {
+  it('muestra la etiqueta, el importe y el reparto en una sola fila', () => {
+    renderDefault({ isValidTotal: true });
+
+    expect(screen.getByText('Presupuesto total')).toBeInTheDocument();
+    expect(screen.getByLabelText('Presupuesto total')).toBeInTheDocument();
+    expect(screen.getByText('✓ 100 % repartido')).toBeInTheDocument();
+  });
+
+  it('avisa cuando el reparto no suma 100%', () => {
+    renderDefault({ isValidTotal: false, totalAllocated: 90 });
+
+    expect(screen.getByText(/Los porcentajes suman 90%/)).toBeInTheDocument();
+  });
+});
+
 describe('BudgetDetails calculate income button', () => {
   it('renders button with default text', () => {
     renderDefault({ onCalculateIncome: vi.fn() });
-    expect(screen.getByRole('button', { name: /calcular ingresos a partir del mes anterior/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /calcular desde ingresos del mes anterior/i })).toBeInTheDocument();
   });
 
   it('renders Calculator icon inside button', () => {
     renderDefault({ onCalculateIncome: vi.fn() });
-    const button = screen.getByRole('button', { name: /calcular ingresos/i });
+    const button = screen.getByRole('button', { name: /calcular desde ingresos/i });
     expect(button.querySelector('svg')).toBeInTheDocument();
   });
 
@@ -43,7 +59,7 @@ describe('BudgetDetails calculate income button', () => {
 
   it('disables button when onCalculateIncome is undefined', () => {
     renderDefault({ onCalculateIncome: undefined });
-    expect(screen.getByRole('button', { name: /calcular ingresos/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /calcular desde ingresos/i })).toBeDisabled();
   });
 
   it('disables button when calculatingIncome is true', () => {
@@ -55,7 +71,7 @@ describe('BudgetDetails calculate income button', () => {
     const onCalculateIncome = vi.fn();
     const user = userEvent.setup();
     renderDefault({ onCalculateIncome });
-    await user.click(screen.getByRole('button', { name: /calcular ingresos/i }));
+    await user.click(screen.getByRole('button', { name: /calcular desde ingresos/i }));
     expect(onCalculateIncome).toHaveBeenCalledOnce();
   });
 });

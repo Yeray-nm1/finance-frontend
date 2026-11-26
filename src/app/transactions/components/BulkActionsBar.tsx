@@ -11,7 +11,7 @@ import {
 import { Trash2, X } from "lucide-react";
 import type { Account } from "@/types/accounts";
 import type { Category } from "@/types/categories";
-import { NO_ACCOUNT_SENTINEL, NO_CATEGORY_SENTINEL } from "@/lib/transactions-utils";
+import { NO_ACCOUNT_LABEL, NO_ACCOUNT_SENTINEL, NO_CATEGORY_SENTINEL } from "@/lib/transactions-utils";
 
 interface BulkActionsBarProps {
   selectedCount: number;
@@ -100,7 +100,7 @@ export function BulkActionsBar({
               <SelectValue placeholder="Cuenta" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={NO_ACCOUNT_SENTINEL}>Sin cuenta</SelectItem>
+              <SelectItem value={NO_ACCOUNT_SENTINEL}>{NO_ACCOUNT_LABEL}</SelectItem>
               {accounts.map((account) => (
                 <SelectItem key={account.id} value={account.id}>
                   {account.name}

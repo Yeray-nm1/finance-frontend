@@ -3,6 +3,29 @@ import type { TransactionType } from "@/types/transactions";
 
 export const NO_CATEGORY_SENTINEL = "__none__";
 export const NO_ACCOUNT_SENTINEL = "__no_account__";
+export const NO_ACCOUNT_LABEL = "Sin cuenta";
+
+type AccountFilterOption = { id: string; name: string };
+
+export function resolveAccountFilterNames(
+  names: readonly string[],
+  accounts: readonly AccountFilterOption[]
+): string[] {
+  return names
+    .map((name) =>
+      name === NO_ACCOUNT_LABEL
+        ? NO_ACCOUNT_SENTINEL
+        : accounts.find((account) => account.name === name)?.id
+    )
+    .filter((id): id is string => Boolean(id));
+}
+
+export function isAccountFilterIdValid(
+  id: string,
+  accounts: readonly AccountFilterOption[]
+): boolean {
+  return id === NO_ACCOUNT_SENTINEL || accounts.some((account) => account.id === id);
+}
 
 export function getSubmitLabel(saving: boolean, isEditing: boolean): string {
   if (saving && isEditing) return "Guardando...";

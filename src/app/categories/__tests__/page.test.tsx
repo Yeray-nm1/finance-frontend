@@ -126,13 +126,33 @@ describe("CategoriesPage", () => {
 
     await user.click(await screen.findByRole("button", { name: "Eliminar Supermercado" }));
 
-    expect(screen.getByText(/se quedarán sin categoría/)).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Eliminar" }));
+    expect(screen.getByText(/Tiene \d+ movimientos?\./)).toBeInTheDocument();
+    expect(screen.getByText(/También se quitará de los presupuestos/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Eliminar categoría" }));
 
     await waitFor(() => {
-      expect(api.categories.delete).toHaveBeenCalledWith("category-1");
+      expect(api.categories.delete).toHaveBeenCalledWith("category-1", undefined);
     });
     expect(await screen.findByText("Aún no tienes categorías")).toBeInTheDocument();
+  });
+
+  it("mueve los movimientos a otra categoría al eliminar", async () => {
+    vi.mocked(api.categories.list).mockResolvedValue([
+      category,
+      { ...category, id: "category-2", name: "Restaurantes", type: "leisure" },
+    ]);
+    const user = userEvent.setup();
+    render(<CategoriesPage />);
+
+    await user.click(await screen.findByRole("button", { name: "Eliminar Supermercado" }));
+    await user.click(screen.getByRole("radio", { name: "Moverlos a otra categoría" }));
+    await user.click(screen.getByRole("combobox", { name: "Categoría" }));
+    await user.click(await screen.findByRole("option", { name: "Restaurantes" }));
+    await user.click(screen.getByRole("button", { name: "Eliminar categoría" }));
+
+    await waitFor(() => {
+      expect(api.categories.delete).toHaveBeenCalledWith("category-1", "category-2");
+    });
   });
 
   it("muestra el error del backend al crear una categoría duplicada", async () => {

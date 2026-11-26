@@ -18,7 +18,13 @@ import { TransactionsMobileList } from "@/app/transactions/components/Transactio
 import { TransactionsPagination } from "@/app/transactions/components/TransactionsPagination";
 import { QuickExpenseButton } from "@/app/transactions/components/QuickExpenseButton";
 import { BulkActionsBar } from "@/app/transactions/components/BulkActionsBar";
-import { NO_ACCOUNT_SENTINEL, NO_CATEGORY_SENTINEL } from "@/lib/transactions-utils";
+import {
+  NO_ACCOUNT_LABEL,
+  NO_ACCOUNT_SENTINEL,
+  NO_CATEGORY_SENTINEL,
+  isAccountFilterIdValid,
+  resolveAccountFilterNames,
+} from "@/lib/transactions-utils";
 import { api } from "@/lib/api";
 import type { Transaction, TransactionType, TransferKind, TransferDirection, UpdateTransactionDTO } from "@/types/transactions";
 import type { TransactionFlow } from "@/types/filter";
@@ -291,10 +297,7 @@ function TransactionsPageContent() {
     }
 
     if (pendingAccountNames !== null) {
-      const ids = pendingAccountNames
-        .map((name) => accounts.find((account) => account.name === name)?.id)
-        .filter((id): id is string => Boolean(id));
-      setFilterAccountIds(ids);
+      setFilterAccountIds(resolveAccountFilterNames(pendingAccountNames, accounts));
       setPendingAccountNames(null);
     }
 
@@ -330,9 +333,7 @@ function TransactionsPageContent() {
     }
 
     if (filterAccountIds.length > 0) {
-      const resolved = filterAccountIds.filter((id) =>
-        accounts.some((account) => account.id === id)
-      );
+      const resolved = filterAccountIds.filter((id) => isAccountFilterIdValid(id, accounts));
       if (resolved.length !== filterAccountIds.length) {
         setFilterAccountIds(resolved);
       }
@@ -378,6 +379,10 @@ function TransactionsPageContent() {
       if (category) params.append("category", category.name);
     }
     for (const id of filterAccountIds) {
+      if (id === NO_ACCOUNT_SENTINEL) {
+        params.append("account", NO_ACCOUNT_LABEL);
+        continue;
+      }
       const account = accounts.find((item) => item.id === id);
       if (account) params.append("account", account.name);
     }

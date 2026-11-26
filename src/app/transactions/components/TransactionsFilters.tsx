@@ -2,7 +2,11 @@
 
 import { Input } from "@/components/ui/input";
 import { ArrowDownWideNarrow, Search, X } from "lucide-react";
-import { NO_CATEGORY_SENTINEL } from "@/lib/transactions-utils";
+import {
+  NO_ACCOUNT_LABEL,
+  NO_ACCOUNT_SENTINEL,
+  NO_CATEGORY_SENTINEL,
+} from "@/lib/transactions-utils";
 import { SelectFilter } from "@/app/transactions/components/SelectFilter";
 import { MultiSelectFilter } from "@/app/transactions/components/MultiSelectFilter";
 import { MultiSelectTags } from "@/app/transactions/components/MultiSelectTags";
@@ -56,10 +60,10 @@ export function TransactionsFilters({
     { value: NO_CATEGORY_SENTINEL, label: "Sin categoría" },
     ...categories.map((category) => ({ value: category.id, label: category.name })),
   ];
-  const accountOptions: SelectFilterOption[] = accounts.map((account) => ({
-    value: account.id,
-    label: account.name,
-  }));
+  const accountOptions: SelectFilterOption[] = [
+    { value: NO_ACCOUNT_SENTINEL, label: NO_ACCOUNT_LABEL },
+    ...accounts.map((account) => ({ value: account.id, label: account.name })),
+  ];
   const subscriptionOptions: SelectFilterOption[] = subscriptions.map((subscription) => ({
     value: subscription.id,
     label: subscription.name,

@@ -56,27 +56,23 @@ vi.mock('@/app/budgets/components/BudgetDetails', () => ({
     totalIncome,
     onCalculateIncome,
     onTotalIncomeChange,
-    onSave,
-    onCancel,
     canSave,
-    saving,
   }: {
     totalIncome?: number;
     onCalculateIncome?: () => void;
     onTotalIncomeChange?: (value: number) => void;
-    onSave?: () => void;
-    onCancel?: () => void;
     canSave?: boolean;
-    saving?: boolean;
   }) =>
     <div data-testid="budget-details">
       <span data-testid="total-income">{totalIncome}</span>
       <button onClick={onCalculateIncome}>Calcular ingresos</button>
       <button onClick={() => onTotalIncomeChange?.(1000)}>Definir ingresos 1000</button>
-      <button onClick={onSave} disabled={!canSave || saving}>Guardar presupuesto</button>
-      <button onClick={onCancel}>Cancelar</button>
       <span data-testid="can-save">{String(canSave)}</span>
     </div>,
+}));
+
+vi.mock('@/app/budgets/components/BudgetTypeTabs', () => ({
+  BudgetTypeTabs: () => <div data-testid="budget-type-tabs" />,
 }));
 
 vi.mock('@/app/budgets/components/BudgetCategoryDetails', () => ({
@@ -230,10 +226,11 @@ describe('BudgetsPage - optimistic category updates', () => {
     await user.click(deleteButton);
 
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByRole('button', { name: 'Eliminar' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Eliminar categoría' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('radio', { name: 'Dejarlos sin categoría' })).toBeChecked();
 
     const user2 = userEvent.setup({ pointerEventsCheck: 0 });
-    await user2.click(within(dialog).getByRole('button', { name: 'Eliminar' }));
+    await user2.click(within(dialog).getByRole('button', { name: 'Eliminar categoría' }));
 
     await waitFor(() => {
       expect(screen.queryByText('Comida')).not.toBeInTheDocument();
@@ -463,7 +460,7 @@ describe('BudgetsPage - optimistic category updates', () => {
 
     const dialog = await screen.findByRole('dialog');
     const user2 = userEvent.setup({ pointerEventsCheck: 0 });
-    await user2.click(within(dialog).getByRole('button', { name: 'Eliminar' }));
+    await user2.click(within(dialog).getByRole('button', { name: 'Eliminar categoría' }));
 
     await waitFor(() => {
       expect(screen.queryByText('Comida')).not.toBeInTheDocument();
@@ -518,6 +515,34 @@ describe('BudgetsPage - optimistic category updates', () => {
       expect(screen.getByTestId('budget-readonly')).toBeInTheDocument();
     });
     expect(screen.getByText('Cine')).toBeInTheDocument();
+  });
+
+  it('muestra el aviso de cambios sin guardar y permite mover movimientos al eliminar', async () => {
+    vi.mocked(api.categories.list).mockResolvedValue([
+      { id: 'cat-1', name: 'Comida', type: 'needs', userId: '1', transactionCount: 3 },
+      { id: 'cat-2', name: 'Restaurantes', type: 'leisure', userId: '1' },
+    ]);
+    const user = userEvent.setup();
+    render(<BudgetsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
+    });
+    await user.click(screen.getByRole('button', { name: 'Crear presupuesto' }));
+    await user.click(screen.getByRole('button', { name: 'Definir ingresos 1000' }));
+
+    expect(screen.getByText('Tienes cambios sin guardar')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Eliminar Comida' }));
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('radio', { name: 'Moverlos a otra categoría' }));
+    await user.click(within(dialog).getByRole('combobox', { name: 'Categoría' }));
+    await user.click(await screen.findByRole('option', { name: 'Restaurantes' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Eliminar categoría' }));
+
+    await waitFor(() => {
+      expect(api.categories.delete).toHaveBeenCalledWith('cat-1', 'cat-2');
+    });
   });
 
   it('C18: copia el presupuesto anterior en el formulario en modo edición', async () => {
@@ -701,5 +726,30 @@ describe('BudgetsPage - optimistic category updates', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('C21: apila el total, los grupos, las categorías y el pie sin columnas laterales', async () => {
+    const user = userEvent.setup();
+    render(<BudgetsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
+    });
+    await user.click(screen.getByRole('button', { name: 'Crear presupuesto' }));
+
+    const layout = screen.getByTestId('budget-edit-layout');
+    expect(layout.className).toContain('max-w-[1100px]');
+    expect(layout.className).toContain('flex-col');
+    expect(document.querySelector('[class*="lg:grid-cols-3"]')).toBeNull();
+
+    const sections = Array.from(layout.querySelectorAll('[data-edit-section]')).map((section) =>
+      section.getAttribute('data-testid')
+    );
+    expect(sections).toEqual([
+      'section-total',
+      'section-groups',
+      'section-categories',
+      'section-footer',
+    ]);
   });
 });

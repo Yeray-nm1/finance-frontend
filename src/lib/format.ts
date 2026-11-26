@@ -8,6 +8,19 @@ export function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
+export function formatAmountNumber(amount: number): string {
+  return new Intl.NumberFormat("es-ES", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+    useGrouping: true,
+  }).format(amount);
+}
+
+export function formatSignedAmount(amount: number): string {
+  const sign = amount >= 0 ? "+" : "−";
+  return `${sign} ${formatAmountNumber(Math.abs(amount))}`;
+}
+
 export function formatShortDate(iso: string): string {
   const d = new Date(iso);
   return `${d.getDate()} ${SHORT_MONTHS[d.getMonth()]}`;

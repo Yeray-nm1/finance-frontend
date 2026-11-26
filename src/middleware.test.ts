@@ -24,7 +24,7 @@ function request(pathname: string, search = '', loggedIn = false) {
 
 describe('middleware · retorno al enlace de aportación', () => {
   it('redirige al login conservando la ruta y el token', () => {
-    const result = middleware(request('/goals/aceptar', '?token=abc')) as {
+    const result = middleware(request('/goals/aceptar', '?token=abc')) as unknown as {
       kind: string;
       url: string;
     };
@@ -44,7 +44,7 @@ describe('middleware · retorno al enlace de aportación', () => {
   it('respeta un retorno interno si el usuario ya está autenticado', () => {
     const result = middleware(
       request('/login', '?next=%2Fgoals%2Faceptar%3Ftoken%3Dabc', true)
-    ) as { kind: string; url: string };
+    ) as unknown as { kind: string; url: string };
 
     expect(result.url).toBe('http://localhost:3001/goals/aceptar?token=abc');
   });
@@ -52,13 +52,13 @@ describe('middleware · retorno al enlace de aportación', () => {
   it('ignora retornos externos y envía al dashboard', () => {
     const result = middleware(
       request('/login', '?next=https%3A%2F%2Fevil.example', true)
-    ) as { kind: string; url: string };
+    ) as unknown as { kind: string; url: string };
 
     expect(result.url).toBe('http://localhost:3001/dashboard');
   });
 
   it('sin retorno, un usuario autenticado en login va al dashboard', () => {
-    const result = middleware(request('/login', '', true)) as { kind: string; url: string };
+    const result = middleware(request('/login', '', true)) as unknown as { kind: string; url: string };
 
     expect(result.url).toBe('http://localhost:3001/dashboard');
   });

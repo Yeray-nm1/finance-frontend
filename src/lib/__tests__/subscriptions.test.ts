@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { getAnnualCost, getNextChargeDate } from '@/lib/subscriptions';
+import { getAnnualCost, getNextChargeDate, getNextChargeDateFromPayments } from '@/lib/subscriptions';
 import type { Subscription } from '@/types/subscriptions';
 
 afterEach(() => {
@@ -13,6 +13,8 @@ function subscription(overrides: Partial<Subscription> = {}): Subscription {
     name: 'Netflix',
     amount: 9.99,
     frequency: 'monthly',
+    kind: 'subscription',
+    estimated: false,
     matchDescriptions: [],
     amountTolerance: 10,
     active: true,
@@ -86,5 +88,43 @@ describe('getNextChargeDate', () => {
     expect(next?.getFullYear()).toBe(2026);
     expect(next?.getMonth()).toBe(5);
     expect(next?.getDate()).toBe(10);
+  });
+
+  it('da prioridad a nextChargeDate explícita sobre el último pago', () => {
+    const next = getNextChargeDate(
+      subscription({
+        frequency: 'monthly',
+        nextChargeDate: '2027-03-08',
+        lastTransaction: {
+          id: 'tx-1',
+          amount: -9.99,
+          date: new Date(2026, 0, 15).toISOString(),
+          description: 'Netflix',
+        },
+      })
+    );
+
+    expect(next?.getFullYear()).toBe(2027);
+    expect(next?.getMonth()).toBe(2);
+    expect(next?.getDate()).toBe(8);
+  });
+});
+
+describe('getNextChargeDateFromPayments', () => {
+  it('calcula el próximo cobro a partir del pago más reciente', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 10, 21));
+
+    const next = getNextChargeDateFromPayments(
+      [
+        { date: new Date(2026, 9, 12).toISOString() },
+        { date: new Date(2026, 10, 12).toISOString() },
+      ],
+      'monthly'
+    );
+
+    expect(next?.getFullYear()).toBe(2026);
+    expect(next?.getMonth()).toBe(11);
+    expect(next?.getDate()).toBe(12);
   });
 });

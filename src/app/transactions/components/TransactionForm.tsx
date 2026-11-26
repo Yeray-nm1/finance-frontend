@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { NO_ACCOUNT_SENTINEL, NO_CATEGORY_SENTINEL, getSubmitLabel, getAmountSign, typeLabel } from "@/lib/transactions-utils";
+import { NO_ACCOUNT_LABEL, NO_ACCOUNT_SENTINEL, NO_CATEGORY_SENTINEL, getSubmitLabel, getAmountSign, typeLabel } from "@/lib/transactions-utils";
 import { formatCurrency } from "@/lib/format";
 import { getAmountColor } from "@/components/ui/variants/transactions.variants";
 import { QuickAccountCreate } from "@/components/QuickAccountCreate";
@@ -113,10 +113,10 @@ export function TransactionForm({
             disabled={accounts.length === 0}
           >
             <SelectTrigger id="tx-transfer-account">
-              <SelectValue placeholder={accounts.length === 0 ? "Sin cuentas" : "Sin cuenta"} />
+              <SelectValue placeholder={accounts.length === 0 ? "Sin cuentas" : NO_ACCOUNT_LABEL} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={NO_ACCOUNT_SENTINEL}>Sin cuenta</SelectItem>
+              <SelectItem value={NO_ACCOUNT_SENTINEL}>{NO_ACCOUNT_LABEL}</SelectItem>
               {accounts
                 .filter((account) => account.id !== newAccountId)
                 .map((account) => (
@@ -146,10 +146,10 @@ export function TransactionForm({
           <Label htmlFor="tx-account">Cuenta</Label>
           <Select value={newAccountId} onValueChange={onAccountIdChange} disabled={accounts.length === 0}>
             <SelectTrigger id="tx-account">
-              <SelectValue placeholder={accounts.length === 0 ? "Sin cuentas" : "Sin cuenta"} />
+              <SelectValue placeholder={accounts.length === 0 ? "Sin cuentas" : NO_ACCOUNT_LABEL} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={NO_ACCOUNT_SENTINEL}>Sin cuenta</SelectItem>
+              <SelectItem value={NO_ACCOUNT_SENTINEL}>{NO_ACCOUNT_LABEL}</SelectItem>
               {accounts.map((acc) => (
                 <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
               ))}

@@ -3,6 +3,7 @@ import { afterEach, describe, it, expect, vi, beforeAll } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SubscriptionListContent } from '../SubscriptionListContent';
+import { getNextChargeDate, getUpcomingCharge } from '@/lib/subscriptions';
 import type { Subscription } from '@/types/subscriptions';
 
 beforeAll(() => {
@@ -27,6 +28,8 @@ function buildSubscription(overrides: Partial<Subscription> = {}): Subscription 
     matchDescriptions: [],
     amountTolerance: 10,
     active: true,
+    kind: 'subscription',
+    estimated: false,
     createdAt: new Date(2026, 0, 1).toISOString(),
     ...overrides,
   };
@@ -94,7 +97,7 @@ describe('SubscriptionListContent', () => {
   it('only adds active subscriptions to the annual total', () => {
     render(<SubscriptionListContent {...buildProps()} />);
 
-    expect(screen.getByText('COSTE ANUAL').parentElement).toHaveTextContent('120,00 €');
+    expect(screen.getByText('TODOS · 1').parentElement).toHaveTextContent('120,00 €');
   });
 
   it('opens the history of the selected subscription', async () => {
@@ -163,9 +166,8 @@ describe('SubscriptionListContent', () => {
       />
     );
 
-    expect(screen.getByText('COSTE ANUAL')).toBeInTheDocument();
-    expect(screen.getByText('263,88 €')).toBeInTheDocument();
-    expect(screen.getByText(/PRÓXIMO COBRO · 27 Nov · EN 6 DÍAS/i)).toBeInTheDocument();
+    expect(screen.getByText('TODOS · 2').parentElement).toHaveTextContent('263,88 €');
+    expect(screen.getByText(/PRÓXIMO · 27 NOV/i)).toBeInTheDocument();
     expect(screen.getByText(/21,99 €/)).toBeInTheDocument();
     expect(screen.getByText(/2 pagos/)).toBeInTheDocument();
   });
@@ -193,6 +195,82 @@ describe('SubscriptionListContent', () => {
 
     expect(screen.getByText(/2 suscripciones sin cobros desde mayo/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /revisar/i })).toBeInTheDocument();
+  });
+
+  it('muestra el resumen por tipo y filtra la lista al pulsar una tarjeta', async () => {
+    const user = userEvent.setup();
+    const recurring = buildSubscription({
+      id: 'sub-r',
+      name: 'Alquiler piso',
+      amount: 650,
+      kind: 'recurring',
+    });
+    render(
+      <SubscriptionListContent
+        {...buildProps({ subscriptions: [activeSub, recurring, cancelledSub] })}
+      />
+    );
+
+    expect(screen.getByText('TODOS · 2').parentElement).toHaveTextContent('7.920,00 €');
+    expect(screen.getByText('SUSCRIPCIONES · 1').parentElement).toHaveTextContent('120,00 €');
+    expect(screen.getByText('PAGOS RECURRENTES · 1').parentElement).toHaveTextContent('7.800,00 €');
+    expect(screen.getByText(/Pulsa una tarjeta para filtrar la lista por tipo/i)).toBeInTheDocument();
+    expect(screen.getByText('Netflix')).toBeInTheDocument();
+    expect(screen.getByText('Alquiler piso')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /PAGOS RECURRENTES/i }));
+
+    expect(screen.getByText('Alquiler piso')).toBeInTheDocument();
+    expect(screen.queryByText('Netflix')).not.toBeInTheDocument();
+  });
+
+  it('filtra la lista por el día del próximo cobro al pulsar su tarjeta', async () => {
+    const user = userEvent.setup();
+    const today = new Date();
+    const charge = (daysAgo: number) => ({
+      id: 'tx',
+      amount: -10,
+      date: new Date(today.getFullYear(), today.getMonth(), today.getDate() - daysAgo).toISOString(),
+      description: 'cargo',
+    });
+    const netflix = buildSubscription({
+      id: 'a',
+      name: 'Netflix',
+      amount: 11.99,
+      lastTransaction: charge(10),
+    });
+    const iberdrola = buildSubscription({
+      id: 'b',
+      name: 'Iberdrola',
+      amount: 74.2,
+      lastTransaction: charge(20),
+    });
+    const upcoming = getUpcomingCharge([netflix, iberdrola])!;
+    const expectedName =
+      getNextChargeDate(netflix)?.toDateString() === upcoming.date.toDateString()
+        ? 'Netflix'
+        : 'Iberdrola';
+    const hiddenName = expectedName === 'Netflix' ? 'Iberdrola' : 'Netflix';
+
+    render(
+      <SubscriptionListContent
+        {...buildProps({ subscriptions: [netflix, iberdrola] })}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: /PRÓXIMO/i })).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    );
+
+    await user.click(screen.getByRole('button', { name: /PRÓXIMO/i }));
+
+    expect(screen.getByRole('button', { name: /PRÓXIMO/i })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+    expect(screen.getByText(expectedName)).toBeInTheDocument();
+    expect(screen.queryByText(hiddenName)).not.toBeInTheDocument();
   });
 
   it('indica que la lista está ordenada por próximo cobro', () => {

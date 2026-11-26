@@ -1,9 +1,15 @@
+export type SubscriptionKind = 'subscription' | 'recurring';
+
 export interface Subscription {
   id: string;
   userId: string;
   name: string;
   amount: number;
   frequency: 'weekly' | 'biweekly' | 'monthly' | 'bimonthly' | 'quarterly' | 'yearly';
+  kind: SubscriptionKind;
+  estimated: boolean;
+  /** Fecha elegida por el usuario para el próximo cobro (YYYY-MM-DD). */
+  nextChargeDate?: string | null;
   matchDescriptions: string[];
   amountTolerance: number;
   active: boolean;

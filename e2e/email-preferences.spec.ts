@@ -46,6 +46,7 @@ test.describe('preferencias de email', () => {
             httpOnly: true,
             secure: false,
             sameSite: 'Strict',
+            expires: -1,
           },
         ],
         origins: [],

@@ -26,6 +26,8 @@ function buildSubscription(overrides: Partial<Subscription> = {}): Subscription 
     matchDescriptions: [],
     amountTolerance: 10,
     active: true,
+    kind: 'subscription',
+    estimated: false,
     createdAt: new Date(2026, 0, 1).toISOString(),
     ...overrides,
   };
@@ -109,6 +111,34 @@ describe('SubscriptionRow', () => {
 
     expect(screen.getByText('N')).toBeInTheDocument();
     expect(screen.getByText(/Último cobro 27 Oct/i)).toBeInTheDocument();
+  });
+
+  it('muestra la etiqueta del tipo de pago', () => {
+    render(<SubscriptionRow {...buildProps()} />);
+
+    expect(screen.getByText('Suscripción')).toBeInTheDocument();
+    expect(screen.queryByText('Pago recurrente')).not.toBeInTheDocument();
+  });
+
+  it('distingue los pagos recurrentes y marca el importe estimado', () => {
+    render(
+      <SubscriptionRow
+        {...buildProps(
+          buildSubscription({
+            name: 'Iberdrola (luz)',
+            amount: 74.2,
+            kind: 'recurring',
+            estimated: true,
+          })
+        )}
+      />
+    );
+
+    expect(screen.getByText('Pago recurrente')).toBeInTheDocument();
+    expect(screen.queryByText('Suscripción')).not.toBeInTheDocument();
+    expect(screen.getByText(/importe estimado/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/74,20/).some((el) => el.textContent?.includes('≈'))).toBe(true);
+    expect(screen.getAllByText(/890,40/).some((el) => el.textContent?.includes('≈'))).toBe(true);
   });
 
   it('indica cuántos días quedan para el próximo cobro', () => {

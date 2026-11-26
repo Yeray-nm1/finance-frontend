@@ -33,6 +33,26 @@ export const transactions = {
     const url = query ? `/transactions?${query}` : '/transactions';
     return request<PaginatedResponse<Transaction>>(url, { signal })
   },
+  listAll: async (signal?: AbortSignal) => {
+    const limit = 100;
+    let page = 1;
+    const all: Transaction[] = [];
+
+    while (page <= 50) {
+      const response = await transactions.list({ page, limit }, signal);
+      all.push(...response.data);
+      if (
+        response.data.length === 0 ||
+        response.data.length < limit ||
+        all.length >= response.total
+      ) {
+        break;
+      }
+      page += 1;
+    }
+
+    return all;
+  },
   create: (data: CreateTransactionDTO) =>
     request<Transaction>('/transactions', { method: 'POST', body: JSON.stringify(data) }),
   importCsv: (rows: Record<string, string>[], mapping?: CsvMapping, accountId?: string) =>

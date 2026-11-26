@@ -33,6 +33,8 @@ const subscription: Subscription = {
   name: 'Netflix',
   amount: 9.99,
   frequency: 'monthly',
+  kind: 'subscription',
+  estimated: false,
   matchDescriptions: [],
   amountTolerance: 10,
   active: true,
@@ -54,6 +56,10 @@ function renderDialog() {
 describe('EditSubscriptionDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ data: [], total: 0 }),
+    }));
   });
 
   it('saves name, amount and frequency without overwriting the active flag', async () => {
@@ -65,10 +71,31 @@ describe('EditSubscriptionDialog', () => {
 
     expect(api.subscriptions.update).toHaveBeenCalledWith(
       'sub-1',
-      expect.objectContaining({ name: 'Netflix', amount: 9.99, frequency: 'monthly' })
+      expect.objectContaining({
+        name: 'Netflix',
+        amount: 9.99,
+        frequency: 'monthly',
+        kind: 'subscription',
+        estimated: false,
+      })
     );
     const payload = vi.mocked(api.subscriptions.update).mock.calls[0][1];
     expect(payload).not.toHaveProperty('active');
+  });
+
+  it('guarda el tipo de pago recurrente y el importe estimado', async () => {
+    const user = userEvent.setup();
+    renderDialog();
+
+    await user.click(screen.getByRole('radio', { name: /Pago recurrente/ }));
+    await user.click(screen.getByRole('checkbox', { name: /importe estimado/i }));
+    await user.click(screen.getByRole('button', { name: /siguiente/i }));
+    await user.click(await screen.findByRole('button', { name: /^guardar$/i }));
+
+    expect(api.subscriptions.update).toHaveBeenCalledWith(
+      'sub-1',
+      expect.objectContaining({ kind: 'recurring', estimated: true })
+    );
   });
 
   it('does not render the active toggle inside the edit dialog', () => {

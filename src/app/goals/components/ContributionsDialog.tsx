@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
 import { formatCurrency, formatShortDate } from "@/lib/format";
+import { NO_ACCOUNT_LABEL } from "@/lib/transactions-utils";
 import type { SavingsGoal } from "@/types/goals";
 import { Trash2 } from "lucide-react";
 
@@ -118,7 +119,7 @@ export function ContributionsDialog({
                   </p>
                   <p className="truncate text-xs text-text-muted">
                     {formatShortDate(contribution.date)} ·{" "}
-                    {contribution.account?.name ?? "Sin cuenta"} →{" "}
+                    {contribution.account?.name ?? NO_ACCOUNT_LABEL} →{" "}
                     {contribution.transferAccount?.name ?? "—"}
                   </p>
                 </div>

@@ -4,13 +4,15 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import type { Category } from "@/types/categories";
 import type { IncomeGroup, CategoryAllocation } from "@/types/budgets";
 import { api } from "@/lib/api";
+import { Button } from "@/components/ui/button";
 import { BudgetDetails } from "@/app/budgets/components/BudgetDetails";
+import { BudgetTypeTabs } from "@/app/budgets/components/BudgetTypeTabs";
 import { BudgetCategoryDetails } from "@/app/budgets/components/BudgetCategoryDetails";
 import { BudgetReadOnlyView } from "@/app/budgets/components/BudgetReadOnlyView";
 import { IncomeReviewDialog } from "@/app/budgets/components/IncomeReviewDialog";
 import { BudgetHeader } from "@/app/budgets/components/BudgetHeader";
 import { CategoryDialog } from "@/app/categories/components/CategoryDialog";
-import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
+import { DeleteCategoryDialog } from "@/app/categories/components/DeleteCategoryDialog";
 import { getBudgetBadge, DEFAULT_ALLOCATIONS, MONTH_NAMES } from "@/lib/budget-constants";
 import {
   buildInitialAllocations,
@@ -258,7 +260,7 @@ export default function BudgetsPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-bg-page p-4 md:p-8">
+      <main className="min-h-screen bg-[#F2F2F2] p-4 md:p-8">
         <p className="text-sm text-text-muted">Cargando...</p>
       </main>
     );
@@ -266,7 +268,7 @@ export default function BudgetsPage() {
 
   if (error) {
     return (
-      <main className="min-h-screen bg-bg-page p-4 md:p-8">
+      <main className="min-h-screen bg-[#F2F2F2] p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
           <p className="text-sm text-expense">{error}</p>
           <button onClick={() => void loadData()} className="text-primary text-sm hover:underline mt-2">
@@ -292,9 +294,9 @@ export default function BudgetsPage() {
     setDeleteDialogOpen(true);
   }
 
-  async function handleDeleteConfirm() {
+  async function handleDeleteConfirm(targetCategoryId?: string) {
     try {
-      await api.categories.delete(deletingCategory!.id);
+      await api.categories.delete(deletingCategory!.id, targetCategoryId);
       setCategories(prev => prev.filter(c => c.id !== deletingCategory!.id));
       setCategoryAllocations(prev =>
         prev.filter((entry) => entry.categoryId !== deletingCategory!.id)
@@ -537,8 +539,11 @@ export default function BudgetsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-bg-page p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
+    <main className="min-h-screen bg-[#F2F2F2] p-4 md:p-8">
+      <div
+        data-testid="budget-edit-layout"
+        className="mx-auto flex w-full max-w-[1100px] flex-col gap-5"
+      >
         <BudgetHeader
           monthOptions={monthOptions}
           selectedMonthValue={selectedMonthValue}
@@ -566,8 +571,8 @@ export default function BudgetsPage() {
             categories={readOnlyCategories}
           />
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1 self-start">
+          <>
+            <div data-edit-section data-testid="section-total">
               <BudgetDetails
                 totalIncome={totalIncome}
                 onTotalIncomeChange={handleTotalIncomeChange}
@@ -578,30 +583,56 @@ export default function BudgetsPage() {
                 isValidTotal={isValidTotal}
                 onCalculateIncome={handleCalculateIncome}
                 calculatingIncome={calculatingIncome}
-                onSave={handleSave}
-                onCancel={handleCancelEdit}
-                saving={saving}
                 canSave={canSave}
-                />
+              />
             </div>
 
-            <div className="lg:col-span-2 relative">
-              <div className="absolute inset-0">
-                <BudgetCategoryDetails
-                  categories={categories}
-                  selectedType={selectedType}
-                  typeAllocations={typeAllocations}
-                  categoryAllocations={categoryAllocations}
-                  onPercentageChange={handlePercentageChange}
-                  onCategoryAmountChange={handleCategoryAmountChange}
-                  totalIncome={totalIncome}
-                  remaining={remainingByType.find((item) => item.type === selectedType)?.remaining ?? 0}
-                  saveError={saveError}
-                  onOpenEditCategory={openEditCategory}
-                  onDeleteCategory={handleDeleteCategory}
-                  onAddCategory={handleAddCategory}
-                />
-              </div>
+            <div data-edit-section data-testid="section-groups">
+              <BudgetTypeTabs
+                typeAllocations={typeAllocations}
+                selectedType={selectedType}
+                totalIncome={totalIncome}
+                onSelectType={setSelectedType}
+                onPercentageChange={handlePercentageChange}
+              />
+            </div>
+
+            <div data-edit-section data-testid="section-categories">
+              <BudgetCategoryDetails
+                categories={categories}
+                selectedType={selectedType}
+                typeAllocations={typeAllocations}
+                categoryAllocations={categoryAllocations}
+                onCategoryAmountChange={handleCategoryAmountChange}
+                totalIncome={totalIncome}
+                remaining={remainingByType.find((item) => item.type === selectedType)?.remaining ?? 0}
+                saveError={saveError}
+                onOpenEditCategory={openEditCategory}
+                onDeleteCategory={handleDeleteCategory}
+                onAddCategory={handleAddCategory}
+              />
+            </div>
+          </>
+        )}
+
+        {!isPastMonth && editingBudget && (
+          <div
+            data-edit-section
+            data-testid="section-footer"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-white px-4 py-3"
+          >
+            <span className="text-sm font-medium text-[#9A3412]">
+              {hasChanges || budget === null
+                ? "Tienes cambios sin guardar"
+                : "Sin cambios pendientes"}
+            </span>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={handleCancelEdit}>
+                Cancelar
+              </Button>
+              <Button onClick={() => void handleSave()} disabled={!canSave || saving}>
+                {saving ? "Guardando..." : "Guardar presupuesto"}
+              </Button>
             </div>
           </div>
         )}
@@ -625,12 +656,22 @@ export default function BudgetsPage() {
           onSubmit={handleCategorySubmit}
         />
 
-        <ConfirmDeleteDialog
+        <DeleteCategoryDialog
           open={deleteDialogOpen}
-          title="Eliminar categoría"
-          description={<>¿Estás seguro de que quieres eliminar la categoría <strong>{deletingCategory?.name ?? ""}</strong>? Esta acción no se puede deshacer.</>}
-          onConfirm={handleDeleteConfirm}
-          onCancel={() => { setDeleteDialogOpen(false); setDeletingCategory(null); }}
+          category={deletingCategory}
+          categories={categories}
+          saving={false}
+          onOpenChange={(open) => {
+            if (!open) {
+              setDeleteDialogOpen(false);
+              setDeletingCategory(null);
+            }
+          }}
+          onConfirm={async (targetCategoryId) => {
+            await handleDeleteConfirm(targetCategoryId);
+            setDeleteDialogOpen(false);
+            setDeletingCategory(null);
+          }}
         />
       </div>
     </main>

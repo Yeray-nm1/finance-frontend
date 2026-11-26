@@ -6,6 +6,7 @@ import { describe, it, expect, vi } from 'vitest';
 vi.mock('../CalendarFilter', () => ({ CalendarFilter: () => null }));
 
 import { TransactionsFilters } from '../TransactionsFilters';
+import { NO_ACCOUNT_LABEL, NO_ACCOUNT_SENTINEL } from '@/lib/transactions-utils';
 
 const onClearFilters = vi.fn();
 
@@ -66,5 +67,34 @@ describe('TransactionsFilters · filtro por meta', () => {
     );
 
     expect(screen.queryByRole('group', { name: 'Filtro de meta' })).not.toBeInTheDocument();
+  });
+
+  it('ofrece «Sin cuenta» en el filtro de cuentas y selecciona el centinela', async () => {
+    const user = userEvent.setup();
+    const onFilterAccountIdsChange = vi.fn();
+
+    render(
+      <TransactionsFilters
+        {...baseProps}
+        accounts={[
+          {
+            id: 'acc-1',
+            userId: 'u1',
+            name: 'Cuenta Principal',
+            type: 'checking',
+            createdAt: '2026-01-01T00:00:00.000Z',
+          },
+        ]}
+        filterGoalId={null}
+        goalName={null}
+        onFilterGoalIdClear={vi.fn()}
+        onFilterAccountIdsChange={onFilterAccountIdsChange}
+      />
+    );
+
+    await user.click(screen.getByRole('combobox', { name: 'Cuenta' }));
+    await user.click(screen.getByRole('checkbox', { name: NO_ACCOUNT_LABEL }));
+
+    expect(onFilterAccountIdsChange).toHaveBeenCalledWith([NO_ACCOUNT_SENTINEL]);
   });
 });

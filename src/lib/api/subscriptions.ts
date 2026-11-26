@@ -1,16 +1,16 @@
 import { request } from './client';
-import type { Subscription, SubscriptionCandidate } from '@/types/subscriptions';
+import type { Subscription, SubscriptionCandidate, SubscriptionKind } from '@/types/subscriptions';
 
 export const subscriptions = {
   list: (signal?: AbortSignal) => request<Subscription[]>('/subscriptions', { signal }),
 
-  create: (data: { name: string; amount: number; frequency: string; transactionId?: string }) =>
+  create: (data: { name: string; amount: number; frequency: string; kind?: SubscriptionKind; estimated?: boolean; nextChargeDate?: string; transactionId?: string }) =>
     request<Subscription>('/subscriptions', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  update: (id: string, data: Partial<{ name: string; amount: number; frequency: string; matchDescriptions: string[]; active: boolean }>) =>
+  update: (id: string, data: Partial<{ name: string; amount: number; frequency: string; kind: SubscriptionKind; estimated: boolean; nextChargeDate: string | null; matchDescriptions: string[]; active: boolean }>) =>
     request<Subscription>(`/subscriptions/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -28,6 +28,12 @@ export const subscriptions = {
 
   unlinkTransactions: (id: string) =>
     request<void>(`/subscriptions/${id}/unlink-transactions`, { method: 'POST' }),
+
+  unlinkTransaction: (id: string, transactionId: string) =>
+    request<{ unlinked: number }>(`/subscriptions/${id}/unlink-transaction`, {
+      method: 'POST',
+      body: JSON.stringify({ transactionId }),
+    }),
 
   dismissPriceChanges: (id: string) =>
     request<void>(`/subscriptions/${id}/dismiss-price-changes`, { method: 'POST' }),

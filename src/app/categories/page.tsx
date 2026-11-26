@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pencil, Plus, Tags, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
+import { DeleteCategoryDialog } from "./components/DeleteCategoryDialog";
 import { ErrorState } from "@/components/ErrorState";
 import { toast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
@@ -131,11 +131,11 @@ export default function CategoriesPage() {
     }
   }
 
-  async function handleDelete() {
+  async function handleDelete(targetCategoryId?: string) {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      await api.categories.delete(deleteTarget.id);
+      await api.categories.delete(deleteTarget.id, targetCategoryId);
       setCategories((prev) => prev.filter((cat) => cat.id !== deleteTarget.id));
       setDeleteTarget(null);
       toast({ title: "Categoría eliminada" });
@@ -279,17 +279,12 @@ export default function CategoriesPage() {
         onSubmit={handleSubmit}
       />
 
-      <ConfirmDeleteDialog
+      <DeleteCategoryDialog
         open={deleteTarget !== null}
-        title="Eliminar categoría"
-        description={
-          <>
-            ¿Eliminar «{deleteTarget?.name}»? Los movimientos se quedarán sin categoría y
-            desaparecerá de tus presupuestos.
-          </>
-        }
-        loading={deleting}
-        onCancel={() => setDeleteTarget(null)}
+        category={deleteTarget}
+        categories={categories}
+        saving={deleting}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
         onConfirm={handleDelete}
       />
     </main>

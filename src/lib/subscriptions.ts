@@ -26,9 +26,26 @@ export function getAnnualCost(
   return subscription.amount * multiplier;
 }
 
+function parseDateInput(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (match) {
+    return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+export function toDateInputValue(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 export function getNextChargeDate(
-  subscription: Pick<Subscription, "frequency" | "createdAt" | "lastTransaction">
+  subscription: Pick<Subscription, "frequency" | "createdAt" | "lastTransaction" | "nextChargeDate">
 ): Date | null {
+  const explicit = parseDateInput(subscription.nextChargeDate);
+  if (explicit) return explicit;
+
   const base = subscription.lastTransaction?.date ?? subscription.createdAt;
   if (!base) return null;
 
@@ -52,6 +69,31 @@ export function getNextChargeDate(
 function advance(date: Date, step: { months: number; days: number }): Date {
   if (step.months > 0) return addMonths(date, step.months);
   return addDays(date, step.days);
+}
+
+/** Próximo cobro calculado a partir de los pagos seleccionados. */
+export function getNextChargeDateFromPayments(
+  payments: ReadonlyArray<{ date: string }>,
+  frequency: Subscription["frequency"]
+): Date | null {
+  const dates = payments
+    .map((payment) => new Date(payment.date))
+    .filter((date) => !Number.isNaN(date.getTime()));
+  if (dates.length === 0) return null;
+
+  const newest = dates.reduce((latest, date) => (date > latest ? date : latest));
+  const step = NEXT_CHARGE_STEPS[frequency] ?? NEXT_CHARGE_STEPS.monthly;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let next = advance(newest, step);
+  let guard = 0;
+  while (next < today && guard < 500) {
+    next = advance(next, step);
+    guard += 1;
+  }
+
+  return next;
 }
 
 function startOfDay(date: Date): Date {

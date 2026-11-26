@@ -5,8 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import type { SubscriptionRowProps } from "./types/SubscriptionRow.types";
 import { formatCurrency, formatShortDate } from "@/lib/format";
-import { freqLabels } from "@/lib/constants";
+import { freqLabels, kindLabels } from "@/lib/constants";
 import { daysUntil, getAnnualCost, getNextChargeDate } from "@/lib/subscriptions";
+import { cn } from "@/lib/utils";
 
 export function SubscriptionRow({
   subscription,
@@ -19,6 +20,9 @@ export function SubscriptionRow({
   const nextCharge = getNextChargeDate(subscription);
   const [menuOpen, setMenuOpen] = useState(false);
   const initial = (subscription.name.trim() || "?").charAt(0).toUpperCase();
+  const kind = subscription.kind ?? "subscription";
+  const estimated = subscription.estimated ?? false;
+  const estimatedPrefix = estimated ? "≈ " : "";
 
   return (
     <div
@@ -43,10 +47,20 @@ export function SubscriptionRow({
           <p className="truncate text-sm font-semibold text-text-primary">
             {subscription.name}
           </p>
+          <Badge
+            variant={kind === "subscription" ? "secondary" : "default"}
+            className={cn(
+              "shrink-0 font-medium",
+              kind === "recurring" && "border-transparent bg-teal-50 text-teal-700"
+            )}
+          >
+            {kindLabels[kind]}
+          </Badge>
           {!active && <Badge variant="outline">Cancelada</Badge>}
         </div>
         <p className="mt-0.5 truncate text-xs text-text-muted">
-          {formatCurrency(subscription.amount)} · {freqLabels[subscription.frequency]}
+          {estimatedPrefix}{formatCurrency(subscription.amount)} · {freqLabels[subscription.frequency]}
+          {estimated && " · importe estimado"}
           {subscription.lastTransaction
             ? ` · Último cobro ${formatShortDate(subscription.lastTransaction.date)}`
             : " · Sin cobros registrados"}
@@ -65,7 +79,7 @@ export function SubscriptionRow({
       <div className="w-[110px] shrink-0 text-xs">
         <p className="text-text-muted">Coste anual</p>
         <p className="font-medium text-text-primary">
-          {formatCurrency(getAnnualCost(subscription))}
+          {estimatedPrefix}{formatCurrency(getAnnualCost(subscription))}
         </p>
       </div>
 

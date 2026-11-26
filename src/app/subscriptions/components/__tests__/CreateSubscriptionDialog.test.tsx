@@ -1,14 +1,18 @@
-import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CreateSubscriptionDialog } from '../CreateSubscriptionDialog';
 
 beforeAll(() => {
   globalThis.ResizeObserver = class ResizeObserver {
-    observe() { /* noop */ }
-    unobserve() { /* noop */ }
-    disconnect() { /* noop */ }
+    observe() {}
+    unobserve() {}
+    disconnect() {}
   };
+  Element.prototype.hasPointerCapture = vi.fn(() => false);
+  Element.prototype.setPointerCapture = vi.fn();
+  Element.prototype.releasePointerCapture = vi.fn();
+  Element.prototype.scrollIntoView = vi.fn();
 });
 
 vi.mock('@/lib/api', () => ({
@@ -16,7 +20,6 @@ vi.mock('@/lib/api', () => ({
     subscriptions: {
       create: vi.fn(),
       confirmMatch: vi.fn(),
-      list: vi.fn(),
     },
   },
 }));
@@ -26,338 +29,146 @@ import { api } from '@/lib/api';
 const mockCreate = api.subscriptions.create as ReturnType<typeof vi.fn>;
 const mockConfirmMatch = api.subscriptions.confirmMatch as ReturnType<typeof vi.fn>;
 
-function mockTransactionSearch(results: Array<{ id: string; description: string; amount: number; date: string }>) {
+function mockTransactionSearch(results: Array<{ id: string; description: string; amount: number; date: string }> = []) {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
     ok: true,
     json: () => Promise.resolve({ data: results, total: results.length }),
   }));
 }
 
-function mockTransactionSearchError() {
-  vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')));
+function renderDialog(existingNames: string[] = []) {
+  return render(
+    <CreateSubscriptionDialog
+      open
+      onOpenChange={vi.fn()}
+      onCreated={vi.fn()}
+      existingNames={existingNames}
+    />
+  );
 }
 
-describe('CreateSubscriptionDialog - Step 1', () => {
+async function fillStep1(user: ReturnType<typeof userEvent.setup>, name = 'Netflix', amount = '9.99') {
+  await user.type(screen.getByLabelText('Nombre'), name);
+  await user.type(screen.getByLabelText('Importe'), amount);
+  await user.click(screen.getByRole('button', { name: /Siguiente: pagos anteriores/ }));
+  await screen.findByText(/Hemos buscado movimientos parecidos/);
+}
+
+describe('CreateSubscriptionDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCreate.mockResolvedValue({ id: '1', name: 'Netflix', amount: 9.99, frequency: 'monthly' });
+    mockCreate.mockResolvedValue({ id: '1' });
+    mockTransactionSearch();
   });
 
-  it('A1: shows step 1 with name, amount, frequency fields when open', () => {
-    render(
-      <CreateSubscriptionDialog
-        open={true}
-        onOpenChange={vi.fn()}
-        onCreated={vi.fn()}
-        existingNames={[]}
-      />
-    );
+  it('muestra nombre, importe, frecuencia y próximo cobro en el paso 1', () => {
+    renderDialog();
 
-    expect(screen.getByText('Nueva Suscripcion')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Nueva suscripción' })).toBeInTheDocument();
     expect(screen.getByLabelText('Nombre')).toBeInTheDocument();
     expect(screen.getByLabelText('Importe')).toBeInTheDocument();
-    expect(screen.getByText('Mensual')).toBeInTheDocument();
+    expect(screen.getByLabelText('Frecuencia')).toBeInTheDocument();
+    expect(screen.getByLabelText('Próximo cobro')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Siguiente: pagos anteriores/ })).toBeDisabled();
   });
 
-  it('A2: "Siguiente" button is disabled when name or amount are empty', () => {
-    render(
-      <CreateSubscriptionDialog
-        open={true}
-        onOpenChange={vi.fn()}
-        onCreated={vi.fn()}
-        existingNames={[]}
-      />
-    );
-
-    const nextButton = screen.getByRole('button', { name: /siguiente/i });
-    expect(nextButton).toBeDisabled();
-  });
-
-  it('A2b: "Siguiente" is enabled when name and amount are filled', async () => {
+  it('el botón Siguiente se habilita con nombre e importe', async () => {
     const user = userEvent.setup();
-    render(
-      <CreateSubscriptionDialog
-        open={true}
-        onOpenChange={vi.fn()}
-        onCreated={vi.fn()}
-        existingNames={[]}
-      />
-    );
-
-    const nameInput = screen.getByLabelText('Nombre');
-    const amountInput = screen.getByLabelText('Importe');
-
-    await user.type(nameInput, 'Netflix');
-    await user.type(amountInput, '9.99');
-
-    const nextButton = screen.getByRole('button', { name: /siguiente/i });
-    expect(nextButton).not.toBeDisabled();
-  });
-
-  it('A3: clicking "Siguiente" with valid fields goes to step 2', async () => {
-    const user = userEvent.setup();
-    mockTransactionSearch([]);
-    render(
-      <CreateSubscriptionDialog
-        open={true}
-        onOpenChange={vi.fn()}
-        onCreated={vi.fn()}
-        existingNames={[]}
-      />
-    );
+    renderDialog();
 
     await user.type(screen.getByLabelText('Nombre'), 'Netflix');
     await user.type(screen.getByLabelText('Importe'), '9.99');
-    await user.click(screen.getByRole('button', { name: /siguiente/i }));
 
-    await waitFor(() => {
-      expect(screen.getByText(/vincular transacciones/i)).toBeInTheDocument();
-    });
+    expect(screen.getByRole('button', { name: /Siguiente: pagos anteriores/ })).not.toBeDisabled();
   });
 
-  it('A4: clicking "Cancelar" calls onOpenChange(false)', async () => {
-    const user = userEvent.setup();
-    const onOpenChange = vi.fn();
-    render(
-      <CreateSubscriptionDialog
-        open={true}
-        onOpenChange={onOpenChange}
-        onCreated={vi.fn()}
-        existingNames={[]}
-      />
-    );
-
-    await user.click(screen.getByRole('button', { name: /cancelar/i }));
-    expect(onOpenChange).toHaveBeenCalledWith(false);
-  });
-});
-
-describe('CreateSubscriptionDialog - Step 2', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockCreate.mockResolvedValue({ id: '1', name: 'Netflix', amount: 9.99, frequency: 'monthly' });
-  });
-
-  it('A5: shows candidate transactions after clicking "Buscar transacciones"', async () => {
+  it('busca movimientos parecidos al llegar al paso 2', async () => {
     const user = userEvent.setup();
     mockTransactionSearch([
-      { id: 'tx-1', description: 'NETFLIX COM', amount: 9.99, date: '2026-05-02' },
-      { id: 'tx-2', description: 'NETFLIX COM', amount: 9.99, date: '2026-04-02' },
+      { id: 'tx-1', description: 'NETFLIX COM', amount: -9.99, date: '2026-05-02T00:00:00.000Z' },
     ]);
-    render(
-      <CreateSubscriptionDialog
-        open={true}
-        onOpenChange={vi.fn()}
-        onCreated={vi.fn()}
-        existingNames={[]}
-      />
-    );
+    renderDialog();
 
-    await user.type(screen.getByLabelText('Nombre'), 'Netflix');
-    await user.type(screen.getByLabelText('Importe'), '9.99');
-    await user.click(screen.getByRole('button', { name: /siguiente/i }));
+    await fillStep1(user);
 
-    await waitFor(() => {
-      expect(screen.getByText(/vincular transacciones/i)).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByRole('button', { name: /buscar transacciones/i }));
-
-    await waitFor(() => {
-      expect(screen.getAllByText('NETFLIX COM')).toHaveLength(2);
-    });
+    expect(screen.getByText('NETFLIX COM')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /NETFLIX COM/ })).toBeChecked();
   });
 
-  it('A6: shows hint text before any search', async () => {
+  it('"Atrás" vuelve al paso 1 conservando los datos', async () => {
     const user = userEvent.setup();
-    mockTransactionSearch([]);
-    render(
-      <CreateSubscriptionDialog
-        open={true}
-        onOpenChange={vi.fn()}
-        onCreated={vi.fn()}
-        existingNames={[]}
-      />
-    );
+    renderDialog();
 
-    await user.type(screen.getByLabelText('Nombre'), 'Netflix');
-    await user.type(screen.getByLabelText('Importe'), '9.99');
-    await user.click(screen.getByRole('button', { name: /siguiente/i }));
+    await fillStep1(user);
+    await user.click(screen.getByRole('button', { name: /Atrás/ }));
 
-    await waitFor(() => {
-      expect(screen.getByText(/pulsa.*buscar transacciones/i)).toBeInTheDocument();
-    });
+    expect(screen.getByLabelText('Nombre')).toHaveValue('Netflix');
   });
 
-  it('A7: "Atrás" returns to step 1 preserving form data', async () => {
+  it('crea la suscripción sin vincular pagos', async () => {
     const user = userEvent.setup();
-    mockTransactionSearch([]);
-    render(
-      <CreateSubscriptionDialog
-        open={true}
-        onOpenChange={vi.fn()}
-        onCreated={vi.fn()}
-        existingNames={[]}
-      />
-    );
-
-    await user.type(screen.getByLabelText('Nombre'), 'Netflix');
-    await user.type(screen.getByLabelText('Importe'), '9.99');
-    await user.click(screen.getByRole('button', { name: /siguiente/i }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/vincular transacciones/i)).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByRole('button', { name: /atras/i }));
-
-    await waitFor(() => {
-      expect(screen.getByText('Nueva Suscripcion')).toBeInTheDocument();
-    });
-    const nameInput = screen.getByLabelText('Nombre') as HTMLInputElement;
-    expect(nameInput.value).toBe('Netflix');
-  });
-
-  it('A8: "Crear" without linking creates subscription without confirmMatch', async () => {
-    const user = userEvent.setup();
-    mockTransactionSearch([]);
     const onCreated = vi.fn();
-
     render(
-      <CreateSubscriptionDialog
-        open={true}
-        onOpenChange={vi.fn()}
-        onCreated={onCreated}
-        existingNames={[]}
-      />
+      <CreateSubscriptionDialog open onOpenChange={vi.fn()} onCreated={onCreated} existingNames={[]} />
     );
 
-    await user.type(screen.getByLabelText('Nombre'), 'Netflix');
-    await user.type(screen.getByLabelText('Importe'), '9.99');
-    await user.click(screen.getByRole('button', { name: /siguiente/i }));
+    await fillStep1(user);
+    await user.click(screen.getByRole('button', { name: /Guardar sin vincular pagos/ }));
 
     await waitFor(() => {
-      expect(screen.getByText(/vincular transacciones/i)).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByRole('button', { name: /^crear$/i }));
-
-    await waitFor(() => {
-      expect(mockCreate).toHaveBeenCalledWith({
+      expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
         name: 'Netflix',
         amount: 9.99,
         frequency: 'monthly',
-      });
+        kind: 'subscription',
+        estimated: false,
+      }));
       expect(mockConfirmMatch).not.toHaveBeenCalled();
       expect(onCreated).toHaveBeenCalled();
     });
   });
 
-  it('A9: "Crear" with linked transactions calls confirmMatch for each', async () => {
+  it('crea y vincula los movimientos seleccionados', async () => {
     const user = userEvent.setup();
     mockTransactionSearch([
-      { id: 'tx-1', description: 'NETFLIX COM', amount: 9.99, date: '2026-05-02' },
+      { id: 'tx-1', description: 'NETFLIX COM', amount: -9.99, date: '2026-05-02T00:00:00.000Z' },
     ]);
-    const onCreated = vi.fn();
+    renderDialog();
 
-    render(
-      <CreateSubscriptionDialog
-        open={true}
-        onOpenChange={vi.fn()}
-        onCreated={onCreated}
-        existingNames={[]}
-      />
-    );
-
-    await user.type(screen.getByLabelText('Nombre'), 'Netflix');
-    await user.type(screen.getByLabelText('Importe'), '9.99');
-    await user.click(screen.getByRole('button', { name: /siguiente/i }));
+    await fillStep1(user);
+    await user.click(screen.getByRole('button', { name: /Guardar con 1 pago/ }));
 
     await waitFor(() => {
-      expect(screen.getByText(/vincular transacciones/i)).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByRole('button', { name: /buscar transacciones/i }));
-
-    await waitFor(() => {
-      expect(screen.getByText('NETFLIX COM')).toBeInTheDocument();
-    });
-
-    const vincularBtn = screen.getByRole('button', { name: /^vincular$/i });
-    await user.click(vincularBtn);
-    await user.click(screen.getByRole('button', { name: /^crear$/i }));
-
-    await waitFor(() => {
-      expect(mockCreate).toHaveBeenCalledWith({
-        name: 'NETFLIX COM',
-        amount: 9.99,
-        frequency: 'monthly',
-      });
       expect(mockConfirmMatch).toHaveBeenCalledWith('1', 'NETFLIX COM', 'tx-1');
-      expect(onCreated).toHaveBeenCalled();
     });
   });
 
-  it('A10: shows loading indicator while searching candidates', async () => {
+  it('muestra el error de búsqueda y permite guardar igualmente', async () => {
     const user = userEvent.setup();
-    render(
-      <CreateSubscriptionDialog
-        open={true}
-        onOpenChange={vi.fn()}
-        onCreated={vi.fn()}
-        existingNames={[]}
-      />
-    );
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')));
+    renderDialog();
 
-    await user.type(screen.getByLabelText('Nombre'), 'Netflix');
-    await user.type(screen.getByLabelText('Importe'), '9.99');
-    await user.click(screen.getByRole('button', { name: /siguiente/i }));
+    await fillStep1(user);
+    expect(screen.getByText(/Error al buscar transacciones/)).toBeInTheDocument();
 
-    await waitFor(() => {
-      expect(screen.getByText(/vincular transacciones/i)).toBeInTheDocument();
-    });
-
-    mockTransactionSearch([]);
-    await user.click(screen.getByRole('button', { name: /buscar transacciones/i }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/pulsa.*buscar transacciones/i)).toBeInTheDocument();
-    });
+    await user.click(screen.getByRole('button', { name: /Guardar sin vincular pagos/ }));
+    await waitFor(() => expect(mockCreate).toHaveBeenCalled());
   });
 
-  it('A11: shows error when search fails and allows continuing', async () => {
+  it('permite crear un pago recurrente con importe estimado', async () => {
     const user = userEvent.setup();
-    const onCreated = vi.fn();
+    renderDialog();
 
-    render(
-      <CreateSubscriptionDialog
-        open={true}
-        onOpenChange={vi.fn()}
-        onCreated={onCreated}
-        existingNames={[]}
-      />
-    );
-
-    await user.type(screen.getByLabelText('Nombre'), 'Netflix');
-    await user.type(screen.getByLabelText('Importe'), '9.99');
-    await user.click(screen.getByRole('button', { name: /siguiente/i }));
+    await user.click(screen.getByRole('radio', { name: /Pago recurrente/ }));
+    await user.click(screen.getByRole('checkbox', { name: /Importe estimado/ }));
+    await fillStep1(user, 'Alquiler piso', '650');
+    await user.click(screen.getByRole('button', { name: /Guardar sin vincular pagos/ }));
 
     await waitFor(() => {
-      expect(screen.getByText(/vincular transacciones/i)).toBeInTheDocument();
-    });
-
-    mockTransactionSearchError();
-    await user.click(screen.getByRole('button', { name: /buscar transacciones/i }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/error al buscar/i)).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByRole('button', { name: /^crear$/i }));
-
-    await waitFor(() => {
-      expect(mockCreate).toHaveBeenCalled();
-      expect(onCreated).toHaveBeenCalled();
+      expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
+        kind: 'recurring',
+        estimated: true,
+      }));
     });
   });
 });

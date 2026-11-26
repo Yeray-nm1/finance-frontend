@@ -23,7 +23,7 @@ export function BudgetHeader({
   const showActions = showEditButton || showCopyButton;
 
   return (
-    <header className="mb-6">
+    <header>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-[auto_1fr_auto] sm:items-center">
         <h1 className="row-start-1 font-serif text-2xl font-semibold text-text-primary sm:col-start-1 sm:row-start-1 sm:text-3xl">
           Presupuestos

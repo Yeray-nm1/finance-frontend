@@ -29,14 +29,19 @@ describe('cliente API de aportaciones programadas', () => {
   });
 
   it('CA-5.1 acepta con POST autenticado y el token en el body', async () => {
-    await goalContributions.accept('token-valido', 'checking');
+    await goalContributions.accept('token-valido', 'checking', 50, true);
 
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/v1/goal-contributions/accept',
       expect.objectContaining({
         method: 'POST',
         credentials: 'include',
-        body: JSON.stringify({ token: 'token-valido', accountId: 'checking' }),
+        body: JSON.stringify({
+          token: 'token-valido',
+          accountId: 'checking',
+          amount: 50,
+          updateSuggestion: true,
+        }),
       })
     );
   });

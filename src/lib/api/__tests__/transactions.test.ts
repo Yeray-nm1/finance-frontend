@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { transactions } from '../transactions';
+import { NO_ACCOUNT_SENTINEL } from '@/lib/transactions-utils';
 
 const fetchMock = vi.fn();
 
@@ -24,6 +25,15 @@ describe('cliente API de transacciones', () => {
 
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/v1/transactions?goalId=goal-1',
+      expect.objectContaining({ credentials: 'include' })
+    );
+  });
+
+  it('envía el centinela de «Sin cuenta» dentro de accountIds', async () => {
+    await transactions.list({ accountIds: NO_ACCOUNT_SENTINEL });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `/api/v1/transactions?accountIds=${NO_ACCOUNT_SENTINEL}`,
       expect.objectContaining({ credentials: 'include' })
     );
   });

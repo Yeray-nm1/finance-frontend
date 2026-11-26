@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
-import { NO_ACCOUNT_SENTINEL, NO_CATEGORY_SENTINEL } from "@/lib/transactions-utils";
+import { NO_ACCOUNT_LABEL, NO_ACCOUNT_SENTINEL, NO_CATEGORY_SENTINEL } from "@/lib/transactions-utils";
 import type { Account } from "@/types/accounts";
 import type { Category } from "@/types/categories";
 import type { QuickExpenseDialogProps } from "./types/QuickExpense.types";
@@ -209,7 +209,7 @@ export function QuickExpenseDialog({
                     <SelectItem value={NO_ACCOUNT_SENTINEL}>Sin cuentas</SelectItem>
                   ) : (
                     <>
-                      <SelectItem value={NO_ACCOUNT_SENTINEL}>Sin cuenta</SelectItem>
+                      <SelectItem value={NO_ACCOUNT_SENTINEL}>{NO_ACCOUNT_LABEL}</SelectItem>
                       {accounts.map((account) => (
                         <SelectItem key={account.id} value={account.id}>
                           {account.name}

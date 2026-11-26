@@ -15,5 +15,9 @@ export const categories = {
     request<Category>('/categories', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: Partial<{ name: string; type: string }>) =>
     request<Category>(`/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  delete: (id: string) => request<void>(`/categories/${id}`, { method: 'DELETE' }),
+  delete: (id: string, targetCategoryId?: string) =>
+    request<void>(`/categories/${id}`, {
+      method: 'DELETE',
+      ...(targetCategoryId ? { body: JSON.stringify({ targetCategoryId }) } : {}),
+    }),
 };

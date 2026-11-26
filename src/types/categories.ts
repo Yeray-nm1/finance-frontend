@@ -6,6 +6,7 @@ export interface Category {
   userId: string;
   name: string;
   type: CategoryType;
+  transactionCount?: number;
 }
 
 

@@ -1,112 +1,156 @@
 "use client";
 
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Link, X } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
+import { SubscriptionSteps } from "./SubscriptionSteps";
 import type { LinkTransactionsStepProps } from "./types/LinkTransactionsStep.types";
+import type { SearchTx } from "@/types/subscriptions";
+
+function dateLabel(date: string): string {
+  const parsed = new Date(date);
+  return Number.isNaN(parsed.getTime())
+    ? date
+    : format(parsed, "d MMM yyyy", { locale: es });
+}
 
 export function LinkTransactionsStep({
+  title,
   name,
-  pendingLinks,
+  searchQuery,
   searchResults,
+  selectedIds,
   searchLoading,
   searchError,
   error,
   saving,
   saveLabel,
   savingLabel,
+  referenceAmount,
+  nextChargeLabel,
+  onSearchQueryChange,
   onSearch,
-  onLinkAll,
-  onAddPending,
-  onRemovePending,
+  onToggle,
   onBack,
   onSave,
+  onSaveWithoutLinks,
 }: Readonly<LinkTransactionsStepProps>) {
+  const selectedCount = selectedIds.length;
+
+  function isDifferentAmount(tx: SearchTx): boolean {
+    if (!referenceAmount) return false;
+    return Math.abs(Math.abs(tx.amount) - referenceAmount) > 0.01;
+  }
+
   return (
     <>
       <DialogHeader>
-        <DialogTitle>Vincular transacciones</DialogTitle>
-        <DialogDescription>
-          Busca y vincula transacciones a &quot;{name}&quot;
-        </DialogDescription>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <DialogTitle>{title}</DialogTitle>
+            <DialogDescription>Paso 2 de 2 · puedes saltarlo</DialogDescription>
+          </div>
+        </div>
       </DialogHeader>
-      <div className="space-y-4">
-        {pendingLinks.length > 0 && (
-          <div className="border rounded-lg max-h-24 overflow-y-auto divide-y bg-bg-elevated">
-            {pendingLinks.map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between px-3 py-1.5 text-sm">
-                <span className="truncate text-xs">{tx.description}</span>
-                <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 shrink-0" onClick={() => onRemovePending(tx.id)}>
-                  <X className="size-3" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
 
-        <div className="flex gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={onSearch} disabled={searchLoading}>
-            {searchLoading ? "Buscando..." : "Buscar transacciones"}
-          </Button>
-        </div>
+      <SubscriptionSteps current={2} />
 
-        {searchError && <p className="text-sm text-expense">{searchError}</p>}
+      <p className="text-sm leading-relaxed text-text-primary">
+        Hemos buscado movimientos parecidos a &laquo;{name}&raquo;. Marca los que sean de esta suscripción.
+      </p>
 
-        {searchResults.length > 0 && (
-          <div className="flex justify-end">
-            <Button type="button" variant="outline" size="sm" onClick={onLinkAll}>
-              Vincular todas
-            </Button>
-          </div>
-        )}
+      <div className="flex gap-2">
+        <input
+          type="text"
+          aria-label="Buscar movimientos"
+          value={searchQuery}
+          onChange={(event) => onSearchQueryChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              onSearch();
+            }
+          }}
+          className="h-10 min-w-0 flex-1 rounded-lg border border-border bg-white px-3.5 text-sm text-text-primary outline-none focus-visible:border-primary"
+        />
+        <Button type="button" variant="outline" onClick={onSearch} disabled={searchLoading}>
+          {searchLoading ? "Buscando..." : "Buscar"}
+        </Button>
+      </div>
 
-        {searchResults.length > 0 && (
-          <div className="border rounded-lg max-h-40 overflow-y-auto divide-y">
-            {searchResults.map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between px-3 py-2 text-sm">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-xs text-text-muted shrink-0">
-                    {new Date(tx.date).toLocaleDateString("es-ES", {
-                      day: "2-digit", month: "2-digit",
-                    })}
+      {searchError && <p className="text-sm text-expense">{searchError}</p>}
+
+      {searchResults.length > 0 && (
+        <div className="scrollbar-thin max-h-52 space-y-2 overflow-y-auto pr-1">
+          {searchResults.map((tx) => {
+            const label = `${tx.description} ${dateLabel(tx.date)}`;
+            const differentAmount = isDifferentAmount(tx);
+            return (
+              <label
+                key={tx.id}
+                className="flex cursor-pointer items-center gap-3 rounded-xl border border-border px-3.5 py-3 has-[:checked]:border-primary has-[:checked]:bg-primary-light/20"
+              >
+                <input
+                  type="checkbox"
+                  aria-label={label}
+                  checked={selectedIds.includes(tx.id)}
+                  onChange={() => onToggle(tx)}
+                  className="size-[18px] shrink-0 accent-primary"
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold text-text-primary">
+                    {tx.description}
                   </span>
-                  <span className="truncate">{tx.description}</span>
-                  <span className="text-text-muted shrink-0">{formatCurrency(Math.abs(tx.amount))}</span>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs shrink-0"
-                  onClick={() => onAddPending(tx.id, tx.description, tx.amount, tx.date)}
-                >
-                  <Link className="size-3" />
-                  Vincular
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {!searchLoading && !searchError && searchResults.length === 0 && (
-          <p className="text-xs text-text-muted">Pulsa &quot;Buscar transacciones&quot; para encontrar transacciones pendientes de vincular</p>
-        )}
-
-        {error && <p className="text-sm text-expense">{error}</p>}
-
-        <div className="flex justify-between gap-2 pt-2">
-          <Button variant="outline" onClick={onBack}>
-            Atras
-          </Button>
-          <Button onClick={onSave} disabled={saving}>
-            {saving ? savingLabel : saveLabel}
-          </Button>
+                  <span className="block text-xs text-text-muted">
+                    {dateLabel(tx.date)}{differentAmount ? " · importe distinto" : ""}
+                  </span>
+                </span>
+                <strong className="shrink-0 text-sm font-semibold text-text-primary">
+                  {formatCurrency(Math.abs(tx.amount))}
+                </strong>
+              </label>
+            );
+          })}
         </div>
+      )}
+
+      {!searchLoading && !searchError && searchResults.length === 0 && (
+        <p className="text-sm text-text-muted">
+          No hemos encontrado movimientos parecidos. Puedes guardar sin vincular pagos.
+        </p>
+      )}
+
+      {nextChargeLabel && (
+        <div className="rounded-lg border border-income/30 bg-income/5 px-3.5 py-2.5 text-[13px] text-income">
+          {selectedCount === 1
+            ? `Con este pago, el próximo cobro será el ${nextChargeLabel}.`
+            : `Con estos ${selectedCount} pagos, el próximo cobro será el ${nextChargeLabel}.`}
+        </div>
+      )}
+
+      {error && <p className="text-sm text-expense">{error}</p>}
+
+      <button
+        type="button"
+        onClick={onSaveWithoutLinks}
+        className="self-start text-sm font-medium text-primary hover:underline"
+      >
+        Guardar sin vincular pagos
+      </button>
+
+      <div className="flex justify-between gap-2 pt-1">
+        <Button type="button" variant="outline" onClick={onBack}>
+          &larr; Atrás
+        </Button>
+        <Button type="button" onClick={onSave} disabled={saving}>
+          {saving ? savingLabel : saveLabel}
+        </Button>
       </div>
     </>
   );

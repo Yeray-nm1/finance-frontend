@@ -1,4 +1,4 @@
-import { afterEach, describe, it, expect, vi, beforeAll } from 'vitest';
+import { afterEach, beforeAll, describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SubscriptionHistoryDialog } from '../SubscriptionHistoryDialog';
@@ -6,10 +6,14 @@ import type { Subscription } from '@/types/subscriptions';
 
 beforeAll(() => {
   globalThis.ResizeObserver = class ResizeObserver {
-    observe() { /* noop */ }
-    unobserve() { /* noop */ }
-    disconnect() { /* noop */ }
+    observe() {}
+    unobserve() {}
+    disconnect() {}
   };
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+    ok: true,
+    json: () => Promise.resolve({ data: [], total: 0 }),
+  }));
 });
 
 afterEach(() => {
@@ -22,6 +26,8 @@ const subscription: Subscription = {
   name: 'Netflix',
   amount: 9.99,
   frequency: 'monthly',
+  kind: 'subscription',
+  estimated: false,
   matchDescriptions: [],
   amountTolerance: 10,
   active: true,
@@ -42,99 +48,46 @@ const subscription: Subscription = {
   ],
 };
 
+function renderDialog(overrides: Partial<Subscription> = {}) {
+  return render(
+    <SubscriptionHistoryDialog
+      subscription={{ ...subscription, ...overrides }}
+      open
+      onOpenChange={vi.fn()}
+      onChanged={vi.fn()}
+    />
+  );
+}
+
 describe('SubscriptionHistoryDialog', () => {
-  it('muestra el resumen y los pagos con fecha y importe', () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(2026, 10, 21, 12));
+  it('muestra el aviso de vinculación y los pagos con fecha, importe y Desvincular', () => {
+    renderDialog();
 
-    render(
-      <SubscriptionHistoryDialog
-        subscription={subscription}
-        open={true}
-        onOpenChange={vi.fn()}
-      />
-    );
-
-    expect(screen.getByText(/historial · netflix/i)).toBeInTheDocument();
-    expect(screen.getByText('Últimos pagos vinculados')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Historial · Netflix/i })).toBeInTheDocument();
+    expect(screen.getByText('Pagos vinculados a esta suscripción')).toBeInTheDocument();
+    expect(screen.getByText(/¿Falta algún pago\?/)).toBeInTheDocument();
     expect(screen.getByText('15 mar 2026')).toBeInTheDocument();
     expect(screen.getByText('15 feb 2026')).toBeInTheDocument();
     expect(screen.getAllByText(/12,99/)).not.toHaveLength(0);
-
-    expect(screen.getByText('Pagos').parentElement).toHaveTextContent('2');
-    expect(screen.getByText('En total').parentElement).toHaveTextContent('22,98 €');
-    expect(screen.getByText('Importe medio').parentElement).toHaveTextContent('11,49 €');
-  });
-
-  it('avisa de los cobros antiguos con la fecha del último pago', () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(2026, 10, 21, 12));
-
-    render(
-      <SubscriptionHistoryDialog
-        subscription={subscription}
-        open={true}
-        onOpenChange={vi.fn()}
-      />
-    );
-
-    expect(screen.getByText(/Sin cobros desde el 15 mar/i)).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /Desvincular/i })).toHaveLength(2);
   });
 
   it('solo la lista de cobros tiene scroll vertical', () => {
-    render(
-      <SubscriptionHistoryDialog
-        subscription={subscription}
-        open={true}
-        onOpenChange={vi.fn()}
-      />
-    );
+    renderDialog();
 
     const list = screen.getByTestId('history-payment-list');
     expect(list.className).toContain('overflow-y-auto');
     expect(list.className).toContain('scrollbar-thin');
     expect(list).toHaveTextContent('15 mar 2026');
-    expect(list).not.toHaveTextContent('Historial');
-    expect(list).not.toHaveTextContent('Cerrar');
+    expect(list).not.toHaveTextContent('Movimientos sin vincular');
 
     const content = list.closest('[data-slot="dialog-content"]');
     expect(content?.className).not.toContain('overflow-y-auto');
     expect(content?.className).toContain('overflow-hidden');
   });
 
-  it('no muestra el aviso cuando el último cobro es reciente', () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(2026, 10, 21, 12));
-
-    render(
-      <SubscriptionHistoryDialog
-        subscription={{
-          ...subscription,
-          recentTransactions: [
-            {
-              id: 'tx-new',
-              amount: -9.99,
-              date: new Date(2026, 10, 7).toISOString(),
-              description: 'Netflix',
-            },
-          ],
-        }}
-        open={true}
-        onOpenChange={vi.fn()}
-      />
-    );
-
-    expect(screen.queryByText(/Sin cobros desde/i)).not.toBeInTheDocument();
-  });
-
-  it('shows an empty state without payments', () => {
-    render(
-      <SubscriptionHistoryDialog
-        subscription={{ ...subscription, recentTransactions: [] }}
-        open={true}
-        onOpenChange={vi.fn()}
-      />
-    );
+  it('muestra el estado vacío cuando no hay pagos vinculados', () => {
+    renderDialog({ recentTransactions: [] });
 
     expect(screen.getByText(/sin pagos vinculados/i)).toBeInTheDocument();
   });
@@ -145,8 +98,9 @@ describe('SubscriptionHistoryDialog', () => {
     render(
       <SubscriptionHistoryDialog
         subscription={subscription}
-        open={true}
+        open
         onOpenChange={onOpenChange}
+        onChanged={vi.fn()}
       />
     );
 

@@ -6,7 +6,6 @@ import { Spinner } from "@/components/ui/spinner";
 import { TriangleAlert } from "lucide-react";
 import { formatCurrency, formatShortDate } from "@/lib/format";
 import {
-  daysUntil,
   getAnnualCost,
   getNextChargeDate,
   getStaleSubscriptions,
@@ -20,6 +19,48 @@ import type { SubscriptionListContentProps } from "./types/SubscriptionListConte
 import { SubscriptionRow } from "./SubscriptionRow";
 
 type Tab = "active" | "cancelled";
+type ListFilter = "all" | "subscription" | "recurring" | "upcoming";
+
+function FilterCard({
+  label,
+  count,
+  amount,
+  suffix = "al año",
+  selected,
+  onClick,
+  disabled = false,
+}: Readonly<{
+  label: string;
+  count: string | number;
+  amount: number | null;
+  suffix?: string;
+  selected: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+}>) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "rounded-lg border bg-white px-5 py-4 text-left transition-colors disabled:cursor-default disabled:opacity-100",
+        selected
+          ? "border-2 border-primary bg-primary-light/30"
+          : "border-border enabled:hover:border-primary/40"
+      )}
+    >
+      <p className="text-xs uppercase tracking-[0.08em] text-text-muted">
+        {label} · {count}
+      </p>
+      <p className="mt-1 flex items-baseline gap-2 whitespace-nowrap text-[22px] font-bold leading-tight text-text-primary">
+        {amount === null ? "-" : formatCurrency(amount)}
+        <span className="text-[13px] font-normal text-text-muted">{suffix}</span>
+      </p>
+    </button>
+  );
+}
 
 function byNextCharge(a: Subscription, b: Subscription): number {
   const aDate = getNextChargeDate(a);
@@ -43,10 +84,14 @@ export function SubscriptionListContent({
   onDismissPriceChange,
 }: Readonly<SubscriptionListContentProps>) {
   const [tab, setTab] = useState<Tab>("active");
+  const [listFilter, setListFilter] = useState<ListFilter>("all");
   const [reviewingStale, setReviewingStale] = useState(false);
 
+  const kindOf = (sub: Subscription) => sub.kind ?? "subscription";
   const activeSubs = subscriptions.filter((s) => s.active !== false);
   const cancelledSubs = subscriptions.filter((s) => s.active === false);
+  const subscriptionSubs = activeSubs.filter((s) => kindOf(s) === "subscription");
+  const recurringSubs = activeSubs.filter((s) => kindOf(s) === "recurring");
 
   if (loading) {
     return <Spinner className="pt-12" />;
@@ -64,14 +109,22 @@ export function SubscriptionListContent({
     );
   }
 
-  const annualTotal = activeSubs.reduce((total, sub) => total + getAnnualCost(sub), 0);
+  const annualTotalOf = (subs: readonly Subscription[]) =>
+    subs.reduce((total, sub) => total + getAnnualCost(sub), 0);
+  const annualTotal = annualTotalOf(activeSubs);
   const upcoming = getUpcomingCharge(activeSubs);
   const staleSubs = getStaleSubscriptions(activeSubs);
   const priceChangeSubs = activeSubs.filter((s) => (s.priceChanges ?? []).length > 0);
   const inScope = tab === "active" ? activeSubs : cancelledSubs;
-  const visibleSubs = [...(reviewingStale && tab === "active" ? staleSubs : inScope)].sort(
-    byNextCharge
-  );
+  const upcomingDay = upcoming?.date.toDateString();
+  const visibleSubs = [...(reviewingStale && tab === "active" ? staleSubs : inScope)]
+    .filter((sub) => {
+      if (listFilter === "upcoming") {
+        return Boolean(upcomingDay && getNextChargeDate(sub)?.toDateString() === upcomingDay);
+      }
+      return listFilter === "all" || kindOf(sub) === listFilter;
+    })
+    .sort(byNextCharge);
 
   return (
     <>
@@ -123,29 +176,48 @@ export function SubscriptionListContent({
         </div>
       )}
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 mb-4">
-        <div className="rounded-lg border border-border bg-white px-5 py-4">
-          <p className="text-xs uppercase tracking-widest text-text-muted">COSTE ANUAL</p>
-          <p className="mt-1 text-2xl font-bold text-text-primary">
-            {formatCurrency(annualTotal)}
-          </p>
-        </div>
-        <div className="rounded-lg border border-border bg-white px-5 py-4">
-          <p className="text-xs uppercase tracking-widest text-text-muted">
-            {upcoming
-              ? `PRÓXIMO COBRO · ${formatShortDate(upcoming.date.toISOString())} · EN ${daysUntil(upcoming.date)} DÍAS`
-              : "PRÓXIMO COBRO"}
-          </p>
-          <p className="mt-1 text-2xl font-bold text-text-primary">
-            {upcoming ? formatCurrency(upcoming.amount) : "-"}
-            {upcoming && (
-              <span className="ml-2 text-sm font-normal text-text-muted">
-                {upcoming.count} {upcoming.count === 1 ? "pago" : "pagos"}
-              </span>
-            )}
-          </p>
-        </div>
+      <section
+        aria-label="Filtrar por tipo"
+        className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
+      >
+        <FilterCard
+          label="TODOS"
+          count={activeSubs.length}
+          amount={annualTotal}
+          selected={listFilter === "all"}
+          onClick={() => setListFilter("all")}
+        />
+        <FilterCard
+          label="SUSCRIPCIONES"
+          count={subscriptionSubs.length}
+          amount={annualTotalOf(subscriptionSubs)}
+          selected={listFilter === "subscription"}
+          onClick={() => setListFilter("subscription")}
+        />
+        <FilterCard
+          label="PAGOS RECURRENTES"
+          count={recurringSubs.length}
+          amount={annualTotalOf(recurringSubs)}
+          selected={listFilter === "recurring"}
+          onClick={() => setListFilter("recurring")}
+        />
+        <FilterCard
+          label="PRÓXIMO"
+          count={upcoming ? formatShortDate(upcoming.date.toISOString()).toUpperCase() : "—"}
+          amount={upcoming?.amount ?? null}
+          suffix={
+            upcoming
+              ? `${upcoming.count} ${upcoming.count === 1 ? "pago" : "pagos"}`
+              : "sin cobros"
+          }
+          selected={listFilter === "upcoming"}
+          onClick={() => setListFilter("upcoming")}
+          disabled={!upcoming}
+        />
       </section>
+      <p className="mb-4 text-xs text-text-muted">
+        Pulsa una tarjeta para filtrar la lista por tipo.
+      </p>
 
       {staleSubs.length > 0 && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3">

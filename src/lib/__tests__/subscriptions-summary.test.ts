@@ -18,6 +18,8 @@ function subscription(overrides: Partial<Subscription> = {}): Subscription {
     name: 'Netflix',
     amount: 10,
     frequency: 'monthly',
+    kind: 'subscription',
+    estimated: false,
     matchDescriptions: [],
     amountTolerance: 10,
     active: true,

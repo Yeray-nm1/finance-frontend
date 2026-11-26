@@ -1,9 +1,13 @@
 import { describe, it, expect } from "vitest";
 import {
+  NO_ACCOUNT_LABEL,
+  NO_ACCOUNT_SENTINEL,
   NO_CATEGORY_SENTINEL,
   getSubmitLabel,
   getAmountSign,
   formatDateRange,
+  isAccountFilterIdValid,
+  resolveAccountFilterNames,
   typeLabel,
 } from "@/lib/transactions-utils";
 
@@ -78,5 +82,25 @@ describe("typeLabel", () => {
   it("returns the input for unknown types", () => {
     expect(typeLabel("other")).toBe("other");
     expect(typeLabel("")).toBe("");
+  });
+});
+
+describe("filtro de cuentas con «Sin cuenta»", () => {
+  const accounts = [
+    { id: "acc-1", name: "Cuenta Principal" },
+    { id: "acc-2", name: "Ahorros" },
+  ];
+
+  it("resuelve el nombre «Sin cuenta» al centinela y mantiene las cuentas reales", () => {
+    expect(resolveAccountFilterNames([NO_ACCOUNT_LABEL, "Cuenta Principal"], accounts)).toEqual([
+      NO_ACCOUNT_SENTINEL,
+      "acc-1",
+    ]);
+  });
+
+  it("conserva el centinela al validar ids de cuentas", () => {
+    expect(isAccountFilterIdValid(NO_ACCOUNT_SENTINEL, accounts)).toBe(true);
+    expect(isAccountFilterIdValid("acc-1", accounts)).toBe(true);
+    expect(isAccountFilterIdValid("deleted-account", accounts)).toBe(false);
   });
 });

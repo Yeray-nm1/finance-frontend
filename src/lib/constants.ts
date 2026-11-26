@@ -8,3 +8,8 @@ export const freqLabels: Record<string, string> = {
   quarterly: "Trimestral",
   yearly: "Anual",
 }
+
+export const kindLabels: Record<string, string> = {
+  subscription: "Suscripción",
+  recurring: "Pago recurrente",
+}
